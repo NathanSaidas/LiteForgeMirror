@@ -174,6 +174,7 @@
     <ClCompile Include="Asset\AssetTypes.cpp" />
     <ClCompile Include="Asset\CacheBlob.cpp" />
     <ClCompile Include="Asset\CacheBlock.cpp" />
+    <ClCompile Include="Asset\CacheReader.cpp" />
     <ClCompile Include="Asset\CacheStream.cpp" />
     <ClCompile Include="Asset\CacheWriter.cpp" />
     <ClCompile Include="Async\Async.cpp" />
@@ -193,6 +194,7 @@
     <ClInclude Include="Asset\AssetTypes.h" />
     <ClInclude Include="Asset\CacheBlob.h" />
     <ClInclude Include="Asset\CacheBlock.h" />
+    <ClInclude Include="Asset\CacheReader.h" />
     <ClInclude Include="Asset\CacheStream.h" />
     <ClInclude Include="Asset\CacheTypes.h" />
     <ClInclude Include="Asset\CacheWriter.h" />

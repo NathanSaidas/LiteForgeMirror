@@ -16,7 +16,7 @@
         },
         {
           "Id": "d4911ae7-83e9-4006-aaa2-9055b64779e1",
-          "Command": "-test /single=CacheStreamTest"
+          "Command": "-test /single=CacheWriter_WriteOutputTest"
         },
         {
           "Id": "00c6995c-010b-4710-abfa-376ad6f6db76",

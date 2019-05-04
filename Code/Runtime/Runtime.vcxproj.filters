@@ -66,6 +66,9 @@
     <ClCompile Include="Asset\CacheWriter.cpp">
       <Filter>Asset</Filter>
     </ClCompile>
+    <ClCompile Include="Asset\CacheReader.cpp">
+      <Filter>Asset</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Config.h">
@@ -123,6 +126,9 @@
       <Filter>Asset</Filter>
     </ClInclude>
     <ClInclude Include="Asset\CacheWriter.h">
+      <Filter>Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="Asset\CacheReader.h">
       <Filter>Asset</Filter>
     </ClInclude>
   </ItemGroup>

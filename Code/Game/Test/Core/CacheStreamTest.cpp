@@ -1,3 +1,23 @@
+// ********************************************************************
+// Copyright (c) 2019 Nathan Hanlan
+// 
+// Permission is hereby granted, free of charge, to any person obtaining a 
+// copy of this software and associated documentation files(the "Software"), 
+// to deal in the Software without restriction, including without limitation 
+// the rights to use, copy, modify, merge, publish, distribute, sublicense, 
+// and / or sell copies of the Software, and to permit persons to whom the 
+// Software is furnished to do so, subject to the following conditions :
+// 
+// The above copyright notice and this permission notice shall be included in 
+// all copies or substantial portions of the Software.
+// 
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE 
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+// ********************************************************************
 #include "Core/IO/BinaryStream.h"
 #include "Core/IO/TextStream.h"
 #include "Core/Platform/FileSystem.h"
@@ -30,16 +50,9 @@
 // + Implement CacheBlock::Read(bytes)
 // + Come up with a async/concurrent model of CacheBlock
 // + Commenting and Documentation CacheBlock
+// + Implement CacheReader to ensure write/read  works correctly? We can maybe do specific read/write functions /shrug
 
 namespace lf {
-
-struct CacheAssetRequest
-{
-    Token           mCacheBlock;
-    CacheIndex      mCacheIndex;
-    AssetType*      mAssetType;
-    MemoryBuffer    mCompiledData;
-};
 
 static const UInt32 KB = 1024;
 static const UInt32 MB = 1024 * KB;
@@ -1158,7 +1171,8 @@ REGISTER_TEST(CacheWriter_WriteTest)
     TEST_CRITICAL(index);
 
     {
-        CacheWriter cw(block, index, message.CStr(), message.Size());
+        CacheWriter cw;
+        TEST_CRITICAL(cw.Open(block, index, message.CStr(), message.Size()));
         String fullPath(cw.GetOutputFilename().CStr(), COPY_ON_WRITE);
         TEST_CRITICAL(Valid(fullPath.Find(testBlock)));
         TEST_CRITICAL(FileSystem::FileReserve(fullPath, static_cast<FileSize>(block.GetDefaultCapacity())));
@@ -1173,11 +1187,119 @@ REGISTER_TEST(CacheWriter_WriteTest)
     }
 }
 
+REGISTER_TEST(CacheWriter_WriteOutputTest)
+{
+    const SizeT testSize = 8 * KB;
+    const String testBlock = CacheWriterSetup();
+
+    CacheBlock block;
+    block.Initialize(Token("test_cache"), testSize);
+    TEST_CRITICAL(block.GetDefaultCapacity() == testSize);
+    block.SetFilename(Token(testBlock));
+
+    TStaticArray<CacheIndex, 16> indices;
+    for (SizeT i = 0; i < 16; ++i)
+    {
+        indices.Add(block.Create(static_cast<UInt32>(i), static_cast<UInt32>(1 * KB)));
+        TEST_CRITICAL(indices[i]);
+    }
+    ByteT outputBuffer[3][testSize + 2 * KB];
+    memset(outputBuffer[0], 0xFF, sizeof(outputBuffer[0]));
+    memset(outputBuffer[1], 0xFF, sizeof(outputBuffer[1]));
+    memset(outputBuffer[2], 0xFF, sizeof(outputBuffer[2]));
+
+    // Commit Data
+    for (SizeT i = 0; i < 16; ++i)
+    {
+        ByteT sourceBuffer[3 * KB];
+        ByteT* sourceStart = sourceBuffer + 1 * KB;
+        memset(sourceBuffer, 0xFF, sizeof(sourceBuffer));
+        memset(sourceStart, static_cast<int>(i), 1 * KB);
+
+        CacheObject object;
+        TEST(block.GetObject(indices[i], object));
+        ByteT* outputStart = outputBuffer[indices[i].mBlobID] + 1 * KB;
+
+        CacheWriter cw;
+        cw.Open(block, indices[i], sourceStart, 1 * KB);
+        cw.SetOutputBuffer(outputStart, block.GetDefaultCapacity());
+
+        TEST(cw.Write());
+        SizeT offset = static_cast<SizeT>(object.mLocation);
+        TEST(memcmp(outputStart + offset, sourceStart, 1 * KB) == 0);
+    }
+
+    for (SizeT i = 0; i < 16; ++i)
+    {
+        ByteT sourceBuffer[1 * KB];
+        memset(sourceBuffer, static_cast<int>(i), sizeof(sourceBuffer));
+        CacheObject object;
+        TEST(block.GetObject(indices[i], object));
+        ByteT* outputStart = outputBuffer[indices[i].mBlobID] + 1 * KB;
+
+        SizeT offset = static_cast<SizeT>(object.mLocation);
+        TEST(memcmp(outputStart + offset, sourceBuffer, 1 * KB) == 0);
+    }
+
+    // Delete every other and update others to half size
+    for (SizeT i = 0; i < 16; ++i)
+    {
+        ByteT* outputStart = outputBuffer[indices[i].mBlobID] + 1 * KB;
+
+        if (i % 2 == 0)
+        {
+            auto index = block.Destroy(indices[i]);
+            TEST(index);
+            indices[i].mBlobID = INVALID32;
+            indices[i].mObjectID = INVALID32;
+
+
+            CacheWriter cw;
+            cw.Open(block, indices[i]);
+            cw.SetOutputBuffer(outputStart, block.GetDefaultCapacity());
+            TEST(cw.Write());
+        }
+        else
+        {
+            auto index = block.Update(indices[i], KB / 2);
+            TEST(index);
+            indices[i] = index;
+
+            ByteT sourceBuffer[KB / 2];
+            memset(sourceBuffer, static_cast<int>(i) + 0x0F, sizeof(sourceBuffer));
+            CacheWriter cw;
+            cw.Open(block, indices[i], sourceBuffer, sizeof(sourceBuffer));
+            cw.SetOutputBuffer(outputStart, block.GetDefaultCapacity());
+
+            TEST(cw.Write());
+        }
+    }
+
+    for (SizeT i = 0; i < 16; ++i)
+    {
+        if (!indices[i])
+        {
+            continue;
+        }
+
+        ByteT sourceBuffer[1 * KB];
+        memset(sourceBuffer, static_cast<int>(i) + 0x0F, sizeof(sourceBuffer));
+        CacheObject object;
+        TEST(block.GetObject(indices[i], object));
+        ByteT* outputStart = outputBuffer[indices[i].mBlobID] + 1 * KB;
+
+        SizeT offset = static_cast<SizeT>(object.mLocation);
+        TEST(memcmp(outputStart + offset, sourceBuffer, KB / 2) == 0);
+    }
+
+    LF_DEBUG_BREAK;
+
+}
+
 REGISTER_TEST(CacheWriter_WriteAsyncTest)
 {
     const String testBlock = CacheWriterSetup();
     const String message = "Test content as a string.";
-
 
     CacheBlock block;
     block.Initialize(Token("test_cache"), 8 * KB);
@@ -1185,9 +1307,9 @@ REGISTER_TEST(CacheWriter_WriteAsyncTest)
     block.SetFilename(Token(testBlock));
     CacheIndex index = block.Create(0, 1 * KB);
     TEST_CRITICAL(index);
-
     {
-        CacheWriter cw(block, index, message.CStr(), message.Size());
+        CacheWriter cw;
+        TEST_CRITICAL(cw.Open(block, index, message.CStr(), message.Size()));
         String fullPath(cw.GetOutputFilename().CStr(), COPY_ON_WRITE);
         TEST_CRITICAL(Valid(fullPath.Find(testBlock)));
         TEST_CRITICAL(FileSystem::FileReserve(fullPath, static_cast<FileSize>(block.GetDefaultCapacity())));
@@ -1196,37 +1318,74 @@ REGISTER_TEST(CacheWriter_WriteAsyncTest)
         TEST_CRITICAL(f.IsOpen() && f.GetSize() == static_cast<FileSize>(block.GetDefaultCapacity()));
         f.Close();
 
-        // Promise = using CacheWritePromise = PromiseImpl<TCallback<void>, TCallback<void, const String&>>;
-        bool writeDone = false;
-        auto promise = cw.WriteAsync()
-            .Then([&writeDone]()
+        {
+            bool writeDone = false;
+            auto promise = cw.WriteAsync()
+                .Then([&writeDone]()
                 {
                     gTestLog.Info(LogMessage("Success!"));
                     writeDone = true;
                 }
-            )
-            .Catch([](const String&)
-                {
-                    TEST(false);
-                }
-            )
-            .Execute(); // I refuse to do function argument binding, so to ensure all 
-                        // 'Then' and 'Catch' callbacks are invoked the user must call 
-                        // Execute to actually run the promise.
+                )
+                .Catch([](const String&)
+                    {
+                        TEST(false);
+                    }
+                )
+                .Execute();
 
-        SleepCallingThread(2000); // Pretend like were doing something else...
-        promise->Wait(); // Ensure the promise is completed, it should be.. we gave it 2 seconds
-        TEST_CRITICAL(writeDone);
-        f.Open(fullPath, FF_READ | FF_SHARE_READ | FF_SHARE_WRITE, FILE_OPEN_EXISTING);
-        TEST_CRITICAL(f.IsOpen() && f.GetSize() == static_cast<FileSize>(block.GetDefaultCapacity()));
-        f.Close();
+            SleepCallingThread(2000); // Pretend like were doing something else...
+            promise->Wait(); // Ensure the promise is completed, it should be.. we gave it 2 seconds
+            TEST_CRITICAL(writeDone);
+            f.Open(fullPath, FF_READ | FF_SHARE_READ | FF_SHARE_WRITE, FILE_OPEN_EXISTING);
+            TEST_CRITICAL(f.IsOpen() && f.GetSize() == static_cast<FileSize>(block.GetDefaultCapacity()));
+            f.Close();
+        }
+        
+        {
+            bool writeDone = false;
+            cw.WriteAsync()
+                .Then([&writeDone]()
+                    {
+                        TEST(IsMainThread());
+                        gTestLog.Info(LogMessage("Success!"));
+                        writeDone = true;
+                    }
+                )
+                .Catch([](const String&)
+                    {
+                        TEST(false);
+                    }
+                )
+                .Run();
+
+            // SleepCallingThread(2000); // Pretend like were doing something else...
+            // promise->Wait(); // Ensure the promise is completed, it should be.. we gave it 2 seconds
+            TEST_CRITICAL(writeDone);
+            f.Open(fullPath, FF_READ | FF_SHARE_READ | FF_SHARE_WRITE, FILE_OPEN_EXISTING);
+            TEST_CRITICAL(f.IsOpen() && f.GetSize() == static_cast<FileSize>(block.GetDefaultCapacity()));
+            f.Close();
+        }
+
+        {
+            char outputBuffer[8 * KB] = { 0 };
+            memset(outputBuffer, 0, sizeof(outputBuffer));
+            char cmpBuffer[8 * KB] = { 0 };
+            memset(cmpBuffer, 0, sizeof(cmpBuffer));
+            memcpy(cmpBuffer, message.CStr(), message.Size());
+
+            cw.SetOutputBuffer(outputBuffer, sizeof(outputBuffer));
+
+            FileSystem::FileDelete(fullPath);
+            TEST(cw.Write());
+            TEST(memcmp(outputBuffer, cmpBuffer, sizeof(cmpBuffer)) == 0);
+            TEST(!FileSystem::FileExists(fullPath));
+        }
     }
 }
 
 REGISTER_TEST(CacheBlock_TestEx)
 {
-    
-
     CacheBlock block;
     block.Initialize(Token("gb"), 1 * MB);
 
@@ -1383,6 +1542,7 @@ REGISTER_TEST(CacheStreamTest)
     TestFramework::ExecuteTest("CacheBlock_Test", config);
     TestFramework::ExecuteTest("CacheWriter_WriteTest", config);
     TestFramework::ExecuteTest("CacheWriter_WriteAsyncTest", config);
+    TestFramework::ExecuteTest("CacheWriter_WriteOutputTest", config);
     // TestFramework::ExecuteTest("CacheController_Test", config);
     TestFramework::TestReset();
 

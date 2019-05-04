@@ -1,3 +1,23 @@
+// ********************************************************************
+// Copyright (c) 2019 Nathan Hanlan
+// 
+// Permission is hereby granted, free of charge, to any person obtaining a 
+// copy of this software and associated documentation files(the "Software"), 
+// to deal in the Software without restriction, including without limitation 
+// the rights to use, copy, modify, merge, publish, distribute, sublicense, 
+// and / or sell copies of the Software, and to permit persons to whom the 
+// Software is furnished to do so, subject to the following conditions :
+// 
+// The above copyright notice and this permission notice shall be included in 
+// all copies or substantial portions of the Software.
+// 
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE 
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+// ********************************************************************
 #include "CacheWriter.h"
 #include "Core/Platform/File.h"
 #include "Core/String/String.h"
@@ -45,26 +65,7 @@ mOutputFile(std::forward<Token&&>(other.mOutputFile))
     other.mSourceMemorySize = 0;
     other.mObject = CacheObject();
 }
-CacheWriter::CacheWriter(const CacheBlock& block, CacheIndex index, const void* sourceMemory, SizeT sourceMemorySize) :
-mOutputBuffer(nullptr),
-mOutputBufferSize(0),
-mSourceMemory(sourceMemory),
-mSourceMemorySize(sourceMemorySize),
-mObject(),
-mOutputFile()
-{
-    if (block.GetObject(index, mObject))
-    {
-        String blockTitle(block.GetFilename().CStr(), COPY_ON_WRITE);
-        String blockExtension("_");
 
-        ByteT blobID = static_cast<ByteT>(index.mBlobID);
-        blockExtension.Append(ByteToHex(blobID & 0xF0));
-        blockExtension.Append(ByteToHex(blobID & 0x0F));
-        blockExtension.Append(".lfcache");
-        mOutputFile = Token(blockTitle + blockExtension);
-    }
-}
 CacheWriter::~CacheWriter()
 {
     LF_DEBUG_BREAK;
@@ -95,7 +96,6 @@ bool CacheWriter::Write()
 
 CacheWritePromise CacheWriter::WriteAsync()
 {
-    // Allocate and capture smart pointer, 'this' might go out of scope
     CacheWriterAtomicPtr safe(LFNew<CacheWriter>());
     safe->mOutputBuffer = mOutputBuffer;
     safe->mOutputBufferSize = mOutputBufferSize;
@@ -117,12 +117,23 @@ CacheWritePromise CacheWriter::WriteAsync()
     });
 }
 
-void CacheWriter::Close()
+bool CacheWriter::Open(const CacheBlock& block, CacheIndex index, const void* sourceMemory, SizeT sourceMemorySize)
 {
-    mOutputBuffer = nullptr;
-    mOutputBufferSize = 0;
-    mSourceMemory = nullptr;
-    mSourceMemorySize = 0;
+    if (block.GetObject(index, mObject))
+    {
+        String blockTitle(block.GetFilename().CStr(), COPY_ON_WRITE);
+        String blockExtension("_");
+
+        ByteT blobID = static_cast<ByteT>(index.mBlobID);
+        blockExtension.Append(ByteToHex(blobID & 0xF0));
+        blockExtension.Append(ByteToHex(blobID & 0x0F));
+        blockExtension.Append(".lfcache");
+        mOutputFile = Token(blockTitle + blockExtension);
+        mSourceMemory = sourceMemory;
+        mSourceMemorySize = sourceMemorySize;
+        return true;
+    }
+    return false;
 }
 
 void CacheWriter::SetOutputBuffer(void* outputBuffer, SizeT outputBufferSize)
