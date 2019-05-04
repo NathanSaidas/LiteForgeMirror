@@ -1,0 +1,129 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Config">
+      <UniqueIdentifier>{220e9086-39eb-4418-abaa-a880d11211c4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Reflection">
+      <UniqueIdentifier>{745ec050-588f-4233-9383-90b71ef81c6b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Common">
+      <UniqueIdentifier>{87a30f4c-499b-4a1e-99f0-1d042dc72078}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Async">
+      <UniqueIdentifier>{e2a9900a-ca2e-4813-b4f3-8716e9ba9c3c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Asset">
+      <UniqueIdentifier>{e84398db-86d4-4f68-aefa-4449a0a2b8f9}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Config.cpp">
+      <Filter>Config</Filter>
+    </ClCompile>
+    <ClCompile Include="Reflection\ReflectionMgr.cpp">
+      <Filter>Reflection</Filter>
+    </ClCompile>
+    <ClCompile Include="Reflection\ReflectionTypes.cpp">
+      <Filter>Reflection</Filter>
+    </ClCompile>
+    <ClCompile Include="Async\Promise.cpp">
+      <Filter>Async</Filter>
+    </ClCompile>
+    <ClCompile Include="Async\Async.cpp">
+      <Filter>Async</Filter>
+    </ClCompile>
+    <ClCompile Include="Common\RuntimeGlobals.cpp">
+      <Filter>Common</Filter>
+    </ClCompile>
+    <ClCompile Include="Async\AsyncImpl.cpp">
+      <Filter>Async</Filter>
+    </ClCompile>
+    <ClCompile Include="Asset\AssetTypes.cpp">
+      <Filter>Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="Asset\AssetDataController.cpp">
+      <Filter>Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="Asset\AssetCommon.cpp">
+      <Filter>Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="Asset\AssetObject.cpp">
+      <Filter>Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="Asset\CacheBlob.cpp">
+      <Filter>Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="Asset\CacheStream.cpp">
+      <Filter>Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="Asset\CacheBlock.cpp">
+      <Filter>Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="Asset\AssetCacheController.cpp">
+      <Filter>Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="Asset\CacheWriter.cpp">
+      <Filter>Asset</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Config.h">
+      <Filter>Config</Filter>
+    </ClInclude>
+    <ClInclude Include="Reflection\ReflectionMgr.h">
+      <Filter>Reflection</Filter>
+    </ClInclude>
+    <ClInclude Include="Reflection\ReflectionTypes.h">
+      <Filter>Reflection</Filter>
+    </ClInclude>
+    <ClInclude Include="Async\Promise.h">
+      <Filter>Async</Filter>
+    </ClInclude>
+    <ClInclude Include="Async\Async.h">
+      <Filter>Async</Filter>
+    </ClInclude>
+    <ClInclude Include="Async\AsyncImpl.h">
+      <Filter>Async</Filter>
+    </ClInclude>
+    <ClInclude Include="Common\RuntimeGlobals.h">
+      <Filter>Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Async\PromiseImpl.h">
+      <Filter>Async</Filter>
+    </ClInclude>
+    <ClInclude Include="Asset\AssetTypes.h">
+      <Filter>Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="Asset\AssetDataController.h">
+      <Filter>Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="Asset\AssetCommon.h">
+      <Filter>Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="Asset\AssetObject.h">
+      <Filter>Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="Asset\AssetIndex.h">
+      <Filter>Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="Asset\CacheBlob.h">
+      <Filter>Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="Asset\CacheBlock.h">
+      <Filter>Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="Asset\CacheStream.h">
+      <Filter>Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="Asset\CacheTypes.h">
+      <Filter>Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="Asset\AssetCacheController.h">
+      <Filter>Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="Asset\CacheWriter.h">
+      <Filter>Asset</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

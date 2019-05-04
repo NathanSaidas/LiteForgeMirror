@@ -1,0 +1,320 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Common\Assert.cpp" />
+    <ClCompile Include="Common\Enum.cpp" />
+    <ClCompile Include="Concurrent\IOCPQueue.cpp" />
+    <ClCompile Include="Concurrent\TaskDeliveryThread.cpp" />
+    <ClCompile Include="Concurrent\TaskHandle.cpp" />
+    <ClCompile Include="Concurrent\TaskScheduler.cpp" />
+    <ClCompile Include="Concurrent\TaskWorker.cpp" />
+    <ClCompile Include="Config.cpp" />
+    <ClCompile Include="IO\BinaryStream.cpp" />
+    <ClCompile Include="IO\Stream.cpp" />
+    <ClCompile Include="IO\TextStream.cpp" />
+    <ClCompile Include="Math\Color.cpp" />
+    <ClCompile Include="Math\Quantization.cpp" />
+    <ClCompile Include="Math\Quaternion.cpp" />
+    <ClCompile Include="Math\Random.cpp" />
+    <ClCompile Include="Math\Vector2.cpp" />
+    <ClCompile Include="Math\Vector3.cpp" />
+    <ClCompile Include="Memory\Memory.cpp" />
+    <ClCompile Include="Memory\MemoryBuffer.cpp" />
+    <ClCompile Include="Platform\AsyncIOBuffer.cpp" />
+    <ClCompile Include="Platform\AsyncIODevice.cpp" />
+    <ClCompile Include="Platform\CriticalSection.cpp" />
+    <ClCompile Include="Platform\File.cpp" />
+    <ClCompile Include="Platform\FileSystem.cpp" />
+    <ClCompile Include="Platform\SpinLock.cpp" />
+    <ClCompile Include="Platform\Thread.cpp" />
+    <ClCompile Include="Platform\ThreadSignal.cpp" />
+    <ClCompile Include="Reflection\Object.cpp" />
+    <ClCompile Include="Reflection\Type.cpp" />
+    <ClCompile Include="Runtime\ReflectionHooks.cpp" />
+    <ClCompile Include="String\SStream.cpp" />
+    <ClCompile Include="String\String.cpp" />
+    <ClCompile Include="String\StringCommon.cpp" />
+    <ClCompile Include="String\StringUtil.cpp" />
+    <ClCompile Include="String\TokenShared.cpp" />
+    <ClCompile Include="String\WString.cpp" />
+    <ClCompile Include="Tests\FileTests.cpp" />
+    <ClCompile Include="Tests\PointerTest.cpp" />
+    <ClCompile Include="Tests\SStreamTest.cpp" />
+    <ClCompile Include="Tests\StringTest.cpp" />
+    <ClCompile Include="Tests\ThreadTest.cpp" />
+    <ClCompile Include="Tests\WStringTest.cpp" />
+    <ClCompile Include="Test\Test.cpp" />
+    <ClCompile Include="Utility\CmdLine.cpp" />
+    <ClCompile Include="Utility\DateTime.cpp" />
+    <ClCompile Include="Utility\Guid.cpp" />
+    <ClCompile Include="Utility\Log.cpp" />
+    <ClCompile Include="Utility\StackTrace.cpp" />
+    <ClCompile Include="Utility\StaticCallback.cpp" />
+    <ClCompile Include="Utility\Time.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Common\API.h" />
+    <ClInclude Include="Common\Assert.h" />
+    <ClInclude Include="Common\Enum.h" />
+    <ClInclude Include="Common\Types.h" />
+    <ClInclude Include="Concurrent\ConcurrentRingBuffer.h" />
+    <ClInclude Include="Concurrent\IOCPQueue.h" />
+    <ClInclude Include="Concurrent\TaskDeliveryThread.h" />
+    <ClInclude Include="Concurrent\TaskHandle.h" />
+    <ClInclude Include="Concurrent\TaskScheduler.h" />
+    <ClInclude Include="Concurrent\TaskTypes.h" />
+    <ClInclude Include="Concurrent\TaskWorker.h" />
+    <ClInclude Include="IO\BinaryStream.h" />
+    <ClInclude Include="IO\Stream.h" />
+    <ClInclude Include="IO\TextStream.h" />
+    <ClInclude Include="Math\Color.h" />
+    <ClInclude Include="Math\MathCombined.h" />
+    <ClInclude Include="Math\MathCombinedInline.h" />
+    <ClInclude Include="Math\MathFunctions.h" />
+    <ClInclude Include="Math\Matrix.h" />
+    <ClInclude Include="Math\Matrix4x4.h" />
+    <ClInclude Include="Math\Matrix4x4Inline.h" />
+    <ClInclude Include="Math\MatrixInline.h" />
+    <ClInclude Include="Math\Quantization.h" />
+    <ClInclude Include="Math\Quaternion.h" />
+    <ClInclude Include="Math\QuaternionInline.h" />
+    <ClInclude Include="Math\Random.h" />
+    <ClInclude Include="Math\Rect.h" />
+    <ClInclude Include="Math\SSECommon.h" />
+    <ClInclude Include="Math\Vector.h" />
+    <ClInclude Include="Math\Vector2.h" />
+    <ClInclude Include="Math\Vector2Inline.h" />
+    <ClInclude Include="Math\Vector3.h" />
+    <ClInclude Include="Math\Vector3Inline.h" />
+    <ClInclude Include="Math\Vector4.h" />
+    <ClInclude Include="Math\Vector4Inline.h" />
+    <ClInclude Include="Math\VectorCombined.h" />
+    <ClInclude Include="Math\VectorInline.h" />
+    <ClInclude Include="Memory\AtomicSmartPointer.h" />
+    <ClInclude Include="Memory\Memory.h" />
+    <ClInclude Include="Memory\MemoryBuffer.h" />
+    <ClInclude Include="Memory\SmartPointer.h" />
+    <ClInclude Include="Platform\AsyncIOBuffer.h" />
+    <ClInclude Include="Platform\AsyncIODevice.h" />
+    <ClInclude Include="Platform\Atomic.h" />
+    <ClInclude Include="Platform\Barrier.h" />
+    <ClInclude Include="Platform\CriticalSection.h" />
+    <ClInclude Include="Platform\File.h" />
+    <ClInclude Include="Platform\FileSystem.h" />
+    <ClInclude Include="Platform\PlatformTypes.h" />
+    <ClInclude Include="Platform\SpinLock.h" />
+    <ClInclude Include="Platform\Thread.h" />
+    <ClInclude Include="Platform\ThreadSignal.h" />
+    <ClInclude Include="Reflection\AccessSpecifier.h" />
+    <ClInclude Include="Reflection\FunctionInfo.h" />
+    <ClInclude Include="Reflection\MemberInfo.h" />
+    <ClInclude Include="Reflection\MethodInfo.h" />
+    <ClInclude Include="Reflection\Object.h" />
+    <ClInclude Include="Reflection\ParamInfo.h" />
+    <ClInclude Include="Reflection\Type.h" />
+    <ClInclude Include="Runtime\ReflectionHooks.h" />
+    <ClInclude Include="String\SStream.h" />
+    <ClInclude Include="String\String.h" />
+    <ClInclude Include="String\StringCommon.h" />
+    <ClInclude Include="String\StringUtil.h" />
+    <ClInclude Include="String\Token.h" />
+    <ClInclude Include="String\TokenTable.h" />
+    <ClInclude Include="String\WString.h" />
+    <ClInclude Include="Tests\FileTests.h" />
+    <ClInclude Include="Tests\PointerTest.h" />
+    <ClInclude Include="Tests\SStreamTest.h" />
+    <ClInclude Include="Tests\StringTest.h" />
+    <ClInclude Include="Tests\ThreadTest.h" />
+    <ClInclude Include="Tests\WStringTest.h" />
+    <ClInclude Include="Test\Test.h" />
+    <ClInclude Include="Utility\Array.h" />
+    <ClInclude Include="Utility\ArrayList.h" />
+    <ClInclude Include="Utility\Bitfield.h" />
+    <ClInclude Include="Utility\CmdLine.h" />
+    <ClInclude Include="Utility\DateTime.h" />
+    <ClInclude Include="Utility\ErrorCore.h" />
+    <ClInclude Include="Utility\Guid.h" />
+    <ClInclude Include="Utility\Log.h" />
+    <ClInclude Include="Utility\SmartCallback.h" />
+    <ClInclude Include="Utility\StackTrace.h" />
+    <ClInclude Include="Utility\StaticCallback.h" />
+    <ClInclude Include="Utility\StdMap.h" />
+    <ClInclude Include="Utility\StreamTypes.h" />
+    <ClInclude Include="Utility\Time.h" />
+    <ClInclude Include="Utility\Utility.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="Core.natvis">
+      <SubType>Designer</SubType>
+    </Natvis>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{F3FC9249-17E9-4FC4-A514-3CF8FC276950}</ProjectGuid>
+    <RootNamespace>Core</RootNamespace>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <OutDir>$(SolutionDir)Code\</OutDir>
+    <IntDir>$(SolutionDir)Builds\x86Debug\Core\</IntDir>
+    <TargetName>$(ProjectName)_x86Debug</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <OutDir>$(SolutionDir)Code\</OutDir>
+    <IntDir>$(SolutionDir)Builds\x64Debug\Core\</IntDir>
+    <TargetName>$(ProjectName)_x64Debug</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <OutDir>$(SolutionDir)Code\</OutDir>
+    <IntDir>$(SolutionDir)Builds\x86Release\Core\</IntDir>
+    <TargetName>$(ProjectName)_x86Release</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OutDir>$(SolutionDir)Code\</OutDir>
+    <IntDir>$(SolutionDir)Builds\x64Release\Core\</IntDir>
+    <TargetName>$(ProjectName)_x64Release</TargetName>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level4</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <AdditionalIncludeDirectories>$(SolutionDir)Code\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <TreatWarningAsError>true</TreatWarningAsError>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <ExceptionHandling>false</ExceptionHandling>
+      <PreprocessorDefinitions>_HAS_EXCEPTIONS=0;_ALLOW_RTCc_IN_STL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <StringPooling>true</StringPooling>
+      <RuntimeTypeInfo>false</RuntimeTypeInfo>
+      <ProgramDataBaseFileName>$(SolutionDir)Code\$(ProjectName)_x86Debug.pdb</ProgramDataBaseFileName>
+      <SmallerTypeCheck>true</SmallerTypeCheck>
+    </ClCompile>
+    <Lib>
+      <AdditionalDependencies>synchronization.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level4</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <AdditionalIncludeDirectories>$(SolutionDir)Code\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <TreatWarningAsError>true</TreatWarningAsError>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <ExceptionHandling>false</ExceptionHandling>
+      <PreprocessorDefinitions>_HAS_EXCEPTIONS=0;_ALLOW_RTCc_IN_STL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <StringPooling>true</StringPooling>
+      <RuntimeTypeInfo>false</RuntimeTypeInfo>
+      <ProgramDataBaseFileName>$(SolutionDir)Code\$(ProjectName)_x64Debug.pdb</ProgramDataBaseFileName>
+      <SmallerTypeCheck>true</SmallerTypeCheck>
+    </ClCompile>
+    <Lib>
+      <AdditionalDependencies>synchronization.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level4</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <AdditionalIncludeDirectories>$(SolutionDir)Code\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <TreatWarningAsError>true</TreatWarningAsError>
+      <ProgramDataBaseFileName>$(SolutionDir)Code\$(ProjectName)_x86Release.pdb</ProgramDataBaseFileName>
+      <PreprocessorDefinitions>_HAS_EXCEPTIONS=0;_ALLOW_RTCc_IN_STL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+    <Lib>
+      <AdditionalDependencies>synchronization.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level4</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <AdditionalIncludeDirectories>$(SolutionDir)Code\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <TreatWarningAsError>true</TreatWarningAsError>
+      <ProgramDataBaseFileName>$(SolutionDir)Code\$(ProjectName)_x64Release.pdb</ProgramDataBaseFileName>
+      <PreprocessorDefinitions>_HAS_EXCEPTIONS=0;_ALLOW_RTCc_IN_STL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+    <Lib>
+      <AdditionalDependencies>synchronization.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Lib>
+  </ItemDefinitionGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

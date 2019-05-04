@@ -1,0 +1,52 @@
+{
+  "FileVersion": 2,
+  "Id": "fcd33a39-9982-4e52-aaf2-06dbb5185320",
+  "Items": [
+    {
+      "Id": "19e3a5f7-6d84-44b8-b6ee-a7dc9f7b8830",
+      "Command": "Testing",
+      "Items": [
+        {
+          "Id": "2d2b956d-7e47-469e-b851-c22ed548eeec",
+          "Command": "-app /type=TestRunner"
+        },
+        {
+          "Id": "60925e3e-2f65-4c4a-b156-c57f7681f792",
+          "Command": "-test /batch=TextStreamTest,BinaryStreamTest,AssetTest,CacheStreamTest /opt_no_break "
+        },
+        {
+          "Id": "d4911ae7-83e9-4006-aaa2-9055b64779e1",
+          "Command": "-test /single=CacheStreamTest"
+        },
+        {
+          "Id": "00c6995c-010b-4710-abfa-376ad6f6db76",
+          "Command": "-test /single=CacheController_Test /opt_debug"
+        },
+        {
+          "Id": "db158b84-d89b-4723-9ffb-36b667ff05bb",
+          "Command": "-test /single=AssetTest"
+        }
+      ]
+    },
+    {
+      "Id": "7460a26e-dd1e-4f4a-b2df-6fe7ec3d8306",
+      "Command": "-reflection /logLevel=debug"
+    },
+    {
+      "Id": "d6865771-4f8f-47a3-8ae7-73661f16b6d0",
+      "Command": "-app /type=PromiseApp"
+    },
+    {
+      "Id": "2b8ffa45-210b-4d7d-a44c-25f5756f2755",
+      "Command": "-app /type=ThreadQueueApp"
+    },
+    {
+      "Id": "fd6a63c1-8bcb-426e-87ed-223098956a58",
+      "Command": "-app /type=WorkerTestApp "
+    },
+    {
+      "Id": "c902f7b5-afcc-4d60-8935-7dbad31a698f",
+      "Command": "-app /type=AtomicIncTestApp"
+    }
+  ]
+}

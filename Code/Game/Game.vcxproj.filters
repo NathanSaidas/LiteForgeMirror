@@ -1,0 +1,37 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Config">
+      <UniqueIdentifier>{2bbe09f8-357b-4da2-a715-902b134650e4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Test">
+      <UniqueIdentifier>{bd28f61e-e479-4caa-9f86-811387264cf3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Test\Core">
+      <UniqueIdentifier>{07637d12-9cb4-44ae-86a1-2f08b91584b3}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Config.cpp">
+      <Filter>Config</Filter>
+    </ClCompile>
+    <ClCompile Include="MyApp.cpp" />
+    <ClCompile Include="ThreadQueueApp.cpp" />
+    <ClCompile Include="PromiseApp.cpp" />
+    <ClCompile Include="Test\Core\ArrayTest.cpp">
+      <Filter>Test\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Test\TestRunner.cpp">
+      <Filter>Test</Filter>
+    </ClCompile>
+    <ClCompile Include="Test\Core\TextStreamTest.cpp">
+      <Filter>Test\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Test\Core\BinaryStreamTest.cpp">
+      <Filter>Test\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Test\Core\CacheStreamTest.cpp">
+      <Filter>Test\Core</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

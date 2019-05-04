@@ -1,0 +1,470 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Config">
+      <UniqueIdentifier>{34b01ec0-403c-444d-8a9d-7516e2f7e03f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Math">
+      <UniqueIdentifier>{9ce6bb6c-f4b3-46aa-beb0-17cf645d99c8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Common">
+      <UniqueIdentifier>{a98205e9-480b-44b0-b633-7f487e7a39e7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Utility">
+      <UniqueIdentifier>{b10229ac-1a1f-4e9a-bb85-32e368ba76f0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Memory">
+      <UniqueIdentifier>{ed20fc06-75ac-4293-b975-c9feabfb49ea}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Test">
+      <UniqueIdentifier>{249e1cdf-de97-4372-9a0d-bd4cf7986710}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="String">
+      <UniqueIdentifier>{c75f3b5a-eea6-4945-a1ab-2c7cc316e310}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Tests">
+      <UniqueIdentifier>{fb7b39bb-687b-47cf-a76e-1fb44b81b2ff}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Platform">
+      <UniqueIdentifier>{4e0384dc-3216-4889-990a-70e07f0ac749}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="IO">
+      <UniqueIdentifier>{8a42c940-bfcd-445c-b280-d0b748cb2dcc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Runtime">
+      <UniqueIdentifier>{f5e673d3-d0b8-4f86-b74d-2bc4f413bb4f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Reflection">
+      <UniqueIdentifier>{bfe3bf52-a74f-4938-9477-bceac5de6fd6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Concurrent">
+      <UniqueIdentifier>{e070e2a9-9917-44b0-b1d2-9dcaccd7186d}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Config.cpp">
+      <Filter>Config</Filter>
+    </ClCompile>
+    <ClCompile Include="Common\Assert.cpp">
+      <Filter>Common</Filter>
+    </ClCompile>
+    <ClCompile Include="Memory\Memory.cpp">
+      <Filter>Memory</Filter>
+    </ClCompile>
+    <ClCompile Include="Test\Test.cpp">
+      <Filter>Test</Filter>
+    </ClCompile>
+    <ClCompile Include="Utility\StaticCallback.cpp">
+      <Filter>Utility</Filter>
+    </ClCompile>
+    <ClCompile Include="String\String.cpp">
+      <Filter>String</Filter>
+    </ClCompile>
+    <ClCompile Include="String\StringUtil.cpp">
+      <Filter>String</Filter>
+    </ClCompile>
+    <ClCompile Include="String\WString.cpp">
+      <Filter>String</Filter>
+    </ClCompile>
+    <ClCompile Include="Platform\CriticalSection.cpp">
+      <Filter>Platform</Filter>
+    </ClCompile>
+    <ClCompile Include="String\TokenShared.cpp">
+      <Filter>String</Filter>
+    </ClCompile>
+    <ClCompile Include="Tests\StringTest.cpp">
+      <Filter>Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="Tests\WStringTest.cpp">
+      <Filter>Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="Platform\Thread.cpp">
+      <Filter>Platform</Filter>
+    </ClCompile>
+    <ClCompile Include="Tests\ThreadTest.cpp">
+      <Filter>Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="Platform\SpinLock.cpp">
+      <Filter>Platform</Filter>
+    </ClCompile>
+    <ClCompile Include="Math\Color.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Math\Quantization.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Math\Quaternion.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Math\Random.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Math\Vector2.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Math\Vector3.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Platform\File.cpp">
+      <Filter>Platform</Filter>
+    </ClCompile>
+    <ClCompile Include="Platform\AsyncIOBuffer.cpp">
+      <Filter>Platform</Filter>
+    </ClCompile>
+    <ClCompile Include="Platform\AsyncIODevice.cpp">
+      <Filter>Platform</Filter>
+    </ClCompile>
+    <ClCompile Include="Tests\FileTests.cpp">
+      <Filter>Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="Platform\FileSystem.cpp">
+      <Filter>Platform</Filter>
+    </ClCompile>
+    <ClCompile Include="Memory\MemoryBuffer.cpp">
+      <Filter>Memory</Filter>
+    </ClCompile>
+    <ClCompile Include="IO\Stream.cpp">
+      <Filter>IO</Filter>
+    </ClCompile>
+    <ClCompile Include="String\StringCommon.cpp">
+      <Filter>String</Filter>
+    </ClCompile>
+    <ClCompile Include="Common\Enum.cpp">
+      <Filter>Common</Filter>
+    </ClCompile>
+    <ClCompile Include="Tests\PointerTest.cpp">
+      <Filter>Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="IO\TextStream.cpp">
+      <Filter>IO</Filter>
+    </ClCompile>
+    <ClCompile Include="Utility\Log.cpp">
+      <Filter>Utility</Filter>
+    </ClCompile>
+    <ClCompile Include="Utility\Guid.cpp">
+      <Filter>Utility</Filter>
+    </ClCompile>
+    <ClCompile Include="Reflection\Type.cpp">
+      <Filter>Reflection</Filter>
+    </ClCompile>
+    <ClCompile Include="Runtime\ReflectionHooks.cpp">
+      <Filter>Runtime</Filter>
+    </ClCompile>
+    <ClCompile Include="String\SStream.cpp">
+      <Filter>String</Filter>
+    </ClCompile>
+    <ClCompile Include="Tests\SStreamTest.cpp">
+      <Filter>Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="Reflection\Object.cpp">
+      <Filter>Reflection</Filter>
+    </ClCompile>
+    <ClCompile Include="Utility\CmdLine.cpp">
+      <Filter>Utility</Filter>
+    </ClCompile>
+    <ClCompile Include="Utility\Time.cpp">
+      <Filter>Utility</Filter>
+    </ClCompile>
+    <ClCompile Include="Concurrent\IOCPQueue.cpp">
+      <Filter>Concurrent</Filter>
+    </ClCompile>
+    <ClCompile Include="Concurrent\TaskWorker.cpp">
+      <Filter>Concurrent</Filter>
+    </ClCompile>
+    <ClCompile Include="Concurrent\TaskDeliveryThread.cpp">
+      <Filter>Concurrent</Filter>
+    </ClCompile>
+    <ClCompile Include="Concurrent\TaskScheduler.cpp">
+      <Filter>Concurrent</Filter>
+    </ClCompile>
+    <ClCompile Include="Concurrent\TaskHandle.cpp">
+      <Filter>Concurrent</Filter>
+    </ClCompile>
+    <ClCompile Include="Platform\ThreadSignal.cpp">
+      <Filter>Platform</Filter>
+    </ClCompile>
+    <ClCompile Include="Utility\DateTime.cpp">
+      <Filter>Utility</Filter>
+    </ClCompile>
+    <ClCompile Include="Utility\StackTrace.cpp">
+      <Filter>Utility</Filter>
+    </ClCompile>
+    <ClCompile Include="IO\BinaryStream.cpp">
+      <Filter>IO</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Common\Types.h">
+      <Filter>Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Common\Assert.h">
+      <Filter>Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Common\API.h">
+      <Filter>Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Memory\Memory.h">
+      <Filter>Memory</Filter>
+    </ClInclude>
+    <ClInclude Include="Utility\Utility.h">
+      <Filter>Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="Utility\ErrorCore.h">
+      <Filter>Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="Utility\Array.h">
+      <Filter>Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="Test\Test.h">
+      <Filter>Test</Filter>
+    </ClInclude>
+    <ClInclude Include="Utility\StaticCallback.h">
+      <Filter>Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="String\String.h">
+      <Filter>String</Filter>
+    </ClInclude>
+    <ClInclude Include="String\StringUtil.h">
+      <Filter>String</Filter>
+    </ClInclude>
+    <ClInclude Include="String\WString.h">
+      <Filter>String</Filter>
+    </ClInclude>
+    <ClInclude Include="String\Token.h">
+      <Filter>String</Filter>
+    </ClInclude>
+    <ClInclude Include="String\TokenTable.h">
+      <Filter>String</Filter>
+    </ClInclude>
+    <ClInclude Include="Platform\CriticalSection.h">
+      <Filter>Platform</Filter>
+    </ClInclude>
+    <ClInclude Include="Tests\WStringTest.h">
+      <Filter>Tests</Filter>
+    </ClInclude>
+    <ClInclude Include="Tests\StringTest.h">
+      <Filter>Tests</Filter>
+    </ClInclude>
+    <ClInclude Include="Platform\Thread.h">
+      <Filter>Platform</Filter>
+    </ClInclude>
+    <ClInclude Include="Tests\ThreadTest.h">
+      <Filter>Tests</Filter>
+    </ClInclude>
+    <ClInclude Include="Platform\SpinLock.h">
+      <Filter>Platform</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Color.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\MathCombined.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\MathCombinedInline.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\MathFunctions.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Matrix.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Matrix4x4.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Matrix4x4Inline.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\MatrixInline.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Quantization.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Quaternion.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\QuaternionInline.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Random.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Rect.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\SSECommon.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Vector.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Vector2.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Vector2Inline.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Vector3.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Vector3Inline.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Vector4.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Vector4Inline.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\VectorCombined.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\VectorInline.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Platform\File.h">
+      <Filter>Platform</Filter>
+    </ClInclude>
+    <ClInclude Include="Platform\PlatformTypes.h">
+      <Filter>Platform</Filter>
+    </ClInclude>
+    <ClInclude Include="Platform\AsyncIOBuffer.h">
+      <Filter>Platform</Filter>
+    </ClInclude>
+    <ClInclude Include="Platform\AsyncIODevice.h">
+      <Filter>Platform</Filter>
+    </ClInclude>
+    <ClInclude Include="Tests\FileTests.h">
+      <Filter>Tests</Filter>
+    </ClInclude>
+    <ClInclude Include="Platform\FileSystem.h">
+      <Filter>Platform</Filter>
+    </ClInclude>
+    <ClInclude Include="Memory\MemoryBuffer.h">
+      <Filter>Memory</Filter>
+    </ClInclude>
+    <ClInclude Include="IO\Stream.h">
+      <Filter>IO</Filter>
+    </ClInclude>
+    <ClInclude Include="Utility\Bitfield.h">
+      <Filter>Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="String\StringCommon.h">
+      <Filter>String</Filter>
+    </ClInclude>
+    <ClInclude Include="IO\TextStream.h">
+      <Filter>IO</Filter>
+    </ClInclude>
+    <ClInclude Include="Common\Enum.h">
+      <Filter>Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Memory\SmartPointer.h">
+      <Filter>Memory</Filter>
+    </ClInclude>
+    <ClInclude Include="Platform\Barrier.h">
+      <Filter>Platform</Filter>
+    </ClInclude>
+    <ClInclude Include="Platform\Atomic.h">
+      <Filter>Platform</Filter>
+    </ClInclude>
+    <ClInclude Include="Tests\PointerTest.h">
+      <Filter>Tests</Filter>
+    </ClInclude>
+    <ClInclude Include="Utility\Log.h">
+      <Filter>Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="Utility\Guid.h">
+      <Filter>Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="Runtime\ReflectionHooks.h">
+      <Filter>Runtime</Filter>
+    </ClInclude>
+    <ClInclude Include="Reflection\Type.h">
+      <Filter>Reflection</Filter>
+    </ClInclude>
+    <ClInclude Include="Reflection\ParamInfo.h">
+      <Filter>Reflection</Filter>
+    </ClInclude>
+    <ClInclude Include="Reflection\MemberInfo.h">
+      <Filter>Reflection</Filter>
+    </ClInclude>
+    <ClInclude Include="Reflection\MethodInfo.h">
+      <Filter>Reflection</Filter>
+    </ClInclude>
+    <ClInclude Include="Reflection\AccessSpecifier.h">
+      <Filter>Reflection</Filter>
+    </ClInclude>
+    <ClInclude Include="Reflection\FunctionInfo.h">
+      <Filter>Reflection</Filter>
+    </ClInclude>
+    <ClInclude Include="String\SStream.h">
+      <Filter>String</Filter>
+    </ClInclude>
+    <ClInclude Include="Utility\StreamTypes.h">
+      <Filter>Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="Tests\SStreamTest.h">
+      <Filter>Tests</Filter>
+    </ClInclude>
+    <ClInclude Include="Utility\SmartCallback.h">
+      <Filter>Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="Reflection\Object.h">
+      <Filter>Reflection</Filter>
+    </ClInclude>
+    <ClInclude Include="Utility\CmdLine.h">
+      <Filter>Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="Concurrent\ConcurrentRingBuffer.h">
+      <Filter>Concurrent</Filter>
+    </ClInclude>
+    <ClInclude Include="Utility\Time.h">
+      <Filter>Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="Concurrent\IOCPQueue.h">
+      <Filter>Concurrent</Filter>
+    </ClInclude>
+    <ClInclude Include="Memory\AtomicSmartPointer.h">
+      <Filter>Memory</Filter>
+    </ClInclude>
+    <ClInclude Include="Concurrent\TaskWorker.h">
+      <Filter>Concurrent</Filter>
+    </ClInclude>
+    <ClInclude Include="Concurrent\TaskTypes.h">
+      <Filter>Concurrent</Filter>
+    </ClInclude>
+    <ClInclude Include="Concurrent\TaskScheduler.h">
+      <Filter>Concurrent</Filter>
+    </ClInclude>
+    <ClInclude Include="Concurrent\TaskDeliveryThread.h">
+      <Filter>Concurrent</Filter>
+    </ClInclude>
+    <ClInclude Include="Concurrent\TaskHandle.h">
+      <Filter>Concurrent</Filter>
+    </ClInclude>
+    <ClInclude Include="Platform\ThreadSignal.h">
+      <Filter>Platform</Filter>
+    </ClInclude>
+    <ClInclude Include="Utility\DateTime.h">
+      <Filter>Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="Utility\StackTrace.h">
+      <Filter>Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="IO\BinaryStream.h">
+      <Filter>IO</Filter>
+    </ClInclude>
+    <ClInclude Include="Utility\ArrayList.h">
+      <Filter>Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="Utility\StdMap.h">
+      <Filter>Utility</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="Core.natvis">
+      <Filter>Utility</Filter>
+    </Natvis>
+  </ItemGroup>
+</Project>

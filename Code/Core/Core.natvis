@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?> 
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+  <!--!
+// ********************************************************************
+// Copyright (c) Nathan Hanlan, All rights reserved
+// ********************************************************************
+  -->
+  <Type Name="lf::String">
+    <DisplayString Condition="((unsigned char)mStorage.local.buffer[31] == 128)">"{mStorage.heap.first,sb}"</DisplayString>
+    <DisplayString Condition="((unsigned char)mStorage.local.buffer[31] == 64)">"{mStorage.heap.first,sb}"</DisplayString>
+    <DisplayString Condition="((unsigned char)mStorage.local.buffer[31] == 0)">Empty</DisplayString>
+    <DisplayString>"{mStorage.local.buffer,sb}"</DisplayString>
+    <StringView Condition="((unsigned char)mStorage.local.buffer[31] == 128)">mStorage.heap.first,sb</StringView>
+    <StringView Condition="((unsigned char)mStorage.local.buffer[31] == 64)">mStorage.heap.first,sb</StringView>
+    <StringView>mStorage.local.buffer,sb</StringView>
+
+    <Expand>
+      <Item Name="[Size]" Condition="(unsigned char)mStorage.local.buffer[31] &gt; 63">mStorage.heap.last - mStorage.heap.first</Item>
+      <Item Name="[Size]" Condition="(unsigned char)mStorage.local.buffer[31] &lt; 64">mStorage.local.buffer[31]</Item>
+
+      <Item Name="[Capacity]" Condition="(unsigned char)mStorage.local.buffer[31] &gt; 63">mStorage.heap.end - mStorage.heap.first</Item>
+      <Item Name="[Capacity]" Condition="(unsigned char)mStorage.local.buffer[31] &lt; 64">30</Item>
+
+      <Item Name="[Mode]" Condition="(unsigned char)mStorage.local.buffer[31] == 128">"Heap"</Item>
+      <Item Name="[Mode]" Condition="(unsigned char)mStorage.local.buffer[31] == 64">"Copy On Write"</Item>
+      <Item Name="[Mode]" Condition="(unsigned char)mStorage.local.buffer[31] &lt; 64">"Local"</Item>
+
+      <ArrayItems>
+        <Size Condition="(unsigned char)mStorage.local.buffer[31] &gt; 63">mStorage.heap.last - mStorage.heap.first</Size>
+        <Size Condition="(unsigned char)mStorage.local.buffer[31] &lt; 64">mStorage.local.buffer[31] + 1</Size>
+        <ValuePointer Condition="(unsigned char)mStorage.local.buffer[31] &gt; 63">mStorage.heap.first</ValuePointer>
+        <ValuePointer>mStorage.local.buffer</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+
+  <Type Name="lf::WString">
+    <DisplayString Condition="((unsigned short)mStorage.local.buffer[31] == 128)">"{mStorage.heap.first,su}"</DisplayString>
+    <DisplayString Condition="((unsigned short)mStorage.local.buffer[31] == 64)">"{mStorage.heap.first,su}"</DisplayString>
+    <DisplayString Condition="((unsigned short)mStorage.local.buffer[31] == 0)">Empty</DisplayString>
+    <DisplayString>"{mStorage.local.buffer,su}"</DisplayString>
+    <StringView Condition="((unsigned short)mStorage.local.buffer[31] == 128)">mStorage.heap.first,su</StringView>
+    <StringView Condition="((unsigned short)mStorage.local.buffer[31] == 64)">mStorage.heap.first,su</StringView>
+    <StringView>mStorage.local.buffer,su</StringView>
+
+    <Expand>
+      <Item Name="[Size]" Condition="(unsigned short)mStorage.local.buffer[31] &gt; 63">mStorage.heap.last - mStorage.heap.first</Item>
+      <Item Name="[Size]" Condition="(unsigned short)mStorage.local.buffer[31] &lt; 64">mStorage.local.buffer[31]</Item>
+
+      <Item Name="[Capacity]" Condition="(unsigned short)mStorage.local.buffer[31] &gt; 63">mStorage.heap.end - mStorage.heap.first</Item>
+      <Item Name="[Capacity]" Condition="(unsigned short)mStorage.local.buffer[31] &lt; 64">30</Item>
+
+      <Item Name="[Mode]" Condition="(unsigned short)mStorage.local.buffer[31] == 128">"Heap"</Item>
+      <Item Name="[Mode]" Condition="(unsigned short)mStorage.local.buffer[31] == 64">"Copy On Write"</Item>
+      <Item Name="[Mode]" Condition="(unsigned short)mStorage.local.buffer[31] &lt; 64">"Local"</Item>
+
+      <ArrayItems>
+        <Size Condition="(unsigned short)mStorage.local.buffer[31] &gt; 63">mStorage.heap.last - mStorage.heap.first</Size>
+        <Size Condition="(unsigned short)mStorage.local.buffer[31] &lt; 64">mStorage.local.buffer[31] + 1</Size>
+        <ValuePointer Condition="(unsigned short)mStorage.local.buffer[31] &gt; 63">mStorage.heap.first</ValuePointer>
+        <ValuePointer>mStorage.local.buffer</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+
+  <Type Name="lf::TArray&lt;*&gt;">
+    <DisplayString>Size={mData.mLast - mData.mFirst}</DisplayString>
+    <Expand>
+      <Item Name="[Size]">mData.mLast - mData.mFirst</Item>
+      <Item Name="[Capacity]">mData.mEnd - mData.mFirst</Item>
+      <ArrayItems>
+        <Size>mData.mLast - mData.mFirst</Size>
+        <ValuePointer>mData.mFirst</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+</AutoVisualizer>

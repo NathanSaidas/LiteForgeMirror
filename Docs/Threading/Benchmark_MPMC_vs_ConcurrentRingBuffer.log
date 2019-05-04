@@ -1,0 +1,320 @@
+
+(CRB) ConcurrentRingBuffer -- Custom thread lock-free data structure used to pipe items from one thread to another.
+
+(MPMC) Multiple Producer Multiple Consumer -- https://github.com/rigtorp/MPMCQueue/blob/master/include/rigtorp/MPMCQueue.h
+
+Test Platform:
+    Intel Core i7-4790 CPU 3.60GHz
+    4 Physical Cores
+    8 Logical Cores
+    16 GB of Ram
+
+    1500000 work items.
+Summary:
+
+Average Latency (us)
+            CRB       MPMC
+SPSC(1,1):    7.96     1.65
+SPMC(1,4):    3.21     0.59
+MPSC(4,1):   43.44    55.63
+MPMC(4,4):    5.88     5.78
+MPMC(4,16):   3.76     7.03
+
+Distribution Score (Lower is better, Zero is Perfect)
+            CRB       MPMC
+SPSC(1,1):   NA         NA
+SPMC(1,4):   NA/2       NA/10      
+MPSC(4,1):   0/NA       0/NA
+MPMC(4,4):   0/0        1/1
+MPMC(4,16):  4/2        11/5
+
+1. Average Latency:
+    How much time it takes from the moment work is pushed into the queue, till when it's popped.
+2. Distribution Score:
+    How well distributed is the work between worker threads. The score is derived from sum of deviation from the 'Perfect' score, lower is better and Zero is perfect distribtion.
+
+Extended Testing of MPMC(4,16)
+
+[   crb    ]
+[   mpmc   ]
+[   iocp   ]
+[5.14,3 /11]
+
+[0] -- [4.18(us), 1/7]  -- [6.69(us), 1/10]
+[1] -- [5.30(us), 1/12] -- [13.07(us), 2/6]
+[2] -- [4.18(us), 1/7]  -- [6.69(us), 1/10]
+[3] -- [4.18(us), 1/7]  -- [6.69(us), 1/10]
+[4] -- [4.18(us), 1/7]  -- [6.69(us), 1/10]
+[5] -- [4.18(us), 1/7]  -- [6.69(us), 1/10]
+[6] -- [4.18(us), 1/7]  -- [6.69(us), 1/10]
+[7] -- [4.18(us), 1/7]  -- [6.69(us), 1/10]
+[8] -- [4.18(us), 1/7]  -- [6.69(us), 1/10]
+[9] -- [4.18(us), 1/7]  -- [6.69(us), 1/10]
+[10] -- [4.18(us), 1/7] -- [6.69(us), 1/10]
+[11] -- [4.18(us), 1/7] -- [6.69(us), 1/10]
+[13] -- [4.18(us), 1/7] -- [6.69(us), 1/10]
+[14] -- [4.18(us), 1/7] -- [6.69(us), 1/10]
+[15] -- [4.18(us), 1/7] -- [6.69(us), 1/10]
+
+
+
+[Sys][Info][MyApp.cpp:335]:Profile SPSC test running...
+[Sys][Info][MyApp.cpp:206]:Producers=1
+[Sys][Info][MyApp.cpp:207]:Consumers=1
+[Sys][Info][MyApp.cpp:222]:Waiting for producers to finish...
+[Sys][Info][MyApp.cpp:226]:Waiting for consumers to finish...
+[Sys][Info][MyApp.cpp:232]:WorkCompleted=1500000
+[Sys][Info][MyApp.cpp:233]:WorkSubmitted=1500000
+[Sys][Info][MyApp.cpp:300]:Distribution and Load Balancing Stats:
+[Sys][Info][MyApp.cpp:301]:  Sender
+[Sys][Info][MyApp.cpp:306]:    [40732]: 1500000, 100%
+[Sys][Info][MyApp.cpp:310]:    Perfect Distribution=100
+[Sys][Info][MyApp.cpp:311]:    Distribution Score=0
+[Sys][Info][MyApp.cpp:316]:  Worker
+[Sys][Info][MyApp.cpp:320]:    [35604]: 1500000, 100%
+[Sys][Info][MyApp.cpp:324]:    Perfect Distribution=100
+[Sys][Info][MyApp.cpp:325]:    Distribution Score=0
+[Sys][Info][MyApp.cpp:327]:Timing (in microseconds):
+[Sys][Info][MyApp.cpp:328]:  Average=7.96235
+[Sys][Info][MyApp.cpp:329]:  Min=0.00000
+[Sys][Info][MyApp.cpp:330]:  Max=112.64006
+[Sys][Info][MyApp.cpp:350]:Profile (MPMC) SPSC test running...
+[Sys][Info][MyApp.cpp:206]:Producers=1
+[Sys][Info][MyApp.cpp:207]:Consumers=1
+[Sys][Info][MyApp.cpp:222]:Waiting for producers to finish...
+[Sys][Info][MyApp.cpp:226]:Waiting for consumers to finish...
+[Sys][Info][MyApp.cpp:232]:WorkCompleted=1500000
+[Sys][Info][MyApp.cpp:233]:WorkSubmitted=1500000
+[Sys][Info][MyApp.cpp:300]:Distribution and Load Balancing Stats:
+[Sys][Info][MyApp.cpp:301]:  Sender
+[Sys][Info][MyApp.cpp:306]:    [38952]: 1500000, 100%
+[Sys][Info][MyApp.cpp:310]:    Perfect Distribution=100
+[Sys][Info][MyApp.cpp:311]:    Distribution Score=0
+[Sys][Info][MyApp.cpp:316]:  Worker
+[Sys][Info][MyApp.cpp:320]:    [18184]: 1500000, 100%
+[Sys][Info][MyApp.cpp:324]:    Perfect Distribution=100
+[Sys][Info][MyApp.cpp:325]:    Distribution Score=0
+[Sys][Info][MyApp.cpp:327]:Timing (in microseconds):
+[Sys][Info][MyApp.cpp:328]:  Average=1.65269
+[Sys][Info][MyApp.cpp:329]:  Min=0.28444
+[Sys][Info][MyApp.cpp:330]:  Max=141.65341
+[Sys][Info][MyApp.cpp:335]:Profile SPMC test running...
+[Sys][Info][MyApp.cpp:206]:Producers=1
+[Sys][Info][MyApp.cpp:207]:Consumers=4
+[Sys][Info][MyApp.cpp:222]:Waiting for producers to finish...
+[Sys][Info][MyApp.cpp:226]:Waiting for consumers to finish...
+[Sys][Info][MyApp.cpp:232]:WorkCompleted=1500000
+[Sys][Info][MyApp.cpp:233]:WorkSubmitted=1500000
+[Sys][Info][MyApp.cpp:300]:Distribution and Load Balancing Stats:
+[Sys][Info][MyApp.cpp:301]:  Sender
+[Sys][Info][MyApp.cpp:306]:    [27316]: 1500000, 100%
+[Sys][Info][MyApp.cpp:310]:    Perfect Distribution=100
+[Sys][Info][MyApp.cpp:311]:    Distribution Score=0
+[Sys][Info][MyApp.cpp:316]:  Worker
+[Sys][Info][MyApp.cpp:320]:    [15088]: 370459, 24%
+[Sys][Info][MyApp.cpp:320]:    [34992]: 371098, 24%
+[Sys][Info][MyApp.cpp:320]:    [40036]: 382426, 25%
+[Sys][Info][MyApp.cpp:320]:    [40220]: 376017, 25%
+[Sys][Info][MyApp.cpp:324]:    Perfect Distribution=25
+[Sys][Info][MyApp.cpp:325]:    Distribution Score=2
+[Sys][Info][MyApp.cpp:327]:Timing (in microseconds):
+[Sys][Info][MyApp.cpp:328]:  Average=3.21701
+[Sys][Info][MyApp.cpp:329]:  Min=0.00000
+[Sys][Info][MyApp.cpp:330]:  Max=167.25343
+[Sys][Info][MyApp.cpp:350]:Profile (MPMC) SPMC test running...
+[Sys][Info][MyApp.cpp:206]:Producers=1
+[Sys][Info][MyApp.cpp:207]:Consumers=4
+[Sys][Info][MyApp.cpp:222]:Waiting for producers to finish...
+[Sys][Info][MyApp.cpp:226]:Waiting for consumers to finish...
+[Sys][Info][MyApp.cpp:232]:WorkCompleted=1500000
+[Sys][Info][MyApp.cpp:233]:WorkSubmitted=1500000
+[Sys][Info][MyApp.cpp:300]:Distribution and Load Balancing Stats:
+[Sys][Info][MyApp.cpp:301]:  Sender
+[Sys][Info][MyApp.cpp:306]:    [11992]: 1500000, 100%
+[Sys][Info][MyApp.cpp:310]:    Perfect Distribution=100
+[Sys][Info][MyApp.cpp:311]:    Distribution Score=0
+[Sys][Info][MyApp.cpp:316]:  Worker
+[Sys][Info][MyApp.cpp:320]:    [30120]: 389388, 25%
+[Sys][Info][MyApp.cpp:320]:    [36476]: 322299, 21%
+[Sys][Info][MyApp.cpp:320]:    [37504]: 347246, 23%
+[Sys][Info][MyApp.cpp:320]:    [38472]: 441067, 29%
+[Sys][Info][MyApp.cpp:324]:    Perfect Distribution=25
+[Sys][Info][MyApp.cpp:325]:    Distribution Score=10
+[Sys][Info][MyApp.cpp:327]:Timing (in microseconds):
+[Sys][Info][MyApp.cpp:328]:  Average=0.59765
+[Sys][Info][MyApp.cpp:329]:  Min=0.28444
+[Sys][Info][MyApp.cpp:330]:  Max=224.99568
+[Sys][Info][MyApp.cpp:335]:Profile MPSC test running...
+[Sys][Info][MyApp.cpp:206]:Producers=4
+[Sys][Info][MyApp.cpp:207]:Consumers=1
+[Sys][Info][MyApp.cpp:222]:Waiting for producers to finish...
+[Sys][Info][MyApp.cpp:226]:Waiting for consumers to finish...
+[Sys][Info][MyApp.cpp:232]:WorkCompleted=1500000
+[Sys][Info][MyApp.cpp:233]:WorkSubmitted=1500000
+[Sys][Info][MyApp.cpp:300]:Distribution and Load Balancing Stats:
+[Sys][Info][MyApp.cpp:301]:  Sender
+[Sys][Info][MyApp.cpp:306]:    [28604]: 375068, 25%
+[Sys][Info][MyApp.cpp:306]:    [28708]: 363933, 24%
+[Sys][Info][MyApp.cpp:306]:    [29660]: 374902, 24%
+[Sys][Info][MyApp.cpp:306]:    [37976]: 386097, 25%
+[Sys][Info][MyApp.cpp:310]:    Perfect Distribution=25
+[Sys][Info][MyApp.cpp:311]:    Distribution Score=0
+[Sys][Info][MyApp.cpp:316]:  Worker
+[Sys][Info][MyApp.cpp:320]:    [39800]: 1500000, 100%
+[Sys][Info][MyApp.cpp:324]:    Perfect Distribution=100
+[Sys][Info][MyApp.cpp:325]:    Distribution Score=0
+[Sys][Info][MyApp.cpp:327]:Timing (in microseconds):
+[Sys][Info][MyApp.cpp:328]:  Average=43.44732
+[Sys][Info][MyApp.cpp:329]:  Min=15.92890
+[Sys][Info][MyApp.cpp:330]:  Max=1665.42317
+[Sys][Info][MyApp.cpp:350]:Profile (MPMC) MPSC test running...
+[Sys][Info][MyApp.cpp:206]:Producers=4
+[Sys][Info][MyApp.cpp:207]:Consumers=1
+[Sys][Info][MyApp.cpp:222]:Waiting for producers to finish...
+[Sys][Info][MyApp.cpp:226]:Waiting for consumers to finish...
+[Sys][Info][MyApp.cpp:232]:WorkCompleted=1500000
+[Sys][Info][MyApp.cpp:233]:WorkSubmitted=1500000
+[Sys][Info][MyApp.cpp:300]:Distribution and Load Balancing Stats:
+[Sys][Info][MyApp.cpp:301]:  Sender
+[Sys][Info][MyApp.cpp:306]:    [20904]: 385122, 25%
+[Sys][Info][MyApp.cpp:306]:    [27088]: 371854, 24%
+[Sys][Info][MyApp.cpp:306]:    [29268]: 366071, 24%
+[Sys][Info][MyApp.cpp:306]:    [36216]: 376953, 25%
+[Sys][Info][MyApp.cpp:310]:    Perfect Distribution=25
+[Sys][Info][MyApp.cpp:311]:    Distribution Score=0
+[Sys][Info][MyApp.cpp:316]:  Worker
+[Sys][Info][MyApp.cpp:320]:    [13612]: 1500000, 100%
+[Sys][Info][MyApp.cpp:324]:    Perfect Distribution=100
+[Sys][Info][MyApp.cpp:325]:    Distribution Score=0
+[Sys][Info][MyApp.cpp:327]:Timing (in microseconds):
+[Sys][Info][MyApp.cpp:328]:  Average=55.63036
+[Sys][Info][MyApp.cpp:329]:  Min=0.28444
+[Sys][Info][MyApp.cpp:330]:  Max=307.48462
+[Sys][Info][MyApp.cpp:335]:Profile MPMC test running...
+[Sys][Info][MyApp.cpp:206]:Producers=4
+[Sys][Info][MyApp.cpp:207]:Consumers=4
+[Sys][Info][MyApp.cpp:222]:Waiting for producers to finish...
+[Sys][Info][MyApp.cpp:226]:Waiting for consumers to finish...
+[Sys][Info][MyApp.cpp:232]:WorkCompleted=1500000
+[Sys][Info][MyApp.cpp:233]:WorkSubmitted=1500000
+[Sys][Info][MyApp.cpp:300]:Distribution and Load Balancing Stats:
+[Sys][Info][MyApp.cpp:301]:  Sender
+[Sys][Info][MyApp.cpp:306]:    [11932]: 385326, 25%
+[Sys][Info][MyApp.cpp:306]:    [35952]: 372569, 24%
+[Sys][Info][MyApp.cpp:306]:    [38216]: 373202, 24%
+[Sys][Info][MyApp.cpp:306]:    [38764]: 368903, 24%
+[Sys][Info][MyApp.cpp:310]:    Perfect Distribution=25
+[Sys][Info][MyApp.cpp:311]:    Distribution Score=0
+[Sys][Info][MyApp.cpp:316]:  Worker
+[Sys][Info][MyApp.cpp:320]:    [4604]: 375019, 25%
+[Sys][Info][MyApp.cpp:320]:    [5252]: 368605, 24%
+[Sys][Info][MyApp.cpp:320]:    [22812]: 381772, 25%
+[Sys][Info][MyApp.cpp:320]:    [40544]: 374604, 24%
+[Sys][Info][MyApp.cpp:324]:    Perfect Distribution=25
+[Sys][Info][MyApp.cpp:325]:    Distribution Score=0
+[Sys][Info][MyApp.cpp:327]:Timing (in microseconds):
+[Sys][Info][MyApp.cpp:328]:  Average=5.88578
+[Sys][Info][MyApp.cpp:329]:  Min=0.28444
+[Sys][Info][MyApp.cpp:330]:  Max=8018.77790
+[Sys][Info][MyApp.cpp:350]:Profile (MPMC) MPMC test running...
+[Sys][Info][MyApp.cpp:206]:Producers=4
+[Sys][Info][MyApp.cpp:207]:Consumers=4
+[Sys][Info][MyApp.cpp:222]:Waiting for producers to finish...
+[Sys][Info][MyApp.cpp:226]:Waiting for consumers to finish...
+[Sys][Info][MyApp.cpp:232]:WorkCompleted=1500000
+[Sys][Info][MyApp.cpp:233]:WorkSubmitted=1500000
+[Sys][Info][MyApp.cpp:300]:Distribution and Load Balancing Stats:
+[Sys][Info][MyApp.cpp:301]:  Sender
+[Sys][Info][MyApp.cpp:306]:    [14552]: 330768, 22%
+[Sys][Info][MyApp.cpp:306]:    [31248]: 365886, 24%
+[Sys][Info][MyApp.cpp:306]:    [40720]: 400130, 26%
+[Sys][Info][MyApp.cpp:306]:    [40796]: 403216, 26%
+[Sys][Info][MyApp.cpp:310]:    Perfect Distribution=25
+[Sys][Info][MyApp.cpp:311]:    Distribution Score=1
+[Sys][Info][MyApp.cpp:316]:  Worker
+[Sys][Info][MyApp.cpp:320]:    [6780]: 352607, 23%
+[Sys][Info][MyApp.cpp:320]:    [30788]: 408182, 27%
+[Sys][Info][MyApp.cpp:320]:    [36212]: 381903, 25%
+[Sys][Info][MyApp.cpp:320]:    [39864]: 357308, 23%
+[Sys][Info][MyApp.cpp:324]:    Perfect Distribution=25
+[Sys][Info][MyApp.cpp:325]:    Distribution Score=1
+[Sys][Info][MyApp.cpp:327]:Timing (in microseconds):
+[Sys][Info][MyApp.cpp:328]:  Average=5.78378
+[Sys][Info][MyApp.cpp:329]:  Min=0.28444
+[Sys][Info][MyApp.cpp:330]:  Max=22461.45278
+[Sys][Info][MyApp.cpp:335]:Profile MPMC test running...
+[Sys][Info][MyApp.cpp:206]:Producers=4
+[Sys][Info][MyApp.cpp:207]:Consumers=16
+[Sys][Info][MyApp.cpp:222]:Waiting for producers to finish...
+[Sys][Info][MyApp.cpp:226]:Waiting for consumers to finish...
+[Sys][Info][MyApp.cpp:232]:WorkCompleted=1500000
+[Sys][Info][MyApp.cpp:233]:WorkSubmitted=1500000
+[Sys][Info][MyApp.cpp:300]:Distribution and Load Balancing Stats:
+[Sys][Info][MyApp.cpp:301]:  Sender
+[Sys][Info][MyApp.cpp:306]:    [4628]: 348053, 23%
+[Sys][Info][MyApp.cpp:306]:    [15908]: 278602, 18%
+[Sys][Info][MyApp.cpp:306]:    [35116]: 484711, 32%
+[Sys][Info][MyApp.cpp:306]:    [40300]: 388634, 25%
+[Sys][Info][MyApp.cpp:310]:    Perfect Distribution=25
+[Sys][Info][MyApp.cpp:311]:    Distribution Score=4
+[Sys][Info][MyApp.cpp:316]:  Worker
+[Sys][Info][MyApp.cpp:320]:    [2236]: 95089, 6%
+[Sys][Info][MyApp.cpp:320]:    [7148]: 113857, 7%
+[Sys][Info][MyApp.cpp:320]:    [10080]: 117751, 7%
+[Sys][Info][MyApp.cpp:320]:    [10716]: 87067, 5%
+[Sys][Info][MyApp.cpp:320]:    [19608]: 113693, 7%
+[Sys][Info][MyApp.cpp:320]:    [19912]: 78265, 5%
+[Sys][Info][MyApp.cpp:320]:    [21344]: 75089, 5%
+[Sys][Info][MyApp.cpp:320]:    [22704]: 97060, 6%
+[Sys][Info][MyApp.cpp:320]:    [24712]: 80971, 5%
+[Sys][Info][MyApp.cpp:320]:    [25248]: 89677, 5%
+[Sys][Info][MyApp.cpp:320]:    [33480]: 89094, 5%
+[Sys][Info][MyApp.cpp:320]:    [33572]: 91987, 6%
+[Sys][Info][MyApp.cpp:320]:    [33672]: 95189, 6%
+[Sys][Info][MyApp.cpp:320]:    [35232]: 84755, 5%
+[Sys][Info][MyApp.cpp:320]:    [38328]: 100953, 6%
+[Sys][Info][MyApp.cpp:320]:    [40908]: 89503, 5%
+[Sys][Info][MyApp.cpp:324]:    Perfect Distribution=6
+[Sys][Info][MyApp.cpp:325]:    Distribution Score=2
+[Sys][Info][MyApp.cpp:327]:Timing (in microseconds):
+[Sys][Info][MyApp.cpp:328]:  Average=3.76206
+[Sys][Info][MyApp.cpp:329]:  Min=0.28444
+[Sys][Info][MyApp.cpp:330]:  Max=67015.71812
+[Sys][Info][MyApp.cpp:350]:Profile (MPMC) MPMC test running...
+[Sys][Info][MyApp.cpp:206]:Producers=4
+[Sys][Info][MyApp.cpp:207]:Consumers=16
+[Sys][Info][MyApp.cpp:222]:Waiting for producers to finish...
+[Sys][Info][MyApp.cpp:226]:Waiting for consumers to finish...
+[Sys][Info][MyApp.cpp:232]:WorkCompleted=1500000
+[Sys][Info][MyApp.cpp:233]:WorkSubmitted=1500000
+[Sys][Info][MyApp.cpp:300]:Distribution and Load Balancing Stats:
+[Sys][Info][MyApp.cpp:301]:  Sender
+[Sys][Info][MyApp.cpp:306]:    [4508]: 293494, 19%
+[Sys][Info][MyApp.cpp:306]:    [11920]: 691007, 46%
+[Sys][Info][MyApp.cpp:306]:    [14608]: 307201, 20%
+[Sys][Info][MyApp.cpp:306]:    [21092]: 208298, 13%
+[Sys][Info][MyApp.cpp:310]:    Perfect Distribution=25
+[Sys][Info][MyApp.cpp:311]:    Distribution Score=11
+[Sys][Info][MyApp.cpp:316]:  Worker
+[Sys][Info][MyApp.cpp:320]:    [2332]: 81096, 5%
+[Sys][Info][MyApp.cpp:320]:    [2608]: 78829, 5%
+[Sys][Info][MyApp.cpp:320]:    [10320]: 99544, 6%
+[Sys][Info][MyApp.cpp:320]:    [17232]: 138162, 9%
+[Sys][Info][MyApp.cpp:320]:    [22152]: 89641, 5%
+[Sys][Info][MyApp.cpp:320]:    [22860]: 97387, 6%
+[Sys][Info][MyApp.cpp:320]:    [23208]: 121911, 8%
+[Sys][Info][MyApp.cpp:320]:    [24184]: 141615, 9%
+[Sys][Info][MyApp.cpp:320]:    [33868]: 85431, 5%
+[Sys][Info][MyApp.cpp:320]:    [36728]: 81579, 5%
+[Sys][Info][MyApp.cpp:320]:    [38480]: 124933, 8%
+[Sys][Info][MyApp.cpp:320]:    [38592]: 76924, 5%
+[Sys][Info][MyApp.cpp:320]:    [38808]: 31836, 2%
+[Sys][Info][MyApp.cpp:320]:    [40004]: 84294, 5%
+[Sys][Info][MyApp.cpp:320]:    [40740]: 61878, 4%
+[Sys][Info][MyApp.cpp:320]:    [40912]: 104940, 6%
+[Sys][Info][MyApp.cpp:324]:    Perfect Distribution=6
+[Sys][Info][MyApp.cpp:325]:    Distribution Score=5
+[Sys][Info][MyApp.cpp:327]:Timing (in microseconds):
+[Sys][Info][MyApp.cpp:328]:  Average=7.03488
+[Sys][Info][MyApp.cpp:329]:  Min=0.56889
+[Sys][Info][MyApp.cpp:330]:  Max=177022.67848
