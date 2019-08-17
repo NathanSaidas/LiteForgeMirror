@@ -139,6 +139,10 @@ void TestFramework::ExecuteTest(const Char8* name, const TestConfig& config)
 void TestFramework::ExecuteAllTests(const TestConfig& config)
 {
     TestRegristration* test = sTestHead;
+
+    SizeT numExecuted = 0;
+    SizeT numPassed = 0;
+
     while (test)
     {
         TestContext context;
@@ -156,7 +160,7 @@ void TestFramework::ExecuteAllTests(const TestConfig& config)
         Int64 clockEnd = GetClockTime();
         sExecutionTime = (clockEnd - clockBegin) / static_cast<Float64>(clockFreq);
         gReportBugCallback = bugReporter;
-        test = test->mNext;
+        ++numExecuted;
 
         if (sFailed > 0)
         {
@@ -165,10 +169,13 @@ void TestFramework::ExecuteAllTests(const TestConfig& config)
         else
         {
             gTestLog.Info(LogMessage("Test ") << test->mName << " passed! Execution Time=" << FormatTime(sExecutionTime) << FormatTimeStr(sExecutionTime));
+            ++numPassed;
         }
 
+        test = test->mNext;
         sTestContextStack = sTestContextStack->mPrev;
     }
+    gTestLog.Info(LogMessage("Passed ") << numPassed << "/" << numExecuted << " tests.");
 }
 
 bool TestFramework::ProcessTest(bool result, const char* expression, int line)

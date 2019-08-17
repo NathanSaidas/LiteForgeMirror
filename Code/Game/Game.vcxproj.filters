@@ -10,6 +10,9 @@
     <Filter Include="Test\Core">
       <UniqueIdentifier>{07637d12-9cb4-44ae-86a1-2f08b91584b3}</UniqueIdentifier>
     </Filter>
+    <Filter Include="AnalyzeProjectApp">
+      <UniqueIdentifier>{9da5daf5-9faa-4169-a6c8-490d4e17af7e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Config.cpp">
@@ -33,5 +36,26 @@
     <ClCompile Include="Test\Core\CacheStreamTest.cpp">
       <Filter>Test\Core</Filter>
     </ClCompile>
+    <ClCompile Include="AnalyzeProjectApp\AnalyzeProjectApp.cpp">
+      <Filter>AnalyzeProjectApp</Filter>
+    </ClCompile>
+    <ClCompile Include="AnalyzeProjectApp\DumpbinProcess.cpp">
+      <Filter>AnalyzeProjectApp</Filter>
+    </ClCompile>
+    <ClCompile Include="Test\Core\CryptoTests.cpp">
+      <Filter>Test\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Test\Core\ExceptionTesting.cpp">
+      <Filter>Test\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="DeployBuild.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="AnalyzeProjectApp\AnalyzeProjectApp.h">
+      <Filter>AnalyzeProjectApp</Filter>
+    </ClInclude>
+    <ClInclude Include="AnalyzeProjectApp\DumpbinProcess.h">
+      <Filter>AnalyzeProjectApp</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -173,7 +173,7 @@ bool File::Open(const String& filename, FileFlagsT flags, FileOpenMode openMode)
             creationDisposition = OPEN_ALWAYS;
             break;
         default:
-            Crash("File::Open invalid argument", LF_ERROR_INVALID_ARGUMENT, ERROR_API_CORE);
+            CriticalAssertMsgEx("File::Open invalid argument", LF_ERROR_INVALID_ARGUMENT, ERROR_API_CORE);
             break;
     }
 
@@ -269,7 +269,7 @@ bool File::OpenAsync(const String& filename, FileFlagsT flags, FileOpenMode open
             creationDisposition = OPEN_ALWAYS;
             break;
         default:
-            Crash("File::Open invalid argument", LF_ERROR_INVALID_ARGUMENT, ERROR_API_CORE);
+            CriticalAssertMsgEx("File::Open invalid argument", LF_ERROR_INVALID_ARGUMENT, ERROR_API_CORE);
             break;
     }
 
@@ -292,7 +292,7 @@ bool File::OpenAsync(const String& filename, FileFlagsT flags, FileOpenMode open
     }
     if (!ioDevice.AssociateDevice(mHandle->mFileHandle, nullptr))
     {
-        AssertError(CloseHandle(mHandle->mFileHandle), LF_ERROR_INTERNAL, ERROR_API_CORE);
+        AssertEx(CloseHandle(mHandle->mFileHandle), LF_ERROR_INTERNAL, ERROR_API_CORE);
         LFDelete(mHandle);
         mHandle = nullptr;
         return false;
@@ -325,8 +325,8 @@ void File::Close()
         _ReadWriteBarrier();
     }
 
-    AssertError(mHandle->mFileHandle != INVALID_HANDLE_VALUE, LF_ERROR_BAD_STATE, ERROR_API_CORE);
-    AssertError(CloseHandle(mHandle->mFileHandle), LF_ERROR_INTERNAL, ERROR_API_CORE);
+    AssertEx(mHandle->mFileHandle != INVALID_HANDLE_VALUE, LF_ERROR_BAD_STATE, ERROR_API_CORE);
+    AssertEx(CloseHandle(mHandle->mFileHandle), LF_ERROR_INTERNAL, ERROR_API_CORE);
     LFDelete(mHandle);
     mHandle = nullptr;
 #endif
@@ -334,8 +334,8 @@ void File::Close()
 
 SizeT File::Read(void* buffer, SizeT bufferLength)
 {
-    AssertError(buffer != nullptr, LF_ERROR_INVALID_ARGUMENT, ERROR_API_CORE);
-    AssertError(bufferLength != 0, LF_ERROR_INVALID_ARGUMENT, ERROR_API_CORE);
+    AssertEx(buffer != nullptr, LF_ERROR_INVALID_ARGUMENT, ERROR_API_CORE);
+    AssertEx(bufferLength != 0, LF_ERROR_INVALID_ARGUMENT, ERROR_API_CORE);
     if (!IsOpen())
     {
         return 0;
@@ -385,16 +385,16 @@ SizeT File::Read(void* buffer, SizeT bufferLength)
             }
             else if (error == ERROR_IO_INCOMPLETE)
             {
-                Crash("Failed to wait for IO", LF_ERROR_INTERNAL, ERROR_API_CORE);
+                CriticalAssertMsgEx("Failed to wait for IO", LF_ERROR_INTERNAL, ERROR_API_CORE);
             }
             else
             {
-                AssertError(result == TRUE, LF_ERROR_INTERNAL, ERROR_API_CORE);
+                AssertEx(result == TRUE, LF_ERROR_INTERNAL, ERROR_API_CORE);
                 while (HasPending()) {} // Spin until completion we should be just about done
             }
         }
-        AssertError(!HasPending(), LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
-        AssertError(ioBuffer.IsDone(), LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+        AssertEx(!HasPending(), LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+        AssertEx(ioBuffer.IsDone(), LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
         return ioBuffer.GetBytesTransferred();
     }
     else
@@ -402,7 +402,7 @@ SizeT File::Read(void* buffer, SizeT bufferLength)
         SetLastError(ERROR_SUCCESS);
         DWORD bytesRead = 0;
         BOOL done = ReadFile(mHandle->mFileHandle, buffer, static_cast<DWORD>(bufferLength), &bytesRead, NULL);
-        AssertError(done == TRUE, LF_ERROR_INTERNAL, ERROR_API_CORE);
+        AssertEx(done == TRUE, LF_ERROR_INTERNAL, ERROR_API_CORE);
         if (bytesRead == 0)
         {
             mHandle->mFlags |= FF_EOF;
@@ -416,10 +416,10 @@ SizeT File::Read(void* buffer, SizeT bufferLength)
 }
 bool File::ReadAsync(AsyncIOBuffer* buffer, SizeT bufferLength)
 {
-    AssertError(buffer != nullptr, LF_ERROR_INVALID_ARGUMENT, ERROR_API_CORE);
-    AssertError(bufferLength != 0, LF_ERROR_INVALID_ARGUMENT, ERROR_API_CORE);
-    AssertError(buffer->IsDone(), LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
-    AssertError(buffer->GetBuffer() != nullptr, LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+    AssertEx(buffer != nullptr, LF_ERROR_INVALID_ARGUMENT, ERROR_API_CORE);
+    AssertEx(bufferLength != 0, LF_ERROR_INVALID_ARGUMENT, ERROR_API_CORE);
+    AssertEx(buffer->IsDone(), LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+    AssertEx(buffer->GetBuffer() != nullptr, LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
     if (!IsOpen())
     {
         return false;
@@ -444,8 +444,8 @@ bool File::ReadAsync(AsyncIOBuffer* buffer, SizeT bufferLength)
 }
 SizeT File::Write(const void* buffer, SizeT bufferLength)
 {
-    AssertError(buffer != nullptr, LF_ERROR_INVALID_ARGUMENT, ERROR_API_CORE);
-    AssertError(bufferLength != 0, LF_ERROR_INVALID_ARGUMENT, ERROR_API_CORE);
+    AssertEx(buffer != nullptr, LF_ERROR_INVALID_ARGUMENT, ERROR_API_CORE);
+    AssertEx(bufferLength != 0, LF_ERROR_INVALID_ARGUMENT, ERROR_API_CORE);
     if (!IsOpen())
     {
         return 0;
@@ -491,16 +491,16 @@ SizeT File::Write(const void* buffer, SizeT bufferLength)
             }
             else if (error == ERROR_IO_INCOMPLETE)
             {
-                Crash("Failed to wait for IO", LF_ERROR_INTERNAL, ERROR_API_CORE);
+                CriticalAssertMsgEx("Failed to wait for IO", LF_ERROR_INTERNAL, ERROR_API_CORE);
             }
             else
             {
-                AssertError(result == TRUE, LF_ERROR_INTERNAL, ERROR_API_CORE);
+                AssertEx(result == TRUE, LF_ERROR_INTERNAL, ERROR_API_CORE);
                 while (HasPending()) {} // Spin until completion, we should be just about done.
             }
         }
-        AssertError(!HasPending(), LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
-        AssertError(ioBuffer.IsDone(), LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+        AssertEx(!HasPending(), LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+        AssertEx(ioBuffer.IsDone(), LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
         return ioBuffer.GetBytesTransferred();
     }
     else
@@ -508,7 +508,7 @@ SizeT File::Write(const void* buffer, SizeT bufferLength)
         SetLastError(ERROR_SUCCESS);
         DWORD bytesWritten = 0;
         BOOL done = WriteFile(mHandle->mFileHandle, buffer, static_cast<DWORD>(bufferLength), &bytesWritten, NULL);
-        AssertError(done == TRUE, LF_ERROR_INTERNAL, ERROR_API_CORE);
+        AssertEx(done == TRUE, LF_ERROR_INTERNAL, ERROR_API_CORE);
         return static_cast<SizeT>(bytesWritten);
     }
 #else
@@ -517,10 +517,10 @@ SizeT File::Write(const void* buffer, SizeT bufferLength)
 }
 bool File::WriteAsync(AsyncIOBuffer* buffer, SizeT bufferLength)
 {
-    AssertError(buffer != nullptr, LF_ERROR_INVALID_ARGUMENT, ERROR_API_CORE);
-    AssertError(bufferLength != 0, LF_ERROR_INVALID_ARGUMENT, ERROR_API_CORE);
-    AssertError(buffer->IsDone(), LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
-    AssertError(buffer->GetBuffer() != nullptr, LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+    AssertEx(buffer != nullptr, LF_ERROR_INVALID_ARGUMENT, ERROR_API_CORE);
+    AssertEx(bufferLength != 0, LF_ERROR_INVALID_ARGUMENT, ERROR_API_CORE);
+    AssertEx(buffer->IsDone(), LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+    AssertEx(buffer->GetBuffer() != nullptr, LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
     if (!IsOpen())
     {
         return false;
@@ -555,7 +555,7 @@ void File::Wait()
     {
 #if defined(LF_OS_WINDOWS)
         DWORD dummy = 0;
-        AssertError(GetOverlappedResultEx(mHandle->mFileHandle, &mHandle->mUserData, &dummy, INFINITE, TRUE) == TRUE, LF_ERROR_INTERNAL, ERROR_API_CORE);
+        AssertEx(GetOverlappedResultEx(mHandle->mFileHandle, &mHandle->mUserData, &dummy, INFINITE, TRUE) == TRUE, LF_ERROR_INTERNAL, ERROR_API_CORE);
         while (HasPending()) {}
 #endif
     }
@@ -572,7 +572,7 @@ bool File::Wait(SizeT waitMilliseconds)
     {
 #if defined(LF_OS_WINDOWS)
         DWORD dummy = 0;
-        AssertError(GetOverlappedResultEx(mHandle->mFileHandle, &mHandle->mUserData, &dummy, static_cast<DWORD>(waitMilliseconds), TRUE) == TRUE, LF_ERROR_INTERNAL, ERROR_API_CORE);
+        AssertEx(GetOverlappedResultEx(mHandle->mFileHandle, &mHandle->mUserData, &dummy, static_cast<DWORD>(waitMilliseconds), TRUE) == TRUE, LF_ERROR_INTERNAL, ERROR_API_CORE);
 #endif
     }
     return HasPending();

@@ -22,6 +22,7 @@
 #define LF_ENGINE_PROGRAM_H
 
 #include "Core/Common/Types.h"
+#include "Core/Common/API.h"
 
 // types of programs?
 //   Console View:
@@ -32,7 +33,7 @@ namespace lf {
 
 namespace Program {
 
-void Execute(SizeT argc, const char** argv);
+LF_ENGINE_API void Execute(SizeT argc, const char** argv);
 
 }
 

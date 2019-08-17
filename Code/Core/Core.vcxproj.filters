@@ -40,6 +40,9 @@
     <Filter Include="Concurrent">
       <UniqueIdentifier>{e070e2a9-9917-44b0-b1d2-9dcaccd7186d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Crypto">
+      <UniqueIdentifier>{6e7860cc-f03e-40a6-8da3-94e80817b78f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Config.cpp">
@@ -192,6 +195,21 @@
     <ClCompile Include="IO\BinaryStream.cpp">
       <Filter>IO</Filter>
     </ClCompile>
+    <ClCompile Include="String\StringHashTable.cpp">
+      <Filter>String</Filter>
+    </ClCompile>
+    <ClCompile Include="Test\SampleCycleA.cpp">
+      <Filter>Test</Filter>
+    </ClCompile>
+    <ClCompile Include="Test\SampleCycleB.cpp">
+      <Filter>Test</Filter>
+    </ClCompile>
+    <ClCompile Include="Crypto\SHA256.cpp">
+      <Filter>Crypto</Filter>
+    </ClCompile>
+    <ClCompile Include="IO\EngineConfig.cpp">
+      <Filter>IO</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Common\Types.h">
@@ -247,9 +265,6 @@
     </ClInclude>
     <ClInclude Include="Platform\Thread.h">
       <Filter>Platform</Filter>
-    </ClInclude>
-    <ClInclude Include="Tests\ThreadTest.h">
-      <Filter>Tests</Filter>
     </ClInclude>
     <ClInclude Include="Platform\SpinLock.h">
       <Filter>Platform</Filter>
@@ -460,6 +475,27 @@
     </ClInclude>
     <ClInclude Include="Utility\StdMap.h">
       <Filter>Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="Tests\ThreadTest.h">
+      <Filter>Tests</Filter>
+    </ClInclude>
+    <ClInclude Include="Utility\FNVHash.h">
+      <Filter>Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="String\StringHashTable.h">
+      <Filter>String</Filter>
+    </ClInclude>
+    <ClInclude Include="Test\SampleCycleA.h">
+      <Filter>Test</Filter>
+    </ClInclude>
+    <ClInclude Include="Test\SampleCycleB.h">
+      <Filter>Test</Filter>
+    </ClInclude>
+    <ClInclude Include="Crypto\SHA256.h">
+      <Filter>Crypto</Filter>
+    </ClInclude>
+    <ClInclude Include="IO\EngineConfig.h">
+      <Filter>IO</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

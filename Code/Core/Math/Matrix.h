@@ -23,9 +23,9 @@
 
 #include "Core/Common/Types.h"
 #include "Core/Common/Assert.h"
-#include "Core/math/MathFunctions.h"
-#include "Core/math/Vector.h"
-#include "Core/math/Quaternion.h"
+#include "Core/Math/MathFunctions.h"
+#include "Core/Math/Vector.h"
+#include "Core/Math/Quaternion.h"
 
 #include <math.h>
 

@@ -29,7 +29,7 @@ namespace lf {
 
 using CacheBlobStatArray = TArray<CacheBlobStats>;
 
-class AssetCacheController
+class LF_RUNTIME_API AssetCacheController
 {
 public:
     using CacheNameIndex = AssetUtil::DefaultNameIndex;

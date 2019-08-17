@@ -25,7 +25,7 @@
 
 namespace lf {
 
-    extern TestRegristration PointerTest;
+LF_CORE_API extern TestRegristration PointerTest;
 
 } // namespace lf
 

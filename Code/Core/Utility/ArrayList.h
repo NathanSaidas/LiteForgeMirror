@@ -1010,14 +1010,14 @@ namespace lf {
 #if defined(LF_ITERATOR_CONTAINER_CHECK)
         if (it.GetContainer() != reinterpret_cast<void*>(this))
         {
-            Crash("Iterator container mismatch!", LF_ERROR_BAD_STATE, ERROR_API_CORE);
+            CriticalAssertMsgEx("Iterator container mismatch!", LF_ERROR_BAD_STATE, ERROR_API_CORE);
         }
 #endif
 #if defined(LF_ITERATOR_RANGE_CHECK)
         if (!CheckIterator(it.GetState()) || // Corrupt data:
             (it.GetItemIndex() == internal_util::ARRAY_LIST_END_ID || it.GetItemIndex() == internal_util::ARRAY_LIST_REND_ID)) // Out of range
         {
-            Crash("Iterator out of range!", LF_ERROR_BAD_STATE, ERROR_API_CORE);
+            CriticalAssertMsgEx("Iterator out of range!", LF_ERROR_BAD_STATE, ERROR_API_CORE);
         }
 #endif
         iterator next = it + 1;

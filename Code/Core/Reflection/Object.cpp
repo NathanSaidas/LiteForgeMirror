@@ -51,7 +51,7 @@ bool Object::IsA(const Type* type) const
 
 void Object::Clone(const Object& obj)
 {
-    AssertError(obj.IsA(GetType()), LF_ERROR_INVALID_ARGUMENT, ERROR_API_CORE);
+    AssertEx(obj.IsA(GetType()), LF_ERROR_INVALID_ARGUMENT, ERROR_API_CORE);
     OnClone(obj);
 }
 

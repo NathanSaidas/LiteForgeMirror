@@ -33,8 +33,6 @@ LF_RUNTIME_API extern const char* ERROR_MSG_FAILED_TO_OPEN_FILE;
 LF_RUNTIME_API extern const char* ERROR_MSG_INDEX_OUT_OF_BOUNDS;
 } // namespace CacheWriterError
 
-struct AssetType;
-
 using CacheWritePromise = PromiseImpl<TCallback<void>, TCallback<void, const String&>>;
 
 // **********************************
@@ -56,7 +54,7 @@ public:
     // **********************************
     bool Write();
     // **********************************
-    // Executes the write function (to write to the file)
+    // Executes the write function (to write to the file asynchronously)
     //
     // note: This function will only write to a file if there is no output buffer assigned.
     // **********************************
@@ -72,7 +70,7 @@ public:
     // @param index -- The specific location within the cache block to write to
     // @param sourceMemory [Optional] -- The memory that will be written to the buffer 
     // @param sourceMemorySize [Optional] -- The size of the sourceMemory buffer in bytes.
-    // @returns Returns true if the CacheWriter has somewhere to write to and if it's not currently opened.
+    // @returns Returns true if the CacheWriter has somewhere to write
     // **********************************
     bool Open(const CacheBlock& block, CacheIndex index, const void* sourceMemory = nullptr, SizeT sourceMemorySize = 0);
     // **********************************

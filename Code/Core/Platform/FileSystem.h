@@ -21,7 +21,9 @@
 #ifndef LF_CORE_FILE_SYSTEM_H
 #define LF_CORE_FILE_SYSTEM_H
 
+#include "Core/Common/API.h"
 #include "Core/Platform/PlatformTypes.h"
+#include "Core/Utility/Array.h"
 
 namespace lf {
 
@@ -29,23 +31,36 @@ class String;
 
 namespace FileSystem {
 
-bool FileCreate(const String& filename);
-bool FileDelete(const String& filename);
-bool FileExists(const String& filename);
-bool FileReserve(const String& filename, FileSize size);
+LF_CORE_API bool FileCreate(const String& filename);
+LF_CORE_API bool FileDelete(const String& filename);
+LF_CORE_API bool FileExists(const String& filename);
+LF_CORE_API bool FileReserve(const String& filename, FileSize size);
 
 // **********************************
 // Create all directories for a leading-up to a path.
 // 
 // @param {String} path
 // **********************************
-bool PathCreate(const String& path);
+LF_CORE_API bool PathCreate(const String& path);
+// **********************************
+// Delete the specified path from the file system.
+// 
+// @param {String} path
+// **********************************
+LF_CORE_API bool PathDelete(const String& path);
+// **********************************
+// Delete the specified path and all the content within it (files & directories)
+// recursively. 
+//
+// @param {String} path
+// **********************************
+LF_CORE_API bool PathDeleteRecursive(const String& path);
 // **********************************
 // Check if a path exists.
 // 
 // @param {String} path
 // **********************************
-bool PathExists(const String& path);
+LF_CORE_API bool PathExists(const String& path);
 
 // **********************************
 // Joins two strings together to represent a path.
@@ -53,13 +68,13 @@ bool PathExists(const String& path);
 // @param {String} path
 // @param {String} other
 // **********************************
-String PathJoin(const String& path, const String& other);
+LF_CORE_API String PathJoin(const String& path, const String& other);
 // **********************************
 // Returns a path pointing to the parent directory.
 //
 // @param {String} path
 // **********************************
-String PathGetParent(const String& path);
+LF_CORE_API String PathGetParent(const String& path);
 // **********************************
 // Returns the extension of a file path 
 // 
@@ -69,25 +84,56 @@ String PathGetParent(const String& path);
 //
 // @param {String} path
 // **********************************
-String PathGetExtension(const String& path);
+LF_CORE_API String PathGetExtension(const String& path);
 // **********************************
 // Returns the full path a given path. (Resolves any '../' )
 //
 // @param {String} path
 // **********************************
-String PathResolve(const String& path);
+LF_CORE_API String PathResolve(const String& path);
 // **********************************
 // Returns path but with corrected DIR_CHAR eg path.replace('/','\\')
 //
 // @param {String} path
 // **********************************
-String PathCorrectPath(const String& path);
+LF_CORE_API String PathCorrectPath(const String& path);
 // **********************************
 // Returns the working directory. (Where the executable is launched.)
 //
 // @param {String} path
 // **********************************
-String GetWorkingPath();
+LF_CORE_API String GetWorkingPath();
+// **********************************
+// Returns all files in a given path
+//
+// note: This function does not retrieve 'hidden files'
+//
+// @param {String} path
+// @param {TArray<String>} outFiles
+// **********************************
+LF_CORE_API void GetFiles(const String& path, TArray<String>& outFiles);
+// **********************************
+// Returns all files in a given path (recursively)
+//
+// note: This function does not retrieve 'hidden files'
+//
+// @param {String} path
+// @param {TArray<String>} outDirectories
+// **********************************
+LF_CORE_API void GetDirectories(const String& path, TArray<String>& outDirectories);
+// **********************************
+// Returns all files in a given path (recursively)
+//
+// @param {String} path
+// **********************************
+LF_CORE_API void GetAllFiles(const String& path, TArray<String>& outFiles);
+// **********************************
+// Returns all directories in a given path (recursively)
+//
+// @param {String} path
+// **********************************
+LF_CORE_API void GetAllDirectories(const String& path, TArray<String>& outFiles);
+
 
 
 } // namespace FileSystem

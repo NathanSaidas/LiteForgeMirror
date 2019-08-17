@@ -28,17 +28,17 @@ namespace lf { namespace InternalHooks {
 
 struct IOCPQueueImpl;
 
-void IOCPInitialize(IOCPQueueImpl*& self, SizeT numConsumers);
-void IOCPRelease(IOCPQueueImpl*& self);
-bool IOCPEnqueue(IOCPQueueImpl* self, SizeT itemSize, void* item);
-bool IOCPDequeue(IOCPQueueImpl* self, void*& item);
+void LF_CORE_API IOCPInitialize(IOCPQueueImpl*& self, SizeT numConsumers);
+void LF_CORE_API IOCPRelease(IOCPQueueImpl*& self);
+bool LF_CORE_API IOCPEnqueue(IOCPQueueImpl* self, SizeT itemSize, void* item);
+bool LF_CORE_API IOCPDequeue(IOCPQueueImpl* self, void*& item);
 
 } } // namespace lf::InternalHooks
 
 namespace lf {
 
 template<typename T>
-class LF_CORE_API IOCPQueue
+class IOCPQueue
 {
 public:
     using WorkItem = T;

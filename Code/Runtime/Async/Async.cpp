@@ -23,6 +23,6 @@
 
 namespace lf {
 
-Async& GetAsync() { AssertError(gAsync, LF_ERROR_INVALID_OPERATION, ERROR_API_RUNTIME); return *gAsync; }
+Async& GetAsync() { CriticalAssertEx(gAsync, LF_ERROR_INVALID_OPERATION, ERROR_API_RUNTIME); return *gAsync; }
 
 }

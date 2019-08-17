@@ -44,7 +44,7 @@ union StringStorage
     } heap;
 };
 
-class String
+class LF_CORE_API String
 {
 public:
     using value_type = Char8;

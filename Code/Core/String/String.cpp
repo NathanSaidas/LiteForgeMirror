@@ -307,7 +307,7 @@ String& String::Assign(const String& other)
     }
     else
     {
-        Crash("Unexpected condition.", LF_ERROR_INTERNAL, ERROR_API_CORE);
+        CriticalAssertMsgEx("Unexpected condition.", LF_ERROR_INTERNAL, ERROR_API_CORE);
     }
     return *this;
 }
@@ -361,7 +361,7 @@ String& String::Assign(const value_type* other)
     }
     else
     {
-        Crash("Unexpected condition.", LF_ERROR_INTERNAL, ERROR_API_CORE);
+        CriticalAssertMsgEx("Unexpected condition.", LF_ERROR_INTERNAL, ERROR_API_CORE);
     }
 
     return(*this);
@@ -385,7 +385,7 @@ String& String::Append(value_type character)
         {
             Grow(Capacity() * 2);
         }
-        AssertError(UseHeap(), LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+        AssertEx(UseHeap(), LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
         value_type* buffer = mStorage.heap.first;
         buffer[newSize - 1] = character;
         buffer[newSize] = '\0';
@@ -397,7 +397,7 @@ String& String::Append(value_type character)
         {
             MakeLocal();
         }
-        AssertError(!UseHeap(), LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+        AssertEx(!UseHeap(), LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
         value_type* buffer = mStorage.local.buffer;
         buffer[newSize - 1] = character;
         buffer[newSize] = '\0';
@@ -422,7 +422,7 @@ String& String::Append(const String& other)
         {
             Grow(Max(Capacity() * 2, newSize));
         }
-        AssertError(UseHeap(), LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+        AssertEx(UseHeap(), LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
         value_type* buffer = mStorage.heap.first + originalSize;
         memcpy(buffer, other.GetBufferPointer(), otherSize);
         buffer[otherSize] = '\0';
@@ -434,7 +434,7 @@ String& String::Append(const String& other)
         {
             MakeLocal();
         }
-        AssertError(!UseHeap(), LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+        AssertEx(!UseHeap(), LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
         value_type* buffer = mStorage.local.buffer + originalSize;
         memcpy(buffer, other.GetBufferPointer(), otherSize);
         buffer[otherSize] = '\0';
@@ -552,7 +552,7 @@ void String::SubString(SizeT start, String& outString) const
 }
 void String::SubString(SizeT start, SizeT length, String& outString) const
 {
-    AssertError(&outString != this, LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+    AssertEx(&outString != this, LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
     if (&outString == this)
     {
         return;
@@ -760,8 +760,8 @@ void String::Grow(SizeT desiredCapacity)
 
 void String::MakeLocal()
 {
-    AssertError(CopyOnWrite(), LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
-    AssertError(Size() < (LF_STRING_DEFAULT_STORAGE - 2), LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+    AssertEx(CopyOnWrite(), LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+    AssertEx(Size() < (LF_STRING_DEFAULT_STORAGE - 2), LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
 
     value_type* first = mStorage.heap.first;
     value_type* last = mStorage.heap.last;

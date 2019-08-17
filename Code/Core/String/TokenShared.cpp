@@ -56,14 +56,14 @@ mShutdown(false)
 }
 TokenTable::~TokenTable()
 {
-    AssertError(mMap == nullptr, LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+    CriticalAssertEx(mMap == nullptr, LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
 }
 
 void TokenTable::LookUp(const char* string, Token& token, AcquireTag)
 {
     if (mMap == nullptr)
     {
-        Crash("Token table not initialized! Use STATIC_TOKEN instead.", LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+        CriticalAssertMsgEx("Token table not initialized! Use STATIC_TOKEN instead.", LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
         return;
     }
     if (string == gNullString)
@@ -78,7 +78,7 @@ void TokenTable::LookUp(const char* string, Token& token, AcquireTag)
 
     if ((end - string) >= MAX_TOKEN_SIZE)
     {
-        Crash("Token string is too large.", LF_ERROR_INVALID_ARGUMENT, ERROR_API_CORE);
+        CriticalAssertMsgEx("Token string is too large.", LF_ERROR_INVALID_ARGUMENT, ERROR_API_CORE);
         return;
     }
 
@@ -89,7 +89,7 @@ void TokenTable::LookUp(const char* string, Token& token, CopyOnWriteTag)
 {
     if (mMap == nullptr)
     {
-        Crash("Token table not initialized! Use STATIC_TOKEN instead.", LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+        CriticalAssertMsgEx("Token table not initialized! Use STATIC_TOKEN instead.", LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
         return;
     }
     if (string == gNullString)
@@ -104,7 +104,7 @@ void TokenTable::LookUp(const char* string, Token& token, CopyOnWriteTag)
 
     if ((end - string) > MAX_TOKEN_SIZE)
     {
-        Crash("Token string is too large.", LF_ERROR_INVALID_ARGUMENT, ERROR_API_CORE);
+        CriticalAssertMsgEx("Token string is too large.", LF_ERROR_INVALID_ARGUMENT, ERROR_API_CORE);
         return;
     }
 
@@ -130,7 +130,7 @@ void TokenTable::LookUp(const char* string, Token& token)
 {
     if (mMap == nullptr)
     {
-        Crash("Token table not initialized! Use STATIC_TOKEN instead.", LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+        CriticalAssertMsgEx("Token table not initialized! Use STATIC_TOKEN instead.", LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
         return;
     }
     if (string == gNullString)
@@ -145,7 +145,7 @@ void TokenTable::LookUp(const char* string, Token& token)
 
     if ((end - string) > MAX_TOKEN_SIZE)
     {
-        Crash("Token string is too large.", LF_ERROR_INVALID_ARGUMENT, ERROR_API_CORE);
+        CriticalAssertMsgEx("Token string is too large.", LF_ERROR_INVALID_ARGUMENT, ERROR_API_CORE);
         return;
     }
 
@@ -174,14 +174,14 @@ void TokenTable::IncrementReference(Token& token)
 {
     if (mMap == nullptr)
     {
-        Crash("Token table not initialized! Use STATIC_TOKEN instead.", LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+        CriticalAssertMsgEx("Token table not initialized! Use STATIC_TOKEN instead.", LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
         return;
     }
     if (token.mString == gNullString)
     {
         return;
     }
-    AssertError(token.mKey < mMapSize, LF_ERROR_BAD_STATE, ERROR_API_CORE);
+    AssertEx(token.mKey < mMapSize, LF_ERROR_BAD_STATE, ERROR_API_CORE);
     HashKey& key = mMap[token.mKey];
     ScopedCriticalSection lock(mLock);
     HashNode* node = AcquireNode(token, key);
@@ -189,7 +189,7 @@ void TokenTable::IncrementReference(Token& token)
     {
         const long MAX_TOKEN_REF = 0x7FFFFFFF;
         _ReadWriteBarrier();
-        AssertError(node->mRefCount != MAX_TOKEN_REF, LF_ERROR_BAD_STATE, ERROR_API_CORE);
+        AssertEx(node->mRefCount != MAX_TOKEN_REF, LF_ERROR_BAD_STATE, ERROR_API_CORE);
         _InterlockedIncrement(&node->mRefCount);
     }
 }
@@ -197,21 +197,21 @@ void TokenTable::DecrementReference(Token& token)
 {
     if (mMap == nullptr)
     {
-        Crash("Token table not initialized! Use STATIC_TOKEN instead.", LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+        CriticalAssertMsgEx("Token table not initialized! Use STATIC_TOKEN instead.", LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
         return;
     }
     if (token.mString == gNullString)
     {
         return;
     }
-    AssertError(token.mKey < mMapSize, LF_ERROR_BAD_STATE, ERROR_API_CORE);
+    AssertEx(token.mKey < mMapSize, LF_ERROR_BAD_STATE, ERROR_API_CORE);
     HashKey& key = mMap[token.mKey];
     ScopedCriticalSection lock(mLock);
     HashNode* node = AcquireNode(token, key);
     if (node)
     {
         _ReadWriteBarrier();
-        AssertError(node->mRefCount > 0, LF_ERROR_BAD_STATE, ERROR_API_CORE);
+        AssertEx(node->mRefCount > 0, LF_ERROR_BAD_STATE, ERROR_API_CORE);
         if (_InterlockedDecrement(&node->mRefCount) == 0)
         {
             // Deallocate:
@@ -235,7 +235,7 @@ void TokenTable::DecrementReference(Token& token)
 
                 if (newSize == 1)
                 {
-                    AssertError(oldSize == 2, LF_ERROR_BAD_STATE, ERROR_API_CORE);
+                    AssertEx(oldSize == 2, LF_ERROR_BAD_STATE, ERROR_API_CORE);
                     if (node->mString == key.mList[0].mString)
                     {
                         node = &key.mList[1];
@@ -277,7 +277,7 @@ void TokenTable::DecrementReference(Token& token)
 
 void TokenTable::Initialize()
 {
-    AssertError(mMap == nullptr, LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+    AssertEx(mMap == nullptr, LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
     mMap = static_cast<HashKey*>(LFAlloc(sizeof(HashKey) * TOKEN_TABLE_SIZE, alignof(HashKey)));
     mMapSize = TOKEN_TABLE_SIZE;
     for (SizeT i = 0; i < mMapSize; ++i)
@@ -288,7 +288,7 @@ void TokenTable::Initialize()
 }
 void TokenTable::Release()
 {
-    AssertError(mMap != nullptr, LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+    AssertEx(mMap != nullptr, LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
     mLock.Destroy();
     // Release all string memory...
     // Release all nodes...

@@ -182,7 +182,10 @@ void CmdLine::InternalParseCmdLine(const String& argString)
             String sub;
 
             argString.SubString(breakIndex, i - breakIndex, sub);
-            sub = StrStripWhitespace(sub);
+            if (mode != PARSE_SUBOPTION_VALUE)
+            {
+                sub = StrStripWhitespace(sub);
+            }
             if (mode == PARSE_ARG)
             {
                 arg.name = sub;

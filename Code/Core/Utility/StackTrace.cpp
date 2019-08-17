@@ -508,5 +508,8 @@ namespace lf
         {
             LFFree(trace.frames);
         }
+
+        trace.frameCount = 0;
+        trace.frames = nullptr;
     }
 }

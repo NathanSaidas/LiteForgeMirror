@@ -30,7 +30,7 @@ namespace lf {
 using TestCallback = void(*)();
 struct TestRegristration;
 
-struct TestConfig
+struct LF_CORE_API TestConfig
 {
     TestConfig();
 
@@ -62,7 +62,7 @@ private:
     static Float64 sExecutionTime;
 };
 
-struct TestRegristration
+struct LF_CORE_API TestRegristration
 {
     TestRegristration(const char* name, TestCallback callback) : 
     mName(name),
@@ -78,7 +78,7 @@ struct TestRegristration
 };
 
 // Use this to force test initialization
-struct TestSuite
+struct LF_CORE_API TestSuite
 {
 public:
     TestSuite(...)
@@ -98,6 +98,15 @@ static void NameM##_TestFunction()                    \
 #define TEST(ExpressionM) if(!TestExecute((ExpressionM))) { TestBreak(); }
 #define TEST_CRITICAL(ExpressionM) if(!TestExecute((ExpressionM))) { TestBreak(); return; }
 
+#define TEST_CRITICAL_EXCEPTION(expression_)                                                              \
+{                                                                                                         \
+    do {                                                                                                  \
+        bool exceptionThrown = false;                                                                     \
+        try { expression_; } catch( ::lf::Exception& ) { exceptionThrown = true; }              \
+                                                                                                          \
+        if (!::lf::TestFramework::ProcessTest(exceptionThrown, #expression_, __LINE__)) { TestBreak(); return; }  \
+    } while (false);                                                                                      \
+}
 
 
 } // namespace lf

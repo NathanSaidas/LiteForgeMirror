@@ -115,7 +115,7 @@ enum ConcurrentRingBufferState
 // note: Input/Output order is not guaranteed
 // **********************************
 template<typename T, typename TraitsT = ConcurrentRingBufferTraits<T>>
-class LF_CORE_API ConcurrentRingBuffer
+class ConcurrentRingBuffer
 {
 public:
     using WorkItem = T;
@@ -139,13 +139,13 @@ public:
         mPopId(0),
         mSize(0)
     {
-        AssertError(bufferSize > 0, LF_ERROR_INVALID_ARGUMENT, ERROR_API_CORE);
+        AssertEx(bufferSize > 0, LF_ERROR_INVALID_ARGUMENT, ERROR_API_CORE);
         InitializeSlots(bufferSize);
     }
 
     void Resize(SizeT bufferSize)
     {
-        AssertError(bufferSize > 0, LF_ERROR_INVALID_ARGUMENT, ERROR_API_CORE);
+        AssertEx(bufferSize > 0, LF_ERROR_INVALID_ARGUMENT, ERROR_API_CORE);
         InitializeSlots(bufferSize);
     }
     
@@ -164,7 +164,7 @@ public:
         // Get id we can reserve a slot with
         Atomic32 reserve = static_cast<Atomic32>(GetPlatformThreadId());
         // We assume the platform will not give thread ids equal to the producer/consumer ready states.
-        AssertError(reserve != CRBS_PRODUCER_READY && reserve != CRBS_CONSUMER_READY, LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+        AssertEx(reserve != CRBS_PRODUCER_READY && reserve != CRBS_CONSUMER_READY, LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
         // Get our 'unique' slot. (note: Uniqueness is not guaranteed in multithreaded environment)
         WorkSlot& slot = AllocatePushSlot();
         // Try acquire ownership
@@ -183,7 +183,7 @@ public:
             auto workResult = WorkTraits::ToResultType(slot);
             // Release ownership to any consumer
             result = AtomicCompareExchange(&slot.mState, CRBS_CONSUMER_READY, reserve);
-            AssertError(result == reserve, LF_ERROR_BAD_STATE, ERROR_API_CORE);
+            AssertEx(result == reserve, LF_ERROR_BAD_STATE, ERROR_API_CORE);
             return{ workResult, true };
         }
         else
@@ -207,7 +207,7 @@ public:
         // Get id we can reserve a slot with
         Atomic32 reserve = static_cast<Atomic32>(GetPlatformThreadId());
         // We assume the platform will not give thread ids equal to the producer/consumer ready states.
-        AssertError(reserve != CRBS_PRODUCER_READY && reserve != CRBS_CONSUMER_READY, LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+        AssertEx(reserve != CRBS_PRODUCER_READY && reserve != CRBS_CONSUMER_READY, LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
         // Get our 'unique' slot. (note: Uniqueness is not guaranteed in multithreaded environment)
         WorkSlot& slot = AllocatePopSlot();
         // Try acquire ownership
@@ -225,7 +225,7 @@ public:
 
             // Release ownership to any producer
             result = AtomicCompareExchange(&slot.mState, CRBS_PRODUCER_READY, reserve);
-            AssertError(result == reserve, LF_ERROR_BAD_STATE, ERROR_API_CORE);
+            AssertEx(result == reserve, LF_ERROR_BAD_STATE, ERROR_API_CORE);
             return { workResult, true };
         }
         else

@@ -119,7 +119,7 @@ void ExecuteStaticDestroy(SizeT minPriorty, ProgramContext* programContext)
     if (!sSorted)
     {
         // Program should have fully initialized.
-        AssertError(sCurrentCallback == 0 && sInitialized, LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+        AssertEx(sCurrentCallback == 0 && sInitialized, LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
 
         sCallbacks = static_cast<SafeStaticCallback*>(LFAlloc(sizeof(SafeStaticCallback) * gStaticDestroyCallbacksCount, alignof(SafeStaticCallback)));
         SafeStaticCallback* current = gStaticDestroyCallbacks;
@@ -160,12 +160,12 @@ void ExecuteStaticDestroy(SizeT minPriorty, ProgramContext* programContext)
 void StaticInitFence()
 {
     // If this triggers it means not all static init callbacks were invoked
-    AssertError(sInitialized, LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+    AssertEx(sInitialized, LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
 }
 void StaticDestroyFence()
 {
     // If this triggers it means not all static destroy callbacks were invoked
-    AssertError(sDestroyed, LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+    AssertEx(sDestroyed, LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
 }
 
 }

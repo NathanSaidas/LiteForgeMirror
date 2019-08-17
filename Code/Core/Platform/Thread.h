@@ -54,7 +54,7 @@ public:
     bool operator==(const Thread& other);
     bool operator!=(const Thread& other);
 
-#if defined(LF_DEBUG)
+#if defined(LF_DEBUG) || defined(LF_TEST)
     const char* GetDebugName() const;
     void SetDebugName(const char* name);
 #endif
@@ -73,6 +73,7 @@ LF_CORE_API SizeT GetCallingThreadId();
 LF_CORE_API bool  IsMainThread();
 LF_CORE_API void  SleepCallingThread(SizeT milliseconds);
 LF_CORE_API void  SetMainThread();
+LF_CORE_API const char* GetThreadName();
 
 } // namespace lf
 

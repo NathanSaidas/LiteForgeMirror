@@ -141,7 +141,7 @@ void AtomicIncTestApp::TestAtomicIncrement()
     {
         if (merged[i] != static_cast<Atomic32>(i + 1))
         {
-            Crash("Unexpected value", LF_ERROR_BAD_STATE, ERROR_API_GAME);
+            CriticalAssertMsgEx("Unexpected value", LF_ERROR_BAD_STATE, ERROR_API_GAME);
         }
     }
 }

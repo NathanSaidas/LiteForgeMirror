@@ -26,7 +26,7 @@
 
 namespace lf {
 
-class AssetObject : public Object
+class LF_RUNTIME_API AssetObject : public Object
 {
     DECLARE_CLASS(AssetObject, Object);
 public:

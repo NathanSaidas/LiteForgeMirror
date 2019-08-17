@@ -40,20 +40,20 @@ mThread()
 TaskDeliveryThread::TaskDeliveryThread(const TaskDeliveryThread& )
 {
     // Stubbed just for compliation since we use TArray
-    Crash("Copying TaskDeliveryThread is not allowed!", LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+    CriticalAssertMsgEx("Copying TaskDeliveryThread is not allowed!", LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
 }
 TaskDeliveryThread::~TaskDeliveryThread()
 {
     // If this trips, we're destroying the TaskDeliveryThread without calling Shutdown! Background thread could still be running!
-    AssertError(!IsRunning(), LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+    AssertEx(!IsRunning(), LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
     // If this trips, we haven't stopped the background thread, use Join!
-    AssertError(!mThread.IsRunning(), LF_ERROR_RESOURCE_LEAK, ERROR_API_CORE);
+    AssertEx(!mThread.IsRunning(), LF_ERROR_RESOURCE_LEAK, ERROR_API_CORE);
 }
 
 TaskDeliveryThread& TaskDeliveryThread::operator=(const TaskDeliveryThread&)
 {
     // Stubbed just for compliation since we use TArray
-    Crash("Copying TaskDeliveryThread is not allowed!", LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+    CriticalAssertMsgEx("Copying TaskDeliveryThread is not allowed!", LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
     return *this;
 }
 
@@ -65,12 +65,12 @@ void TaskDeliveryThread::Initialize(RingBufferType* dispatcherQueue, bool async)
 void TaskDeliveryThread::Initialize(const OptionsType& options, RingBufferType* dispatcherQueue, bool async)
 {
     // If either of these trip, you're likely calling Initialize twice!
-    AssertError(!IsRunning(), LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
-    AssertError(!mThread.IsRunning(), LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
-    AssertError(!mDispatcherQueue && dispatcherQueue, LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+    AssertEx(!IsRunning(), LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+    AssertEx(!mThread.IsRunning(), LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+    AssertEx(!mDispatcherQueue && dispatcherQueue, LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
 
     // Perhaps you didn't PopPendingItems()
-    AssertError(mFatBuffer.Empty() && mInternalFatBuffer.Empty(), LF_ERROR_BAD_STATE, ERROR_API_CORE);
+    AssertEx(mFatBuffer.Empty() && mInternalFatBuffer.Empty(), LF_ERROR_BAD_STATE, ERROR_API_CORE);
 
     mRingBuffer.Resize(options.mFastBufferCapacity);
     mDispatcherQueue = dispatcherQueue;
@@ -121,7 +121,7 @@ void TaskDeliveryThread::UpdateSync()
 {
     if (IsAsync())
     {
-        ReportBug("TaskDeliveryThread::UpdateSync cannot be called on an asynchronous worker!", LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+        ReportBugMsgEx("TaskDeliveryThread::UpdateSync cannot be called on an asynchronous worker!", LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
         return;
     }
     Update();
@@ -132,7 +132,7 @@ TArray<TaskDeliveryThread::TaskItemType> TaskDeliveryThread::PopPendingItems()
     TArray<TaskDeliveryThread::TaskItemType> result;
     if (IsRunning())
     {
-        ReportBug("TaskWorker::PopPendingItems cannot be called while running!", LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+        ReportBugMsgEx("TaskWorker::PopPendingItems cannot be called while running!", LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
         return result;
     }
 

@@ -265,7 +265,7 @@ Vector2::scalar_type& Vector2::operator[](const size_t index)
 		break;
 	}
 
-	Crash("Operator [] index out of bounds.", LF_ERROR_BAD_STATE, ERROR_API_CORE);
+	CriticalAssertMsgEx("Operator [] index out of bounds.", LF_ERROR_BAD_STATE, ERROR_API_CORE);
 	return x;
 }
 const Vector2::scalar_type& Vector2::operator[](const size_t index) const
@@ -278,7 +278,7 @@ const Vector2::scalar_type& Vector2::operator[](const size_t index) const
 		break;
 	}
 
-	Crash("Operator [] index out of bounds.", LF_ERROR_BAD_STATE, ERROR_API_CORE);
+	CriticalAssertMsgEx("Operator [] index out of bounds.", LF_ERROR_BAD_STATE, ERROR_API_CORE);
 	return x;
 }
 }

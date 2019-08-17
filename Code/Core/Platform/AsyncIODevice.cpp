@@ -45,10 +45,10 @@ DWORD WINAPI AsyncIOCompletionCallback(LPVOID param)
             {
                 if (ioUserData->mPendingBuffer)
                 {
-                    AssertError(Valid(bytesTransferred), LF_ERROR_BAD_STATE, ERROR_API_CORE);
+                    AssertEx(Valid(bytesTransferred), LF_ERROR_BAD_STATE, ERROR_API_CORE);
                     LARGE_INTEGER cursor;
                     cursor.QuadPart = bytesTransferred;
-                    AssertError(SetFilePointerEx(ioUserData->mHandle, cursor, NULL, FILE_CURRENT) == TRUE, LF_ERROR_INTERNAL, ERROR_API_CORE);
+                    AssertEx(SetFilePointerEx(ioUserData->mHandle, cursor, NULL, FILE_CURRENT) == TRUE, LF_ERROR_INTERNAL, ERROR_API_CORE);
                     ioUserData->mLastBytesRead = bytesTransferred;
                     ioUserData->mPendingBuffer->SetBytesTransferred(bytesTransferred);
                     ioUserData->mPendingBuffer->SetState(ASYNC_IO_DONE);
@@ -58,7 +58,7 @@ DWORD WINAPI AsyncIOCompletionCallback(LPVOID param)
             }
             else
             {
-                Crash("Unknown data in AsyncIO", LF_ERROR_INTERNAL, ERROR_API_CORE);
+                CriticalAssertMsgEx("Unknown data in AsyncIO", LF_ERROR_INTERNAL, ERROR_API_CORE);
             }
         }
     }
@@ -76,13 +76,13 @@ mRunning(0)
 {}
 AsyncIODevice::~AsyncIODevice()
 {
-    AssertError(Close(), LF_ERROR_RESOURCE_LEAK, ERROR_API_CORE);
+    CriticalAssertEx(Close(), LF_ERROR_RESOURCE_LEAK, ERROR_API_CORE);
 }
 
 bool AsyncIODevice::Create(SizeT numThreads)
 {
 #if defined(LF_OS_WINDOWS)
-    AssertError(mHandle == nullptr, LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+    AssertEx(mHandle == nullptr, LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
 
     if (numThreads == 0)
     {
@@ -100,11 +100,11 @@ bool AsyncIODevice::Create(SizeT numThreads)
     for (SizeT i = 0; i < numThreads; ++i)
     {
         HANDLE thread = CreateThread(0, 0, AsyncIOCompletionCallback, this, 0, NULL);
-        AssertError(thread != NULL, LF_ERROR_INTERNAL, ERROR_API_CORE);
+        AssertEx(thread != NULL, LF_ERROR_INTERNAL, ERROR_API_CORE);
         mThreads.Add(thread);
     }
     mHandle = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, static_cast<DWORD>(numThreads));
-    AssertError(mHandle != NULL, LF_ERROR_INTERNAL, ERROR_API_CORE);
+    AssertEx(mHandle != NULL, LF_ERROR_INTERNAL, ERROR_API_CORE);
     return true;
 #endif
 }
@@ -120,10 +120,10 @@ bool AsyncIODevice::Close()
     WaitForMultipleObjects(static_cast<DWORD>(mThreads.Size()), mThreads.GetData(), TRUE, INFINITE);
     for (SizeT i = 0; i < mThreads.Size(); ++i)
     {
-        AssertError(CloseHandle(mThreads[i]), LF_ERROR_INTERNAL, ERROR_API_CORE);
+        AssertEx(CloseHandle(mThreads[i]), LF_ERROR_INTERNAL, ERROR_API_CORE);
     }
     mThreads.Clear();
-    AssertError(CloseHandle(mHandle), LF_ERROR_INTERNAL, ERROR_API_CORE);
+    AssertEx(CloseHandle(mHandle), LF_ERROR_INTERNAL, ERROR_API_CORE);
     mHandle = NULL;
 #endif
     return true;

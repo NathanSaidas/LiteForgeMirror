@@ -25,7 +25,7 @@
 
 namespace lf {
 
-    extern TestRegristration SStreamTest;
+LF_CORE_API extern TestRegristration SStreamTest;
 
 } // namespace lf
 

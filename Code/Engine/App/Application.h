@@ -26,6 +26,8 @@
 
 namespace lf {
 
+class EngineConfig;
+
 class LF_ENGINE_API Application : public ApplicationBase
 {
     DECLARE_CLASS(Application, ApplicationBase);
@@ -39,6 +41,12 @@ public:
     // Called just as the application is shutting down. (Before the bootstrap layer is terminated)
     // **********************************
     virtual void OnExit();
+
+
+    void SetConfig(const EngineConfig* config) { mConfig = config; }
+    const EngineConfig* GetConfig() const { return mConfig; }
+private:
+    const EngineConfig* mConfig;
 };
 
 } // namespace lf

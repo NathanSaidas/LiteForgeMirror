@@ -39,7 +39,7 @@ bool AsyncIOBuffer::IsDone() const
 
 void AsyncIOBuffer::SetBuffer(void* buffer)
 {
-    AssertError(mState != ASYNC_IO_WAITING, LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+    CriticalAssertEx(mState != ASYNC_IO_WAITING, LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
     mBuffer = buffer;
     _ReadWriteBarrier();
 }

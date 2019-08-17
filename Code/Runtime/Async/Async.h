@@ -41,6 +41,24 @@ public:
     {
         return RunTask(TaskCallback::CreateLambda(lambda), param);
     }
+
+    template<typename T, typename P>
+    static LF_INLINE void WaitAll(T first, T last, P pred)
+    {
+        SizeT required = (last - first);
+        SizeT done = 0;
+        while (done != required)
+        {
+            done = 0;
+            for (T it = first; it != last; ++it)
+            {
+                if (pred(*it))
+                {
+                    ++done;
+                }
+            }
+        }
+    }
 };
 
 LF_RUNTIME_API Async& GetAsync();

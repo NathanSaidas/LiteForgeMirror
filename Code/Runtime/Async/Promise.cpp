@@ -64,7 +64,7 @@ bool Promise::SetState(PromiseState state)
         {
             if (IsPending())
             {
-                ReportBug("Invalid promise state transition PROMISE_PENDING -> PROMISE_NULL", LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+                ReportBugMsgEx("Invalid promise state transition PROMISE_PENDING -> PROMISE_NULL", LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
                 return false;
             }
         } break;
@@ -72,7 +72,7 @@ bool Promise::SetState(PromiseState state)
         {
             if (AtomicLoad(&mState) != PROMISE_NULL)
             {
-                ReportBug("Invalid promise state transition NOT PROMISE_NULL -> PROMISE_PENDING", LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+                ReportBugMsgEx("Invalid promise state transition NOT PROMISE_NULL -> PROMISE_PENDING", LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
                 return false;
             }
         } break;
@@ -80,7 +80,7 @@ bool Promise::SetState(PromiseState state)
         {
             if (!IsPending())
             {
-                ReportBug("Invalid promise state transition NOT PROMISE_PENDING -> PROMISE_RESOLVED", LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+                ReportBugMsgEx("Invalid promise state transition NOT PROMISE_PENDING -> PROMISE_RESOLVED", LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
                 return false;
             }
             mStateSignaller.WakeAll();
@@ -90,13 +90,13 @@ bool Promise::SetState(PromiseState state)
         {
             if (!IsPending())
             {
-                ReportBug("Invalid promise state transition NOT PROMISE_PENDING -> PROMISE_REJECTED", LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+                ReportBugMsgEx("Invalid promise state transition NOT PROMISE_PENDING -> PROMISE_REJECTED", LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
                 return false;
             }
             mStateSignaller.WakeAll();
         } break;
         default:
-            Crash("Invalid promise state!", LF_ERROR_INVALID_ARGUMENT, ERROR_API_CORE);
+            CriticalAssertMsgEx("Invalid promise state!", LF_ERROR_INVALID_ARGUMENT, ERROR_API_CORE);
             return false;
     }
 

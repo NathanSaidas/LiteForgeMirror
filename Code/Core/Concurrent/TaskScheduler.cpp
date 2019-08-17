@@ -36,10 +36,10 @@ mAsync(false)
 TaskScheduler::~TaskScheduler()
 {
     // If these trip you're forgetting a call to Shutdown
-    AssertError(!IsRunning(), LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
-    AssertError(mWorkerThreads.Empty(), LF_ERROR_RESOURCE_LEAK, ERROR_API_CORE);
+    CriticalAssertEx(!IsRunning(), LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+    CriticalAssertEx(mWorkerThreads.Empty(), LF_ERROR_RESOURCE_LEAK, ERROR_API_CORE);
     // Oh no some tasks are not going to be run even though we have a guarantee to run them
-    AssertError(mDispatcherQueue.Size() == 0, LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+    CriticalAssertEx(mDispatcherQueue.Size() == 0, LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
 }
 
 void TaskScheduler::Initialize(bool async)
@@ -49,13 +49,13 @@ void TaskScheduler::Initialize(bool async)
 
 void TaskScheduler::Initialize(const OptionsType& options, bool async)
 {
-    AssertError(options.mNumDeliveryThreads > 0, LF_ERROR_INVALID_ARGUMENT, ERROR_API_CORE);
-    AssertError(options.mNumWorkerThreads > 0, LF_ERROR_INVALID_ARGUMENT, ERROR_API_CORE);
+    AssertEx(options.mNumDeliveryThreads > 0, LF_ERROR_INVALID_ARGUMENT, ERROR_API_CORE);
+    AssertEx(options.mNumWorkerThreads > 0, LF_ERROR_INVALID_ARGUMENT, ERROR_API_CORE);
 
     // If these trip you haven't called Shutdown, thus the scheduler is still running!
-    AssertError(!IsRunning(), LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
-    AssertError(mWorkerThreads.Empty(), LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
-    AssertError(mDispatcherQueue.Size() == 0, LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+    AssertEx(!IsRunning(), LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+    AssertEx(mWorkerThreads.Empty(), LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+    AssertEx(mDispatcherQueue.Size() == 0, LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
 
     mAsync = async;
     mWorkerThreads.Resize(options.mNumWorkerThreads);
@@ -72,7 +72,7 @@ void TaskScheduler::Initialize(const OptionsType& options, bool async)
 
 void TaskScheduler::Shutdown()
 {
-    AssertError(IsRunning(), LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+    AssertEx(IsRunning(), LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
 
     SetRunning(false);
     // Tasks that were not completed by workers that must be completed now!
@@ -111,7 +111,7 @@ void TaskScheduler::Shutdown()
     }
 
     // If this trips, perhaps someone pushed onto the queue while we were executing pending tasks.
-    AssertError(mDispatcherQueue.Size() == 0, LF_ERROR_BAD_STATE, ERROR_API_CORE);
+    AssertEx(mDispatcherQueue.Size() == 0, LF_ERROR_BAD_STATE, ERROR_API_CORE);
 }
 
 TaskHandle TaskScheduler::RunTask(TaskLambdaCallback func, void* param)
@@ -146,11 +146,11 @@ mAsync(false)
 TaskScheduler::~TaskScheduler()
 {
     // If these trip you're forgetting a call to Shutdown
-    AssertError(!IsRunning(), LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
-    AssertError(mDeliveryThreads.Empty(), LF_ERROR_RESOURCE_LEAK, ERROR_API_CORE);
-    AssertError(mWorkerThreads.Empty(), LF_ERROR_RESOURCE_LEAK, ERROR_API_CORE);
+    AssertEx(!IsRunning(), LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+    AssertEx(mDeliveryThreads.Empty(), LF_ERROR_RESOURCE_LEAK, ERROR_API_CORE);
+    AssertEx(mWorkerThreads.Empty(), LF_ERROR_RESOURCE_LEAK, ERROR_API_CORE);
     // Oh no some tasks are not going to be run even though we have a guarantee to run them
-    AssertError(mDispatcherQueue.Size() == 0, LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+    AssertEx(mDispatcherQueue.Size() == 0, LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
 }
 
 void TaskScheduler::Initialize(bool async)
@@ -159,14 +159,14 @@ void TaskScheduler::Initialize(bool async)
 }
 void TaskScheduler::Initialize(const OptionsType& options, bool async)
 {
-    AssertError(options.mNumDeliveryThreads > 0, LF_ERROR_INVALID_ARGUMENT, ERROR_API_CORE);
-    AssertError(options.mNumWorkerThreads > 0, LF_ERROR_INVALID_ARGUMENT, ERROR_API_CORE);
+    AssertEx(options.mNumDeliveryThreads > 0, LF_ERROR_INVALID_ARGUMENT, ERROR_API_CORE);
+    AssertEx(options.mNumWorkerThreads > 0, LF_ERROR_INVALID_ARGUMENT, ERROR_API_CORE);
 
     // If these trip you haven't called Shutdown, thus the scheduler is still running!
-    AssertError(!IsRunning(), LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
-    AssertError(mDeliveryThreads.Empty(), LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
-    AssertError(mWorkerThreads.Empty(), LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
-    AssertError(mDispatcherQueue.Size() == 0, LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+    AssertEx(!IsRunning(), LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+    AssertEx(mDeliveryThreads.Empty(), LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+    AssertEx(mWorkerThreads.Empty(), LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+    AssertEx(mDispatcherQueue.Size() == 0, LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
 
     AtomicStore(&mId, 0);
     mAsync = async;
@@ -190,7 +190,7 @@ void TaskScheduler::Initialize(const OptionsType& options, bool async)
 
 void TaskScheduler::Shutdown()
 {
-    AssertError(IsRunning(), LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+    AssertEx(IsRunning(), LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
 
     SetRunning(false);
     // Tasks that were not completed by workers that must be completed now!
@@ -227,7 +227,7 @@ void TaskScheduler::Shutdown()
     }
 
     // If this trips, perhaps someone pushed onto the queue while we were executing pending tasks.
-    AssertError(mDispatcherQueue.Size() == 0, LF_ERROR_BAD_STATE, ERROR_API_CORE);
+    AssertEx(mDispatcherQueue.Size() == 0, LF_ERROR_BAD_STATE, ERROR_API_CORE);
 }
 
 TaskItemAtomicPtr TaskScheduler::RunTask(TaskLambdaCallback func, void* param)
@@ -265,7 +265,7 @@ void TaskScheduler::UpdateSync()
 {
     if (IsAsync())
     {
-        ReportBug("TaskScheduler::UpdateSync cannot be called while running asynchronous workers!", LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+        ReportBugMsgEx("TaskScheduler::UpdateSync cannot be called while running asynchronous workers!", LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
         return;
     }
     // Deliver some tasks

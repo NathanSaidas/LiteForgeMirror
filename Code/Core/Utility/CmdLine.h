@@ -23,7 +23,6 @@
 
 // #include "core/CoreDef.h"
 
-#include "Core/Reflection/Type.h"
 #include "Core/String/String.h"
 #include "Core/Utility/Array.h"
 

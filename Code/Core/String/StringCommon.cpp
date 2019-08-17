@@ -218,13 +218,13 @@ WString StrConvert(const String& str)
         {
             if (character > CP_4)
             {
-                Crash("Not implemented yet.", LF_ERROR_INTERNAL, ERROR_API_CORE);
+                CriticalAssertMsgEx("Not implemented yet.", LF_ERROR_INTERNAL, ERROR_API_CORE);
                 //n = 4;
                 //i = 0;
             }
             else if (character > CP_3)
             {
-                Crash("Not implemented yet.", LF_ERROR_INTERNAL, ERROR_API_CORE);
+                CriticalAssertMsgEx("Not implemented yet.", LF_ERROR_INTERNAL, ERROR_API_CORE);
                 //n = 3;
                 //i = 0;
             }
@@ -235,7 +235,7 @@ WString StrConvert(const String& str)
             }
             else if (character > CP_INVALID)
             {
-                Crash("Invalid code point parsing ", LF_ERROR_INTERNAL, ERROR_API_CORE);
+                CriticalAssertMsgEx("Invalid code point parsing ", LF_ERROR_INTERNAL, ERROR_API_CORE);
             }
             else // Just add this single byte..
             {
@@ -415,6 +415,21 @@ String StrTrimRight(const String& string)
         }
     }
     return String();
+}
+
+LF_CORE_API String BytesToHex(ByteT* bytes, SizeT length)
+{
+    String buf;
+    buf.Reserve(length * 2);
+    for (SizeT i = 0; i < length; ++i)
+    {
+        char hex0 = ByteToHex((bytes[i] >> 4) & 0x0F);
+        char hex1 = ByteToHex(bytes[i] & 0x0F);
+        buf.Append(hex0);
+        buf.Append(hex1);
+    }
+
+    return buf;
 }
 
 SizeT ToVector2(const String& str, Vector2& out)

@@ -40,6 +40,7 @@
 #define LF_ITERATOR_CONTAINER_CHECK
 #define LF_ITERATOR_STL_CHECK
 
+#define LF_COLLECTION_RANGE_CHECK
 
 namespace lf
 {
@@ -349,7 +350,7 @@ namespace lf
             // Static to heap:
             if (capacity < SIZE && size >= SIZE)
             {
-                Crash("Invalid operation, cannot shrink from static TO heap.", LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+                CriticalAssertMsgEx("Invalid operation, cannot shrink from static TO heap.", LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
                 return;
             }
 
@@ -1120,13 +1121,13 @@ namespace lf
 #if defined(LF_ITERATOR_CONTAINER_CHECK)
             if (position.GetContainer() != reinterpret_cast<void*>(this))
             {
-                Crash("Iterator container mismatch!", LF_ERROR_BAD_STATE, ERROR_API_CORE);
+                CriticalAssertMsgEx("Iterator container mismatch!", LF_ERROR_BAD_STATE, ERROR_API_CORE);
             }
 #endif
 #if defined(LF_ITERATOR_RANGE_CHECK)
             if (!(position.GetItem() >= mData.mFirst && position.GetItem() <= mData.mLast))
             {
-                Crash("Iterator out of range!", LF_ERROR_OUT_OF_RANGE, ERROR_API_CORE);
+                CriticalAssertMsgEx("Iterator out of range!", LF_ERROR_OUT_OF_RANGE, ERROR_API_CORE);
             }
 #endif
             if (position.GetItem() == mData.mEnd)
@@ -1168,13 +1169,13 @@ namespace lf
 #if defined(LF_ITERATOR_CONTAINER_CHECK)
             if (position.GetContainer() != reinterpret_cast<void*>(this))
             {
-                Crash("Iterator container mismatch!", LF_ERROR_BAD_STATE, ERROR_API_CORE);
+                CriticalAssertMsgEx("Iterator container mismatch!", LF_ERROR_BAD_STATE, ERROR_API_CORE);
             }
 #endif
 #if defined(LF_ITERATOR_RANGE_CHECK)
             if (!(position.GetItem() >= mData.mFirst && position.GetItem() <= mData.mLast))
             {
-                Crash("Iterator out of range!", LF_ERROR_OUT_OF_RANGE, ERROR_API_CORE);
+                CriticalAssertMsgEx("Iterator out of range!", LF_ERROR_OUT_OF_RANGE, ERROR_API_CORE);
             }
 #endif
 
@@ -1235,13 +1236,13 @@ namespace lf
 #if defined(LF_ITERATOR_CONTAINER_CHECK)
             if (it.GetContainer() != reinterpret_cast<void*>(this))
             {
-                Crash("Iterator container mismatch!", LF_ERROR_BAD_STATE, ERROR_API_CORE);
+                CriticalAssertMsgEx("Iterator container mismatch!", LF_ERROR_BAD_STATE, ERROR_API_CORE);
             }
 #endif
 #if defined(LF_ITERATOR_RANGE_CHECK)
             if (!(it.GetItem() >= mData.mFirst && it.GetItem() <= mData.mLast))
             {
-                Crash("Iterator out of range!", LF_ERROR_OUT_OF_RANGE, ERROR_API_CORE);
+                CriticalAssertMsgEx("Iterator out of range!", LF_ERROR_OUT_OF_RANGE, ERROR_API_CORE);
             }
 #endif
 
@@ -1269,13 +1270,13 @@ namespace lf
 #if defined(LF_ITERATOR_CONTAINER_CHECK)
             if (it.GetContainer() != reinterpret_cast<void*>(this))
             {
-                Crash("Iterator container mismatch!", LF_ERROR_BAD_STATE, ERROR_API_CORE);
+                CriticalAssertMsgEx("Iterator container mismatch!", LF_ERROR_BAD_STATE, ERROR_API_CORE);
             }
 #endif
 #if defined(LF_ITERATOR_RANGE_CHECK)
             if (!(it.GetItem() >= mData.mFirst && it.GetItem() <= mData.mLast))
             {
-                Crash("Iterator out of range!", LF_ERROR_OUT_OF_RANGE, ERROR_API_CORE);
+                CriticalAssertMsgEx("Iterator out of range!", LF_ERROR_OUT_OF_RANGE, ERROR_API_CORE);
             }
 #endif
             if (it == end())
@@ -1345,10 +1346,16 @@ namespace lf
 
         reference operator[](difference_type i)
         {
+#if defined(LF_COLLECTION_RANGE_CHECK)
+            CriticalAssertEx(static_cast<SizeT>(i) < Size(), LF_ERROR_INVALID_ARGUMENT, ERROR_API_CORE);
+#endif
             return mData.mFirst[i];
         }
         const_reference operator[](difference_type i) const
         {
+#if defined(LF_COLLECTION_RANGE_CHECK)
+            CriticalAssertEx(static_cast<SizeT>(i) < Size(), LF_ERROR_INVALID_ARGUMENT, ERROR_API_CORE);
+#endif
             return mData.mFirst[i];
         }
 
@@ -1420,9 +1427,20 @@ namespace lf
             ptr->~value_type();
             (ptr);
         }
-        void Construct(pointer ptr)
+
+        LF_FORCE_INLINE void Construct(pointer ptr, ConstructDefaultAssign)
+        {
+            *ptr = value_type();
+        }
+
+        LF_FORCE_INLINE void Construct(pointer ptr, ConstructPlacementNew)
         {
             new(ptr)value_type();
+        }
+
+        LF_FORCE_INLINE void Construct(pointer ptr)
+        {
+            Construct(ptr, typename TypeConstructionTraits<value_type>::TypeT());
         }
 
         DataT mData;

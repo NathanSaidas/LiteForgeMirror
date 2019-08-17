@@ -60,12 +60,12 @@ namespace lf
     {
         (data);
         (mode);
-        Crash("BinaryStream can only open from memory or file.", LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+        CriticalAssertMsgEx("BinaryStream can only open from memory or file.", LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
     }
 
     void BinaryStream::Open(Stream::StreamMemory, MemoryBuffer* buffer, StreamMode mode)
     {
-        AssertError(buffer, LF_ERROR_INVALID_ARGUMENT, ERROR_API_CORE);
+        AssertEx(buffer, LF_ERROR_INVALID_ARGUMENT, ERROR_API_CORE);
         if (!mContext)
         {
             void* memory = AllocContext(sizeof(BinaryStreamContext), alignof(BinaryStreamContext));
@@ -687,7 +687,7 @@ namespace lf
         SizeT newCursor = mContext->cursor + numBytes;
         if (newCursor < mContext->cursor || newCursor > mContext->buffer->GetCapacity())
         {
-            Crash("Reading off end of buffer.", LF_ERROR_INTERNAL, ERROR_API_CORE);
+            CriticalAssertMsgEx("Reading off end of buffer.", LF_ERROR_INTERNAL, ERROR_API_CORE);
         }
 
         UInt8* bufferData = reinterpret_cast<UInt8*>(mContext->buffer->GetData()) + mContext->cursor;
@@ -701,7 +701,7 @@ namespace lf
         SizeT newCursor = mContext->cursor - numBytes;
         if (newCursor > mContext->cursor)
         {
-            Crash("Reading off end of buffer.", LF_ERROR_INTERNAL, ERROR_API_CORE);
+            CriticalAssertMsgEx("Reading off end of buffer.", LF_ERROR_INTERNAL, ERROR_API_CORE);
         }
 
         mContext->cursor -= numBytes;

@@ -22,6 +22,7 @@
 #define LF_CORE_FILE_H
 
 #include "Core/Common/Types.h"
+#include "Core/Common/API.h"
 #include "Core/Platform/PlatformTypes.h"
 
 namespace lf {
@@ -34,7 +35,7 @@ class  String;
 
 
 // Primitive type used for basic file operations
-class File 
+class LF_CORE_API File 
 {
 public:
     File();

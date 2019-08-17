@@ -26,7 +26,7 @@
 
 namespace lf {
 
-class MemoryBuffer
+class LF_CORE_API MemoryBuffer
 {
 public:
     MemoryBuffer(const MemoryBuffer&) = delete;

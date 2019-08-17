@@ -46,6 +46,9 @@ public:
     // Must call Initialize to actually run the scheduler
     // **********************************
     TaskScheduler();
+    TaskScheduler(const TaskScheduler&) = delete;
+    TaskScheduler(TaskScheduler&&) = delete;
+    
     // **********************************
     // Deconstructs the scheduler verfiying allocated resources are
     // in fact deallocated and the scheduler state is no longer running

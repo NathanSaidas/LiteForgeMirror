@@ -39,6 +39,7 @@
 #include "Runtime/Asset/CacheBlob.h"
 #include "Runtime/Asset/CacheBlock.h"
 #include "Runtime/Asset/CacheWriter.h"
+#include "Runtime/Asset/CacheReader.h"
 #include "Runtime/Asset/CacheStream.h"
 #include "Runtime/Reflection/ReflectionMgr.h"
 #include "Runtime/Reflection/ReflectionTypes.h"
@@ -58,7 +59,7 @@ static const UInt32 KB = 1024;
 static const UInt32 MB = 1024 * KB;
 static const char* BUG_MESSAGE = "";
 static const char* NULL_MSG = "";
-static BugCallback TestBugReporter = [](const char* msg, ErrorCode, ErrorApi) { BUG_MESSAGE = msg; };
+static BugCallback TestBugReporter = [](const char* msg, const StackTrace&, UInt32, UInt32) { BUG_MESSAGE = msg; };
 
 struct MockAssetData
 {
@@ -432,7 +433,7 @@ const SizeT ATD_SIZE = sizeof(AssetTypeData);
 String AssetNameToFilePath(const String& assetName)
 {
     String workingDir = FileSystem::GetWorkingPath();
-    workingDir += "/../Content" + assetName;
+    workingDir += "../Content" + assetName;
     return FileSystem::PathResolve(workingDir);
 }
 
@@ -1384,6 +1385,85 @@ REGISTER_TEST(CacheWriter_WriteAsyncTest)
     }
 }
 
+REGISTER_TEST(CacheReader_ReadTest)
+{
+    const String testBlock = CacheWriterSetup();
+    const String message = "Test content as a string.";
+
+    CacheBlock block;
+    block.Initialize(Token("test_cache"), 8 * KB);
+    TEST_CRITICAL(block.GetDefaultCapacity() == 8 * KB);
+    block.SetFilename(Token(testBlock));
+    CacheIndex i0 = block.Create(0, 1 * KB);
+    CacheIndex i1 = block.Create(1, 1 * KB);
+
+    ByteT buffer[10 * KB];
+    memset(buffer, 0xFF, sizeof(buffer));
+
+    {
+        ByteT source[1 * KB];
+        memset(source, 0x01, sizeof(source));
+
+        CacheWriter cw;
+        cw.SetOutputBuffer(buffer + 1 * KB, 8 * KB);
+        cw.Open(block, i0, source, sizeof(source));
+        TEST(cw.Write());
+
+        memset(source, 0x02, sizeof(source));
+        cw.Open(block, i1, source, sizeof(source));
+        TEST(cw.Write());
+    }
+
+    {
+        ByteT output[1 * KB];
+        memset(output, 0, sizeof(output));
+        ByteT compare[1 * KB];
+        memset(compare, 0x01, sizeof(compare));
+
+        CacheReader cr;
+        cr.Open(block, i0, output, sizeof(output));
+        cr.SetInputBuffer(buffer + 1 * KB, 8 * KB);
+
+        TEST(cr.Read());
+        TEST(memcmp(compare, output, sizeof(compare)) == 0);
+
+        memset(compare, 0x02, sizeof(compare));
+        cr.Open(block, i1, output, sizeof(output));
+        TEST(cr.Read());
+        TEST(memcmp(compare, output, sizeof(compare)) == 0);
+
+    }
+
+    {
+        ByteT output[1 * KB];
+        memset(output, 0, sizeof(output));
+        ByteT compare[1 * KB];
+        memset(compare, 0x01, sizeof(compare));
+
+        CacheReader cr;
+        cr.Open(block, i0, output, sizeof(output));
+        cr.SetInputBuffer(buffer + 1 * KB, 8 * KB);
+
+        auto promise = cr.ReadAsync()
+            .Catch([](const String& ) { TEST(false); })
+            .Execute();
+
+        SleepCallingThread(2000);
+        promise->Wait();
+        TEST(memcmp(compare, output, sizeof(compare)) == 0);
+
+        memset(compare, 0x02, sizeof(compare));
+        cr.Open(block, i1, output, sizeof(output));
+        promise = cr.ReadAsync()
+            .Catch([](const String& ) { TEST(false); })
+            .Execute();
+
+        SleepCallingThread(2000);
+        promise->Wait();
+        TEST(memcmp(compare, output, sizeof(compare)) == 0);
+    }
+}
+
 REGISTER_TEST(CacheBlock_TestEx)
 {
     CacheBlock block;
@@ -1543,6 +1623,7 @@ REGISTER_TEST(CacheStreamTest)
     TestFramework::ExecuteTest("CacheWriter_WriteTest", config);
     TestFramework::ExecuteTest("CacheWriter_WriteAsyncTest", config);
     TestFramework::ExecuteTest("CacheWriter_WriteOutputTest", config);
+    TestFramework::ExecuteTest("CacheReader_ReadTest", config);
     // TestFramework::ExecuteTest("CacheController_Test", config);
     TestFramework::TestReset();
 

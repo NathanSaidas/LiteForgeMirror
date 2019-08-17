@@ -456,7 +456,7 @@ bool DateTime::ParseDate(const String& date)
                     date.SubString(start, length, yearStr);
                     break;
                 default:
-                    Crash("Invalid parse type!", LF_ERROR_INTERNAL, ERROR_API_CORE);
+                    CriticalAssertMsgEx("Invalid parse type!", LF_ERROR_INTERNAL, ERROR_API_CORE);
                     return false;
             }
             start = i + 1;
@@ -477,7 +477,7 @@ bool DateTime::ParseDate(const String& date)
                     date.SubString(start, yearStr);
                     break;
                 default:
-                    Crash("Invalid parse type!", LF_ERROR_INTERNAL, ERROR_API_CORE);
+                    CriticalAssertMsgEx("Invalid parse type!", LF_ERROR_INTERNAL, ERROR_API_CORE);
                     return false;
             }
         }
@@ -541,7 +541,7 @@ bool DateTime::ParseTime(const String& time)
                     time.SubString(start, length, hourStr);
                     break;
                 default:
-                    Crash("Invalid parse type!", LF_ERROR_INTERNAL, ERROR_API_CORE);
+                    CriticalAssertMsgEx("Invalid parse type!", LF_ERROR_INTERNAL, ERROR_API_CORE);
                     return false;
             }
             start = i + 1;
@@ -562,7 +562,7 @@ bool DateTime::ParseTime(const String& time)
                     time.SubString(start, hourStr);
                     break;
                 default:
-                    Crash("Invalid parse type!", LF_ERROR_INTERNAL, ERROR_API_CORE);
+                    CriticalAssertMsgEx("Invalid parse type!", LF_ERROR_INTERNAL, ERROR_API_CORE);
                     return false;
             }
         }

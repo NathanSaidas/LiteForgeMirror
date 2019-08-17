@@ -81,28 +81,23 @@ bool CacheWriter::Write()
     }
     else if (error == ERROR_MSG_FAILED_TO_OPEN_FILE)
     {
-        ReportBug(ERROR_MSG_FAILED_TO_OPEN_FILE, LF_ERROR_INTERNAL, ERROR_API_RUNTIME);
+        ReportBugMsgEx(ERROR_MSG_FAILED_TO_OPEN_FILE, LF_ERROR_INTERNAL, ERROR_API_RUNTIME);
     }
     else if (error == ERROR_MSG_INDEX_OUT_OF_BOUNDS)
     {
-        ReportBug(ERROR_MSG_INDEX_OUT_OF_BOUNDS, LF_ERROR_OUT_OF_RANGE, ERROR_API_RUNTIME);
+        ReportBugMsgEx(ERROR_MSG_INDEX_OUT_OF_BOUNDS, LF_ERROR_OUT_OF_RANGE, ERROR_API_RUNTIME);
     }
     else
     {
-        ReportBug(ERROR_MSG_INTERNAL_ERROR, LF_ERROR_INTERNAL, ERROR_API_RUNTIME);
+        ReportBugMsgEx(ERROR_MSG_INTERNAL_ERROR, LF_ERROR_INTERNAL, ERROR_API_RUNTIME);
     }
     return false;
 }
 
 CacheWritePromise CacheWriter::WriteAsync()
 {
-    CacheWriterAtomicPtr safe(LFNew<CacheWriter>());
-    safe->mOutputBuffer = mOutputBuffer;
-    safe->mOutputBufferSize = mOutputBufferSize;
-    safe->mSourceMemory = mSourceMemory;
-    safe->mSourceMemorySize = mSourceMemorySize;
-    safe->mObject = mObject;
-    safe->mOutputFile = mOutputFile;
+    void* memory = LFAlloc(sizeof(CacheWriter), alignof(CacheWriter));
+    CacheWriterAtomicPtr safe(new(memory)CacheWriter(*this));
     return CacheWritePromise([safe](Promise* self)
     {
         const char* error = safe->WriteCommon();
@@ -183,6 +178,11 @@ const char* CacheWriter::WriteOutput()
     SizeT writeSize = Min(SizeT(mObject.mSize), mSourceMemorySize);
     SizeT writeEnd = writePos + writeSize;
     if (writeEnd < writePos || writeEnd > mOutputBufferSize)
+    {
+        return ERROR_MSG_INDEX_OUT_OF_BOUNDS;
+    }
+
+    if (writeSize > mSourceMemorySize)
     {
         return ERROR_MSG_INDEX_OUT_OF_BOUNDS;
     }

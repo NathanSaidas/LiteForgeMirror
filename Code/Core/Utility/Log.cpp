@@ -20,6 +20,7 @@
 // ********************************************************************
 #include "Log.h"
 #include "Core/Common/Assert.h"
+#include "Core/IO/EngineConfig.h"
 #include "Core/Utility/ErrorCore.h"
 #include "Core/Platform/FileSystem.h"
 
@@ -43,7 +44,8 @@ mBufferStream(),
 mFile(),
 mName(name),
 mMasterLog(master),
-mLogLevel(LOG_INFO)
+mLogLevel(LOG_INFO),
+mConfig(nullptr)
 {}
 Log::~Log()
 {
@@ -124,15 +126,28 @@ void Log::Output(const SStream& buffer)
     {
         ScopeLock lock(mOutputLock);
         OutputDebugString(buffer.CStr());
+        printf("%s", buffer.CStr());
 
         if (!mFile.IsOpen())
         {
+            // Get config
+            // Try Load Directory
+            String tempDirectory;
+            if (mConfig)
+            {
+                tempDirectory = FileSystem::PathJoin(mConfig->GetTempDirectory(), "Logs");
+            }
+            else
+            {
+                tempDirectory = FileSystem::PathResolve("../Temp/Logs");
+            }
+
             // todo: Date the log file name.
-            FileSystem::PathCreate(FileSystem::PathResolve("../Temp/Logs"));
-            const String path = FileSystem::PathResolve("../Temp/Logs/") + mName + ".log";
+            FileSystem::PathCreate(tempDirectory);
+            const String path = FileSystem::PathJoin(FileSystem::PathResolve(tempDirectory), mName + ".log");
             if (!mFile.Open(path, FF_READ | FF_WRITE | FF_SHARE_READ, FILE_OPEN_ALWAYS))
             {
-                Crash("Failed to open log file", LF_ERROR_INTERNAL, ERROR_API_CORE);
+                CriticalAssertMsgEx("Failed to open log file", LF_ERROR_INTERNAL, ERROR_API_CORE);
             }
         }
 

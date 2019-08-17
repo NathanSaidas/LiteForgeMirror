@@ -22,10 +22,11 @@
 
 namespace lf {
 
-static void NullHandler(const char*, ErrorCode, ErrorApi) {}
+static void NullHandler(const char*, const StackTrace&, UInt32, UInt32) {}
 
+Int32 gAssertFlags = ERROR_FLAG_LOG | ERROR_FLAG_LOG_CALLSTACK | ERROR_FLAG_LOG_THREAD;
 AssertCallback gAssertCallback = NullHandler;
-CrashCallback  gCrashCallback = NullHandler;
+CrashCallback  gCriticalAssertCallback = NullHandler;
 BugCallback    gReportBugCallback = NullHandler;
 
 }

@@ -37,7 +37,7 @@ mOwner(SPIN_LOCK_UNLOCKED)
 SpinLock::~SpinLock()
 {
     // If this trips we didn't release the lock! Possible dead lock ahead.
-    AssertError(_InterlockedCompareExchange64(&mOwner, SPIN_LOCK_UNLOCKED, SPIN_LOCK_UNLOCKED) == SPIN_LOCK_UNLOCKED, LF_ERROR_RESOURCE_LEAK, ERROR_API_CORE);
+    CriticalAssertEx(_InterlockedCompareExchange64(&mOwner, SPIN_LOCK_UNLOCKED, SPIN_LOCK_UNLOCKED) == SPIN_LOCK_UNLOCKED, LF_ERROR_RESOURCE_LEAK, ERROR_API_CORE);
 }
 
 void SpinLock::Acquire()
@@ -54,7 +54,7 @@ void SpinLock::Acquire()
         }
         state = _InterlockedCompareExchange64(&mOwner, id, SPIN_LOCK_UNLOCKED);
         --spin;
-        AssertError(state != id, LF_ERROR_DEADLOCK, ERROR_API_CORE); // If this trips were in deadlock
+        AssertEx(state != id, LF_ERROR_DEADLOCK, ERROR_API_CORE); // If this trips were in deadlock
     } while (state != SPIN_LOCK_UNLOCKED);
 }
 bool SpinLock::TryAcquire()
@@ -87,7 +87,7 @@ bool SpinLock::TryAcquire(SizeT milliseconds)
         }
         state = _InterlockedCompareExchange64(&mOwner, id, SPIN_LOCK_UNLOCKED);
         --spin;
-        AssertError(state != id, LF_ERROR_DEADLOCK, ERROR_API_CORE); // If this trips were in deadlock
+        AssertEx(state != id, LF_ERROR_DEADLOCK, ERROR_API_CORE); // If this trips were in deadlock
     } while (state != SPIN_LOCK_UNLOCKED);
     return state == SPIN_LOCK_UNLOCKED;
 }
@@ -95,7 +95,7 @@ void SpinLock::Release()
 {
     long long id = static_cast<long long>(GetCallingThreadId());
     long long state = _InterlockedCompareExchange64(&mOwner, SPIN_LOCK_UNLOCKED, id);
-    AssertError(state == id, LF_ERROR_INVALID_OPERATION, ERROR_API_CORE); // If this trips someone has corrupted the ownership of this spin lock, or you're attemping to release without acquiring.
+    AssertEx(state == id, LF_ERROR_INVALID_OPERATION, ERROR_API_CORE); // If this trips someone has corrupted the ownership of this spin lock, or you're attemping to release without acquiring.
 }
 
 MultiSpinLock::MultiSpinLock() :
@@ -106,8 +106,8 @@ MultiSpinLock::MultiSpinLock() :
 MultiSpinLock::~MultiSpinLock()
 {
     // If this trips we didn't release the lock! Possible dead lock ahead.
-    AssertError(_InterlockedCompareExchange64(&mOwner, SPIN_LOCK_UNLOCKED, SPIN_LOCK_UNLOCKED) == SPIN_LOCK_UNLOCKED, LF_ERROR_RESOURCE_LEAK, ERROR_API_CORE);
-    AssertError(_InterlockedCompareExchange64(&mRefs, 0, 0) == 0, LF_ERROR_RESOURCE_LEAK, ERROR_API_CORE);
+    CriticalAssertEx(_InterlockedCompareExchange64(&mOwner, SPIN_LOCK_UNLOCKED, SPIN_LOCK_UNLOCKED) == SPIN_LOCK_UNLOCKED, LF_ERROR_RESOURCE_LEAK, ERROR_API_CORE);
+    CriticalAssertEx(_InterlockedCompareExchange64(&mRefs, 0, 0) == 0, LF_ERROR_RESOURCE_LEAK, ERROR_API_CORE);
 }
 
 void MultiSpinLock::Acquire()
@@ -125,7 +125,7 @@ void MultiSpinLock::Acquire()
         state = _InterlockedCompareExchange64(&mOwner, id, SPIN_LOCK_UNLOCKED);
         --spin;
     } while (state != SPIN_LOCK_UNLOCKED && state != id);
-    AssertError(_InterlockedIncrement64(&mRefs) > 0, LF_ERROR_DEADLOCK, ERROR_API_CORE); // If this trips were not keeping track of refs correctly
+    AssertEx(_InterlockedIncrement64(&mRefs) > 0, LF_ERROR_DEADLOCK, ERROR_API_CORE); // If this trips were not keeping track of refs correctly
 }
 
 bool MultiSpinLock::TryAcquire()
@@ -135,7 +135,7 @@ bool MultiSpinLock::TryAcquire()
     bool owned = state == SPIN_LOCK_UNLOCKED || state == id;
     if (owned)
     {
-        AssertError(_InterlockedIncrement64(&mRefs) > 0, LF_ERROR_BAD_STATE, ERROR_API_CORE); // If this trips were not keeping track of refs correctly
+        AssertEx(_InterlockedIncrement64(&mRefs) > 0, LF_ERROR_BAD_STATE, ERROR_API_CORE); // If this trips were not keeping track of refs correctly
     }
     return owned;
 }
@@ -170,7 +170,7 @@ bool MultiSpinLock::TryAcquire(SizeT milliseconds)
     bool owned = state == SPIN_LOCK_UNLOCKED || state == id;
     if (owned)
     {
-        AssertError(_InterlockedIncrement64(&mRefs) > 0, LF_ERROR_BAD_STATE, ERROR_API_CORE); // If this trips were not keeping track of refs correctly
+        AssertEx(_InterlockedIncrement64(&mRefs) > 0, LF_ERROR_BAD_STATE, ERROR_API_CORE); // If this trips were not keeping track of refs correctly
     }
     return owned;
 }
@@ -179,11 +179,11 @@ void MultiSpinLock::Release()
 {
     long long id = static_cast<long long>(GetCallingThreadId());
     long long ref = _InterlockedDecrement64(&mRefs);
-    AssertError(ref >= 0, LF_ERROR_BAD_STATE, ERROR_API_CORE);
+    AssertEx(ref >= 0, LF_ERROR_BAD_STATE, ERROR_API_CORE);
     if (ref == 0)
     {
         long long state = _InterlockedCompareExchange64(&mOwner, SPIN_LOCK_UNLOCKED, id);
-        AssertError(state == id, LF_ERROR_INVALID_OPERATION, ERROR_API_CORE); // If this trips someone has corrupted the ownership of this spin lock, or you're attemping to release without acquiring.
+        AssertEx(state == id, LF_ERROR_INVALID_OPERATION, ERROR_API_CORE); // If this trips someone has corrupted the ownership of this spin lock, or you're attemping to release without acquiring.
     }
 }
 

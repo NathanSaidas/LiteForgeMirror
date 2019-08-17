@@ -25,7 +25,7 @@
 
 namespace lf {
 
-extern TestRegristration ThreadTest;
+LF_CORE_API extern TestRegristration ThreadTest;
 
 }
 

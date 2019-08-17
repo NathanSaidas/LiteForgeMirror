@@ -57,10 +57,16 @@ namespace lf
     struct StackTrace
     {
         StackTrace() : frameCount(0), frames(nullptr) {}
-        ~StackTrace() { ReleaseStackTrace(*this); }
+        StackTrace(const StackTrace& other) : frameCount(other.frameCount), frames(other.frames) {}
 
         size_t frameCount;    //** Number of frames captured
         StackFrame* frames;   //** Information about each frame.
+    };
+
+    struct ScopedStackTrace : public StackTrace
+    {
+        ScopedStackTrace() { ReleaseStackTrace(*this); }
+
     };
 }
 

@@ -26,7 +26,7 @@
 
 namespace lf {
 
-class AsyncImpl : public Async
+class LF_RUNTIME_API AsyncImpl : public Async
 {
 public:
     AsyncImpl();

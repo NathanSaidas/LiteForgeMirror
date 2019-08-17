@@ -24,13 +24,13 @@ namespace lf
 {
     namespace Random
     {
-        const Int32 LCG_VAR_M = 0x7FFFFFFF; // 2 ^ 32;
+        const Int32 LCG_VAR_M = 0x7FFFFFFF; // (1 << 31) - 1;
         const Int32 LCG_VAR_A = 1103515245;
         const Int32 LCG_VAR_C = 12345;
 
         Int32 Rand(Int32& seed)
         {
-            seed = (LCG_VAR_A * seed + LCG_VAR_C) % LCG_VAR_M;
+            seed = (LCG_VAR_A * seed + LCG_VAR_C) & LCG_VAR_M;
             return seed;
         }
         Int32 Range(Int32& seed, Int32 min, Int32 max)

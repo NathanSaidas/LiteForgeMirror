@@ -22,6 +22,7 @@
 #include "Core/Common/Enum.h"
 #include "Core/Common/Assert.h"
 #include "Core/String/TokenTable.h"
+#include "Core/IO/EngineConfig.h"
 #include "Core/Platform/Thread.h"
 #include "Core/Utility/Utility.h"
 #include "Core/Utility/Array.h"
@@ -29,6 +30,7 @@
 #include "Core/Utility/Log.h"
 #include "Core/Utility/StaticCallback.h"
 #include "Core/Utility/StackTrace.h"
+#include "Core/Utility/Time.h"
 
 #include "Core/Memory/SmartPointer.h"
 #include "Core/Reflection/Object.h"
@@ -37,11 +39,26 @@
 #include "Runtime/Reflection/ReflectionTypes.h"
 #include "Runtime/Reflection/ReflectionMgr.h"
 
-#include "AbstractEngine/App/ApplicationBase.h"
+#include "Engine/App/Application.h"
 
 #include <Windows.h>
 
 namespace lf {
+
+void WaitDebugger()
+{
+    Int64 begin = GetClockTime();
+    while (!IsDebuggerPresent())
+    {
+        SleepCallingThread(10);
+
+        Float64 time = (GetClockTime() - begin) / static_cast<Float64>(GetClockFrequency());
+        if (time > 60.0)
+        {
+            break;
+        }
+    }
+}
 
 class Sample : public Object
 {
@@ -221,6 +238,16 @@ void Program::Execute(SizeT argc, const char** argv)
     cmdString.Clear();
     InitializeRuntime();
 
+    EngineConfig config;
+    String configPath = "Engine.config";
+    CmdLine::GetArgOption("app", "config", configPath);
+    config.Open(configPath);
+
+    for (SizeT i = 0; i < LF_ARRAY_SIZE(gLogGroup); ++i)
+    {
+        gLogGroup[i]->SetConfig(&config);
+    }
+
     // system, io, math, util
     Thread logUpdater;
     logUpdater.Fork(UpdateLogs, nullptr);
@@ -228,6 +255,7 @@ void Program::Execute(SizeT argc, const char** argv)
     StaticInitFence();
     gSysLog.Debug(LogMessage("Program::Initialize Complete"));
     gSysLog.Debug(LogMessage("  MainThread=") << GetPlatformThreadId());
+    gSysLog.Info(LogMessage("Command Line=") << CmdLine::GetCmdString());
     SyncLogs();
 
     // todo: What sort of application should we run? 
@@ -238,12 +266,17 @@ void Program::Execute(SizeT argc, const char** argv)
         const Type* appType = GetReflectionMgr().FindType(Token(StrStripWhitespace(appTypeName)));
         if (appType)
         {
-            auto app = GetReflectionMgr().Create<ApplicationBase>(appType);
+            auto app = GetReflectionMgr().Create<Application>(appType);
+            app->SetConfig(&config);
             if (app)
             {
                 app->OnStart();
                 app->OnExit();
             }
+        }
+        else
+        {
+            gSysLog.Error(LogMessage("Failed to find an app with the name ") << appTypeName);
         }
     }
     
@@ -257,26 +290,67 @@ void Program::Execute(SizeT argc, const char** argv)
     gSysLog.Debug(LogMessage("Program::Terminate Complete"));
     SyncLogs();
     CloseLogs();
-
+    config.Close();
 
     lf::SizeT bytesAtShutdown = lf::LFGetBytesAllocated();
     Assert(bytesAtStartup == bytesAtShutdown);
 }
 
-void HandleAssert(const char* msg, ErrorCode code, ErrorApi api)
+void GenerateReportCommon(const StackTrace& stackTrace)
 {
-    gSysLog.Error(LogMessage("Critical error detected! Assert(") << msg << ") failed with Code=" << code << ", API=" << api);
+    if ((gAssertFlags & ERROR_FLAG_LOG_THREAD) > 0)
+    {
+        gSysLog.Info(LogMessage("  Current Thread = [") << GetThreadName() << "] " << GetPlatformThreadId());
+    }
+
+    if ((gAssertFlags & ERROR_FLAG_LOG_CALLSTACK) > 0)
+    {
+        for (SizeT i = 0; i < stackTrace.frameCount; ++i)
+        {
+            if (stackTrace.frames[i].filename)
+            {
+                gSysLog.Info(LogMessage("  ") << stackTrace.frames[i].filename << ":" << stackTrace.frames[i].line << "  " << stackTrace.frames[i].function);
+            }
+            else
+            {
+                gSysLog.Info(LogMessage("  [Unknown]  ") << stackTrace.frames[i].function);
+            }
+        }
+    }
 }
-void HandleCrash(const char* msg, ErrorCode code, ErrorApi api)
+
+void HandleAssert(const char* msg, const StackTrace& stackTrace, UInt32 code, UInt32 api)
 {
-    gSysLog.Error(LogMessage("Critical error detected! Crash(") << msg << ") with Code=" << code << ", API=" << api);
+    if ((gAssertFlags & ERROR_FLAG_LOG) > 0)
+    {
+        gSysLog.Error(LogMessage("Assertion failed (") << msg << ") Code=" << code << ", API=" << api);
+        GenerateReportCommon(stackTrace);
+        gSysLog.Sync();
+    }
+    WaitDebugger();
+    
 }
-void HandleBug(const char* msg, ErrorCode code, ErrorApi api)
+void HandleCrash(const char* msg, const StackTrace& stackTrace, UInt32 code, UInt32 api)
 {
-    gSysLog.Error(LogMessage("Critical error detected! ReportBug(") << msg << ") with Code=" << code << ", API=" << api);
-#if 1
-    __debugbreak();
-#endif
+    if ((gAssertFlags & ERROR_FLAG_LOG) > 0)
+    {
+        gSysLog.Error(LogMessage("Critical error detected! Crash(") << msg << ") Code=" << code << ", API=" << api);
+        GenerateReportCommon(stackTrace);
+        gSysLog.Sync();
+    }
+    WaitDebugger();
+
+}
+void HandleBug(const char* msg, const StackTrace& stackTrace, UInt32 code, UInt32 api)
+{
+    if ((gAssertFlags & ERROR_FLAG_LOG) > 0)
+    {
+        gSysLog.Error(LogMessage("Reporting Bug (") << msg << ") Code=" << code << ", API=" << api);
+        GenerateReportCommon(stackTrace);
+        gSysLog.Sync();
+    }
+    WaitDebugger();
+
 }
 
 void InitializeCore(const String& cmdLine)
@@ -285,7 +359,7 @@ void InitializeCore(const String& cmdLine)
     SetMainThread();
     // Setup error handlers.
     gAssertCallback     = HandleAssert;
-    gCrashCallback      = HandleCrash;
+    gCriticalAssertCallback = HandleCrash;
     gReportBugCallback  = HandleBug;
     // todo: StackTrace.Init
     gSysLog.Debug(LogMessage("InitializeCore -- Default assert handlers assigned."));
@@ -293,6 +367,10 @@ void InitializeCore(const String& cmdLine)
     // Initialize CommandLine:
     CmdLine::ParseCmdLine(cmdLine);
     gSysLog.Debug(LogMessage("InitializeCore -- CmdLine::Initialize \"") << cmdLine << "\"");
+    if (CmdLine::HasArg("waitdbg"))
+    {
+        WaitDebugger();
+    }
 
     // Setup token table ( a critical part of the Core library )
     gTokenTable = &gTokenTableInstance;

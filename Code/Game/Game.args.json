@@ -3,6 +3,36 @@
   "Id": "fcd33a39-9982-4e52-aaf2-06dbb5185320",
   "Items": [
     {
+      "Id": "ad639d73-bf7f-4bce-af74-830e02b5770d",
+      "Command": "Apps",
+      "Items": [
+        {
+          "Id": "d6865771-4f8f-47a3-8ae7-73661f16b6d0",
+          "Command": "-app /type=PromiseApp"
+        },
+        {
+          "Id": "2b8ffa45-210b-4d7d-a44c-25f5756f2755",
+          "Command": "-app /type=ThreadQueueApp"
+        },
+        {
+          "Id": "fd6a63c1-8bcb-426e-87ed-223098956a58",
+          "Command": "-app /type=WorkerTestApp "
+        },
+        {
+          "Id": "c902f7b5-afcc-4d60-8935-7dbad31a698f",
+          "Command": "-app /type=AtomicIncTestApp"
+        },
+        {
+          "Id": "44d18249-11de-43f5-9d6d-bf55c0931d1f",
+          "Command": "-app /type=AnalyzeProjectApp"
+        },
+        {
+          "Id": "d59db548-15c7-4537-9efb-6d650c66d51f",
+          "Command": "-app /type=DeployBuild"
+        }
+      ]
+    },
+    {
       "Id": "19e3a5f7-6d84-44b8-b6ee-a7dc9f7b8830",
       "Command": "Testing",
       "Items": [
@@ -16,7 +46,7 @@
         },
         {
           "Id": "d4911ae7-83e9-4006-aaa2-9055b64779e1",
-          "Command": "-test /single=CacheWriter_WriteOutputTest"
+          "Command": "-test /single=AssetBundleControllerTest"
         },
         {
           "Id": "00c6995c-010b-4710-abfa-376ad6f6db76",
@@ -24,7 +54,37 @@
         },
         {
           "Id": "db158b84-d89b-4723-9ffb-36b667ff05bb",
-          "Command": "-test /single=AssetTest"
+          "Command": "-test /single=CacheStreamTest"
+        },
+        {
+          "Id": "f4d86b48-eb82-4fb2-8cf4-4e27cf82dea8",
+          "Command": "-test /single=FileIOBenchmarkTest"
+        },
+        {
+          "Id": "f94a88ca-a61f-406b-bf6b-cb554692a32c",
+          "Command": "-test /single=RSATest"
+        },
+        {
+          "Id": "0e1a0fca-d6c8-48e7-91c7-8f4c735dffa2",
+          "Command": "-test /all"
+        }
+      ]
+    },
+    {
+      "Id": "709caa7d-83d2-42e4-a738-f63c99f8e838",
+      "Command": "Deploy",
+      "Items": [
+        {
+          "Id": "5b743ab3-b35e-4183-9172-32caf99456d9",
+          "Command": "-deploy /root=\"D:\\Game Development\\Engine\\LiteForgeDevDeployExample\" /clean"
+        },
+        {
+          "Id": "57f3c9c9-8d6e-43b2-ac3f-7439ed6b63e7",
+          "Command": "-deploy /help"
+        },
+        {
+          "Id": "b30e3281-a6a0-465b-b0c3-cc442f924b1e",
+          "Command": "-deploy /tool"
         }
       ]
     },
@@ -33,20 +93,8 @@
       "Command": "-reflection /logLevel=debug"
     },
     {
-      "Id": "d6865771-4f8f-47a3-8ae7-73661f16b6d0",
-      "Command": "-app /type=PromiseApp"
-    },
-    {
-      "Id": "2b8ffa45-210b-4d7d-a44c-25f5756f2755",
-      "Command": "-app /type=ThreadQueueApp"
-    },
-    {
-      "Id": "fd6a63c1-8bcb-426e-87ed-223098956a58",
-      "Command": "-app /type=WorkerTestApp "
-    },
-    {
-      "Id": "c902f7b5-afcc-4d60-8935-7dbad31a698f",
-      "Command": "-app /type=AtomicIncTestApp"
+      "Id": "492d3b4e-9eaa-4cd5-8d53-8b43d0a0f63a",
+      "Command": "-AnalyzeProject /OBJ=\"D:\\Game Development\\Engine\\MountainGateFramework\\Builds\\Debug64\" /SOURCE=\"D:\\Game Development\\Engine\\MountainGateFramework\""
     }
   ]
 }

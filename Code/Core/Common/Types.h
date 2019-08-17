@@ -34,11 +34,25 @@
 #endif
 
 #if defined(_DEBUG)
-#define LF_DEBUG
 #define LF_DEBUG_BREAK { volatile ::lf::Int32 BP = 0; if(!BP) { BP = 1;} }
 #else
 #define LF_DEBUG_BREAK
+#endif
+
+#if defined(LF_INTERNAL_DEBUG)
+#define LF_DEBUG
+#elif defined(LF_INTERNAL_TEST)
+#define LF_TEST
+#elif defined(LF_INTERNAL_RELEASE)
 #define LF_RELEASE
+#elif defined(LF_INTERNAL_FINAL)
+#define LF_FINAL
+#else
+#error "Unknown build configuration, please define one of the preprocessor directives LF_INTERNAL_DEBUG/LF_INTERNAL_TEST/LF_INTERNAL_RELEASE/LF_INTERNAL_FINAL."
+#endif
+
+#if defined(LF_DEBUG) || defined(LF_TEST)
+#define LF_USE_EXCEPTIONS
 #endif
 
 #define LF_CONCAT_WRAPPER(a,b) a##b
@@ -53,6 +67,7 @@
 #define LF_ARRAY_SIZE(o) (sizeof(o)/sizeof(o[0]))
 #define LF_INLINE inline
 #define LF_FORCE_INLINE __forceinline
+#define LF_NO_INLINE _declspec(noinline)
 #define LF_THREAD_LOCAL _declspec(thread)
 #define LF_SIMD_ALIGN 16
 
@@ -74,6 +89,7 @@ using Char8 = char;
 using Char16 = wchar_t;
 
 using ByteT = unsigned char;
+using SByteT = char;
 
 #if defined(LF_PLATFORM_32)
 using SizeT = unsigned int;
@@ -132,6 +148,8 @@ LF_FORCE_INLINE bool InvalidEnum(TENUM value)
 
 } // namespace lf
 
+// Type Traits
+
 template<typename T>
 class InternalTypeName
 {
@@ -153,5 +171,39 @@ public:
         return "INVALID_TYPE_DETAILS";
     }
 };
+
+namespace lf {
+
+// A type trait used for initializing memory using the placement new operator
+// eg; 
+//      void Foo(T* memory) { new(memory)T(); }
+struct ConstructPlacementNew { };
+// A type trait used for initializing memory using default assignment operator
+// eg;
+//      void Foo(T* memory) { *memory = T(); }
+struct ConstructDefaultAssign { };
+
+} // namespace lf
+
+// The type trait for type construction, by default everything uses the new placement operator
+template<typename T>
+struct TypeConstructionTraits { using TypeT = lf::ConstructPlacementNew; };
+
+// Default overrides for primitive data types
+template<> struct TypeConstructionTraits<lf::Int8> { using TypeT = lf::ConstructDefaultAssign; };
+template<> struct TypeConstructionTraits<lf::Int16> { using TypeT = lf::ConstructDefaultAssign; };
+template<> struct TypeConstructionTraits<lf::Int32> { using TypeT = lf::ConstructDefaultAssign; };
+template<> struct TypeConstructionTraits<lf::Int64> { using TypeT = lf::ConstructDefaultAssign; };
+template<> struct TypeConstructionTraits<lf::UInt8> { using TypeT = lf::ConstructDefaultAssign; };
+template<> struct TypeConstructionTraits<lf::UInt16> { using TypeT = lf::ConstructDefaultAssign; };
+template<> struct TypeConstructionTraits<lf::UInt32> { using TypeT = lf::ConstructDefaultAssign; };
+template<> struct TypeConstructionTraits<lf::UInt64> { using TypeT = lf::ConstructDefaultAssign; };
+template<> struct TypeConstructionTraits<lf::Float64> { using TypeT = lf::ConstructDefaultAssign; };
+template<> struct TypeConstructionTraits<lf::Float32> { using TypeT = lf::ConstructDefaultAssign; };
+template<> struct TypeConstructionTraits<bool> { using TypeT = lf::ConstructDefaultAssign; };
+template<> struct TypeConstructionTraits<lf::Char16> { using TypeT = lf::ConstructDefaultAssign; };
+
+
+
 
 #endif // LF_CORE_TYPES_H

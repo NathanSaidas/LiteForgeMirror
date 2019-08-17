@@ -46,7 +46,7 @@ struct ThreadData
 #if defined(LF_OS_WINDOWS)
     HANDLE         mHandle;
 #endif
-#if defined(LF_DEBUG)
+#if defined(LF_DEBUG) || defined(LF_TEST)
     char*    mDebugName;
 #endif
 };
@@ -122,16 +122,16 @@ Thread::~Thread()
 
 void Thread::Fork(ThreadCallback callback, void* data)
 {
-    AssertError(IsMainThread(), LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
-    AssertError(mData == nullptr, LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+    AssertEx(IsMainThread(), LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+    AssertEx(mData == nullptr, LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
 
     mData = LFNew<ThreadData>();
-    AssertError(mData, LF_ERROR_OUT_OF_MEMORY, ERROR_API_CORE);
+    AssertEx(mData, LF_ERROR_OUT_OF_MEMORY, ERROR_API_CORE);
 
     mData->mArgs = data;
     mData->mCallback = callback;
     mData->mRefCount = 1;
-#if defined(LF_DEBUG)
+#if defined(LF_DEBUG) || defined(LF_TEST)
     mData->mDebugName = nullptr;
 #endif
 
@@ -142,22 +142,22 @@ void Thread::Fork(ThreadCallback callback, void* data)
     LF_STATIC_CRASH("Missing platform implementation.");
 #endif
     mData->mThreadId = static_cast<SizeT>(threadId);
-    AssertError(mData->mHandle != NULL, LF_ERROR_INTERNAL, ERROR_API_CORE);
+    AssertEx(mData->mHandle != NULL, LF_ERROR_INTERNAL, ERROR_API_CORE);
 }
 void Thread::Join()
 {
-    AssertError(IsMainThread(), LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
-    AssertError(mData && mData->mHandle, LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+    AssertEx(IsMainThread(), LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+    AssertEx(mData && mData->mHandle, LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
 #if defined(LF_OS_WINDOWS)
     WaitForSingleObject(mData->mHandle, INFINITE);
-    AssertError(CloseHandle(mData->mHandle), LF_ERROR_INTERNAL, ERROR_API_CORE);
+    AssertEx(CloseHandle(mData->mHandle), LF_ERROR_INTERNAL, ERROR_API_CORE);
     mData->mHandle = 0;
     mData->mThreadId = INVALID_THREAD_ID;
 #else
     LF_STATIC_CRASH("Missing platform implementation.");
 #endif
 
-#if defined(LF_DEBUG)
+#if defined(LF_DEBUG) || defined(LF_TEST)
     if (mData->mDebugName != nullptr)
     {
         LFFree(mData->mDebugName);
@@ -214,7 +214,7 @@ bool Thread::operator!=(const Thread& other)
     return mData != other.mData;
 }
 
-#if defined(LF_DEBUG)
+#if defined(LF_DEBUG) || defined(LF_TEST)
 const char* Thread::GetDebugName() const
 {
     return mData ? mData->mDebugName : "";
@@ -241,7 +241,7 @@ void Thread::SetDebugName(const char* name)
 
 void Thread::JoinAll(Thread* threadArray, const size_t numThreads)
 {
-    AssertError(IsMainThread(), LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+    AssertEx(IsMainThread(), LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
 #if defined(LF_OS_WINDOWS)
     const SizeT STACK_ARRAY_SIZE = 64;
     if (numThreads > STACK_ARRAY_SIZE)
@@ -249,17 +249,17 @@ void Thread::JoinAll(Thread* threadArray, const size_t numThreads)
         HANDLE* handles = reinterpret_cast<HANDLE*>(LFAlloc(sizeof(HANDLE) * numThreads, alignof(HANDLE)));
         for (SizeT i = 0; i < numThreads; ++i)
         {
-            AssertError(threadArray[i].IsRunning(), LF_ERROR_INVALID_ARGUMENT, ERROR_API_CORE);
+            AssertEx(threadArray[i].IsRunning(), LF_ERROR_INVALID_ARGUMENT, ERROR_API_CORE);
             handles[i] = threadArray[i].mData->mHandle;
         }
         WaitForMultipleObjects(static_cast<DWORD>(numThreads), handles, TRUE, INFINITE);
         for (SizeT i = 0; i < numThreads; ++i)
         {
             Thread& thread = threadArray[i];
-            AssertError(CloseHandle(thread.mData->mHandle), LF_ERROR_INTERNAL, ERROR_API_CORE);
+            AssertEx(CloseHandle(thread.mData->mHandle), LF_ERROR_INTERNAL, ERROR_API_CORE);
             thread.mData->mHandle = nullptr;
             thread.mData->mThreadId = INVALID_THREAD_ID;
-#if defined(LF_DEBUG)
+#if defined(LF_DEBUG) || defined(LF_TEST)
             if (thread.mData->mDebugName != nullptr)
             {
                 LFFree(thread.mData->mDebugName);
@@ -275,17 +275,17 @@ void Thread::JoinAll(Thread* threadArray, const size_t numThreads)
         HANDLE handles[STACK_ARRAY_SIZE];
         for (SizeT i = 0; i < numThreads; ++i)
         {
-            // AssertError(threadArray[i].IsRunning(), LF_ERROR_INVALID_ARGUMENT, ERROR_API_CORE);
+            // AssertEx(threadArray[i].IsRunning(), LF_ERROR_INVALID_ARGUMENT, ERROR_API_CORE);
             handles[i] = threadArray[i].mData->mHandle;
         }
         WaitForMultipleObjects(static_cast<DWORD>(numThreads), handles, TRUE, INFINITE);
         for (SizeT i = 0; i < numThreads; ++i)
         {
             Thread& thread = threadArray[i];
-            AssertError(CloseHandle(thread.mData->mHandle), LF_ERROR_INTERNAL, ERROR_API_CORE);
+            AssertEx(CloseHandle(thread.mData->mHandle), LF_ERROR_INTERNAL, ERROR_API_CORE);
             thread.mData->mHandle = nullptr;
             thread.mData->mThreadId = INVALID_THREAD_ID;
-#if defined(LF_DEBUG)
+#if defined(LF_DEBUG) || defined(LF_TEST)
             if (thread.mData->mDebugName != nullptr)
             {
                 LFFree(thread.mData->mDebugName);
@@ -312,12 +312,12 @@ void Thread::RemoveRef()
     {
         if (_InterlockedDecrement(&mData->mRefCount) == 0)
         {
-            AssertError(IsMainThread(), LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+            AssertEx(IsMainThread(), LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
 #if defined(LF_OS_WINDOWS)
             if (mData->mHandle != NULL)
             {
                 WaitForSingleObject(mData->mHandle, INFINITE);
-                AssertError(CloseHandle(mData->mHandle), LF_ERROR_INTERNAL, ERROR_API_CORE);
+                AssertEx(CloseHandle(mData->mHandle), LF_ERROR_INTERNAL, ERROR_API_CORE);
                 mData->mHandle = NULL;
                 mData->mThreadId = INVALID_THREAD_ID;
             }
@@ -325,7 +325,7 @@ void Thread::RemoveRef()
             LF_STATIC_CRASH("Missing platform implementation.");
 #endif
 
-#if defined(LF_DEBUG)
+#if defined(LF_DEBUG) || defined(LF_TEST)
             if (mData->mDebugName != nullptr)
             {
                 LFFree(mData->mDebugName);
@@ -360,6 +360,21 @@ void SetMainThread()
 {
     gIsMainThread = true;
     gCurrentThreadId = GetCurrentThreadId();
+}
+
+const char* GetThreadName()
+{
+#if defined(LF_DEBUG) || defined(LF_TEST)
+    if (gCurrentThread)
+    {
+        return gCurrentThread->mDebugName;
+    }
+    if (IsMainThread())
+    {
+        return "Main";
+    }
+#endif
+    return "Unknown";
 }
 
 } // namespace lf

@@ -66,11 +66,11 @@ CriticalSection::~CriticalSection()
 
 void CriticalSection::Initialize(SizeT spinCount)
 {
-    AssertError(spinCount < 0xFFFF, LF_ERROR_INVALID_ARGUMENT, ERROR_API_CORE);
-    AssertError(!mData, LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+    AssertEx(spinCount < 0xFFFF, LF_ERROR_INVALID_ARGUMENT, ERROR_API_CORE);
+    AssertEx(!mData, LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
     mData = LFNew<CriticalSectionData>();
-    AssertError(mData, LF_ERROR_OUT_OF_MEMORY, ERROR_API_CORE);
-    AssertError(InitializeCriticalSectionAndSpinCount(&mData->mNativeHandle, static_cast<DWORD>(spinCount)), LF_ERROR_INTERNAL, ERROR_API_CORE);
+    AssertEx(mData, LF_ERROR_OUT_OF_MEMORY, ERROR_API_CORE);
+    AssertEx(InitializeCriticalSectionAndSpinCount(&mData->mNativeHandle, static_cast<DWORD>(spinCount)), LF_ERROR_INTERNAL, ERROR_API_CORE);
     _InterlockedExchange(&mData->mRefCount, 1);
 #if defined(LF_DEBUG)
     mData->mDebugName = "";
@@ -79,7 +79,7 @@ void CriticalSection::Initialize(SizeT spinCount)
 
 void CriticalSection::Destroy()
 {
-    AssertError(mData, LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+    AssertEx(mData, LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
     DeleteCriticalSection(&mData->mNativeHandle);
     LFDelete(mData);
     mData = nullptr;
@@ -87,17 +87,17 @@ void CriticalSection::Destroy()
 
 void CriticalSection::Acquire()
 {
-    AssertError(mData, LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+    AssertEx(mData, LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
     EnterCriticalSection(&mData->mNativeHandle);
 }
 bool CriticalSection::TryAcquire()
 {
-    AssertError(mData, LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+    AssertEx(mData, LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
     return TryEnterCriticalSection(&mData->mNativeHandle) == TRUE;
 }
 void CriticalSection::Release()
 {
-    AssertError(mData, LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+    AssertEx(mData, LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
     return LeaveCriticalSection(&mData->mNativeHandle);
 }
 

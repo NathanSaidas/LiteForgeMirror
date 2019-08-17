@@ -342,7 +342,7 @@ Vector3::scalar_type& Vector3::operator[](const size_t index)
         break;
     }
 
-    Crash("Operator [] index out of bounds.", LF_ERROR_BAD_STATE, ERROR_API_CORE);
+    CriticalAssertMsgEx("Operator [] index out of bounds.", LF_ERROR_BAD_STATE, ERROR_API_CORE);
     return x;
 }
 const Vector3::scalar_type& Vector3::operator[](const size_t index) const
@@ -356,7 +356,7 @@ const Vector3::scalar_type& Vector3::operator[](const size_t index) const
         break;
     }
 
-    Crash("Operator [] index out of bounds.", LF_ERROR_BAD_STATE, ERROR_API_CORE);
+    CriticalAssertMsgEx("Operator [] index out of bounds.", LF_ERROR_BAD_STATE, ERROR_API_CORE);
     return x;
 }
 } // namespace lf

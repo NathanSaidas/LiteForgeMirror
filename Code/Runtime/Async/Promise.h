@@ -43,7 +43,7 @@ using PromiseWrapper = TAtomicStrongPointer<Promise>;
 // To implement a promise you must use a TPromiseImpl which is used to
 // create a promise.
 // **********************************
-class Promise
+class LF_RUNTIME_API Promise
 {
 public:
     enum PromiseState

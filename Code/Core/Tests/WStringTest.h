@@ -25,7 +25,7 @@
 
 namespace lf {
 
-extern TestRegristration WStringTest;
+LF_CORE_API extern TestRegristration WStringTest;
 
 } // namespace lf
 

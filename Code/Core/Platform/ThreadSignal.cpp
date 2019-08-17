@@ -33,7 +33,7 @@ namespace lf {
 
 void ThreadSignal::Wait()
 {
-    AssertError(WaitOnAddress(&mValue, &mValueDummy, sizeof(Int32), INFINITE) == TRUE, LF_ERROR_INTERNAL, ERROR_API_CORE);
+    AssertEx(WaitOnAddress(&mValue, &mValueDummy, sizeof(Int32), INFINITE) == TRUE, LF_ERROR_INTERNAL, ERROR_API_CORE);
 }
 void ThreadSignal::WakeOne()
 {

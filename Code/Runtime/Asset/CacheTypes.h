@@ -44,7 +44,7 @@ class CacheBlock;
 class CacheWriter;
 class CacheReader;
 
-struct CacheObject
+struct LF_RUNTIME_API CacheObject
 {
     LF_FORCE_INLINE CacheObject() : mUID(INVALID32), mLocation(0), mSize(0), mCapacity(0) {}
 
@@ -58,7 +58,7 @@ struct CacheObject
     UInt32 mCapacity;
 };
 
-struct CacheIndex
+struct LF_RUNTIME_API CacheIndex
 {
     LF_FORCE_INLINE CacheIndex() : mUID(INVALID32), mBlobID(INVALID32), mObjectID(INVALID32) {}
     LF_FORCE_INLINE CacheIndex(UInt32 uid, UInt32 blobID, UInt32 objectID) : mUID(uid), mBlobID(blobID), mObjectID(objectID) {}
@@ -72,7 +72,7 @@ struct CacheIndex
     UInt32 mObjectID;
 };
 
-struct CacheBlobStats
+struct LF_RUNTIME_API CacheBlobStats
 {
     LF_FORCE_INLINE CacheBlobStats() : 
     mBytesUsed(0),

@@ -29,6 +29,8 @@
 
 namespace lf {
 
+class EngineConfig;
+
 enum LogLevel
 {
     LOG_DEBUG,
@@ -91,7 +93,7 @@ struct LF_CORE_API LoggerMessage
 //
 // @param {any:primitive} message
 // **********************************
-#define LogMessage(message) LoggerMessage(__FILE__, __LINE__, message)
+#define LogMessage(message) lf::LoggerMessage(__FILE__, __LINE__, message)
 
 // Info( message )
 //   header = GenerateHeader("Info");
@@ -113,7 +115,7 @@ struct LF_CORE_API LoggerMessage
 //   console.Write(bufferStream.Str());
 //   remoteLog.Write(bufferStream.Str());
 //   Unlock(bufferStream);
-class Log 
+class LF_CORE_API Log 
 {
 public:
     Log(const String& name, Log* master = nullptr);
@@ -129,6 +131,7 @@ public:
     void Close();
 
     void SetLogLevel(LogLevel value) { mLogLevel = value; }
+    void SetConfig(const EngineConfig* config) { mConfig = config; }
 private:
     Log(const Log&) = delete;
     Log(Log&&) = delete;
@@ -145,6 +148,7 @@ private:
     String   mName;
     Log*     mMasterLog;
     LogLevel mLogLevel;
+    const EngineConfig* mConfig;
 };
 
 extern LF_CORE_API Log gMasterLog;

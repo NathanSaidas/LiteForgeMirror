@@ -293,7 +293,7 @@ TArray<const Type*> ReflectionMgr::FindAll(const Type* base) const
     TArray<const Type*> types;
     if (!base)
     {
-        ReportBug("Invalid argument 'base'", LF_ERROR_INVALID_ARGUMENT, ERROR_API_RUNTIME);
+        ReportBugMsgEx("Invalid argument 'base'", LF_ERROR_INVALID_ARGUMENT, ERROR_API_RUNTIME);
         return types;
     }
     for (const Type& type : mTypes)
@@ -310,7 +310,7 @@ ObjectPtr ReflectionMgr::CreateObject(const Type* type, MemoryMarkupTag markUp) 
 {
     if (!type)
     {
-        ReportBug("Invalid argument 'type'", LF_ERROR_INVALID_ARGUMENT, ERROR_API_RUNTIME);
+        ReportBugMsgEx("Invalid argument 'type'", LF_ERROR_INVALID_ARGUMENT, ERROR_API_RUNTIME);
         return NULL_PTR;
     }
 
@@ -318,26 +318,26 @@ ObjectPtr ReflectionMgr::CreateObject(const Type* type, MemoryMarkupTag markUp) 
     if (type->IsAbstract())
     {
         gSysLog.Error(LogMessage("Failed to create type, it's abstract. Type=") << type->GetFullName());
-        ReportBug("Failed to create abstract type", LF_ERROR_INVALID_OPERATION, ERROR_API_RUNTIME);
+        ReportBugMsgEx("Failed to create abstract type", LF_ERROR_INVALID_OPERATION, ERROR_API_RUNTIME);
         return NULL_PTR;
     }
 
     if (type->IsNative())
     {
         gSysLog.Error(LogMessage("Failed to create type, it's native. Type=") << type->GetFullName());
-        ReportBug("Failed to create native type", LF_ERROR_INVALID_OPERATION, ERROR_API_RUNTIME);
+        ReportBugMsgEx("Failed to create native type", LF_ERROR_INVALID_OPERATION, ERROR_API_RUNTIME);
         return NULL_PTR;
     }
 
     if (type->IsEnum())
     {
         gSysLog.Error(LogMessage("Failed to create type, it's an enum. Type=") << type->GetFullName());
-        ReportBug("Failed to create native type", LF_ERROR_INVALID_OPERATION, ERROR_API_RUNTIME);
+        ReportBugMsgEx("Failed to create native type", LF_ERROR_INVALID_OPERATION, ERROR_API_RUNTIME);
         return NULL_PTR;
     }
 
     // Only accept those that are Objects!
-    AssertError(type->IsA(typeof(Object)), LF_ERROR_BAD_STATE, ERROR_API_RUNTIME);
+    AssertEx(type->IsA(typeof(Object)), LF_ERROR_BAD_STATE, ERROR_API_RUNTIME);
 
     // Allocate memory for the object using type information
     void* pointer = LFAlloc(type->GetSize(), type->GetAlignment(), markUp);
@@ -355,33 +355,33 @@ Object* ReflectionMgr::CreateObjectUnsafe(const Type* type, MemoryMarkupTag mark
 {
     if (!type)
     {
-        ReportBug("Failed to create type", LF_ERROR_INVALID_ARGUMENT, ERROR_API_RUNTIME);
+        ReportBugMsgEx("Failed to create type", LF_ERROR_INVALID_ARGUMENT, ERROR_API_RUNTIME);
         return nullptr;
     }
 
     if (type->IsAbstract())
     {
         gSysLog.Error(LogMessage("Failed to create type, it's abstract. Type=") << type->GetFullName());
-        ReportBug("Failed to create abstract type", LF_ERROR_INVALID_OPERATION, ERROR_API_RUNTIME);
+        ReportBugMsgEx("Failed to create abstract type", LF_ERROR_INVALID_OPERATION, ERROR_API_RUNTIME);
         return nullptr;
     }
 
     if (type->IsNative())
     {
         gSysLog.Error(LogMessage("Failed to create type, it's native. Type=") << type->GetFullName());
-        ReportBug("Failed to create native type", LF_ERROR_INVALID_OPERATION, ERROR_API_RUNTIME);
+        ReportBugMsgEx("Failed to create native type", LF_ERROR_INVALID_OPERATION, ERROR_API_RUNTIME);
         return nullptr;
     }
 
     if (type->IsEnum())
     {
         gSysLog.Error(LogMessage("Failed to create type, it's an enum. Type=") << type->GetFullName());
-        ReportBug("Failed to create native type", LF_ERROR_INVALID_OPERATION, ERROR_API_RUNTIME);
+        ReportBugMsgEx("Failed to create native type", LF_ERROR_INVALID_OPERATION, ERROR_API_RUNTIME);
         return nullptr;
     }
 
     // Only accept those that are Objects!
-    AssertError(type->IsA(typeof(Object)), LF_ERROR_BAD_STATE, ERROR_API_RUNTIME);
+    AssertEx(type->IsA(typeof(Object)), LF_ERROR_BAD_STATE, ERROR_API_RUNTIME);
     // Allocate memory for the object using type information
     void* pointer = LFAlloc(type->GetSize(), type->GetAlignment(), markUp);
     // Call the constructor to setup the object and more importantly the V-table

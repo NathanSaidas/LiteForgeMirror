@@ -48,19 +48,19 @@ void CacheBlock::Initialize(const Token& name, UInt32 defaultCapacity)
 {
     if (name.Empty())
     {
-        ReportBug(ERROR_MSG_INVALID_ARGUMENT_NAME, LF_ERROR_INVALID_ARGUMENT, ERROR_API_RUNTIME);
+        ReportBugMsgEx(ERROR_MSG_INVALID_ARGUMENT_NAME, LF_ERROR_INVALID_ARGUMENT, ERROR_API_RUNTIME);
         return;
     }
 
     if (defaultCapacity < 1024) // Needs to be some sane value
     {
-        ReportBug(ERROR_MSG_INVALID_ARGUMENT_DEFAULT_CAPACITY, LF_ERROR_INVALID_ARGUMENT, ERROR_API_RUNTIME);
+        ReportBugMsgEx(ERROR_MSG_INVALID_ARGUMENT_DEFAULT_CAPACITY, LF_ERROR_INVALID_ARGUMENT, ERROR_API_RUNTIME);
         return;
     }
 
     if (!mName.Empty() || mDefaultCapacity > 0) 
     {
-        ReportBug(ERROR_MSG_INVALID_OPERATION_INITIALIZED, LF_ERROR_INVALID_OPERATION, ERROR_API_RUNTIME);
+        ReportBugMsgEx(ERROR_MSG_INVALID_OPERATION_INITIALIZED, LF_ERROR_INVALID_OPERATION, ERROR_API_RUNTIME);
         return;
     }
     mName = name;
@@ -78,25 +78,25 @@ CacheIndex CacheBlock::Create(UInt32 uid, UInt32 size)
 {
     if (Invalid(uid))
     {
-        ReportBug(ERROR_MSG_INVALID_ARGUMENT_UID, LF_ERROR_INVALID_ARGUMENT, ERROR_API_RUNTIME);
+        ReportBugMsgEx(ERROR_MSG_INVALID_ARGUMENT_UID, LF_ERROR_INVALID_ARGUMENT, ERROR_API_RUNTIME);
         return CacheIndex();
     }
 
     if (size > mDefaultCapacity || size == 0)
     {
-        ReportBug(ERROR_MSG_INVALID_ARGUMENT_SIZE, LF_ERROR_INVALID_ARGUMENT, ERROR_API_RUNTIME);
+        ReportBugMsgEx(ERROR_MSG_INVALID_ARGUMENT_SIZE, LF_ERROR_INVALID_ARGUMENT, ERROR_API_RUNTIME);
         return CacheIndex();
     }
 
     if (mName.Empty() || mDefaultCapacity == 0)
     {
-        ReportBug(ERROR_MSG_INVALID_OPERATION_INITIALIZATION_REQUIRED, LF_ERROR_INVALID_OPERATION, ERROR_API_RUNTIME);
+        ReportBugMsgEx(ERROR_MSG_INVALID_OPERATION_INITIALIZATION_REQUIRED, LF_ERROR_INVALID_OPERATION, ERROR_API_RUNTIME);
         return CacheIndex();
     }
 
     if (Find(uid))
     {
-        ReportBug(ERROR_MSG_INVALID_OPERATION_OBJECT_EXISTS, LF_ERROR_INVALID_OPERATION, ERROR_API_RUNTIME);
+        ReportBugMsgEx(ERROR_MSG_INVALID_OPERATION_OBJECT_EXISTS, LF_ERROR_INVALID_OPERATION, ERROR_API_RUNTIME);
         return CacheIndex();
     }
 
@@ -132,34 +132,34 @@ CacheIndex CacheBlock::Update(CacheIndex index, UInt32 size)
 {
     if (!index)
     {
-        ReportBug(ERROR_MSG_INVALID_ARGUMENT_INDEX, LF_ERROR_INVALID_ARGUMENT, ERROR_API_RUNTIME);
+        ReportBugMsgEx(ERROR_MSG_INVALID_ARGUMENT_INDEX, LF_ERROR_INVALID_ARGUMENT, ERROR_API_RUNTIME);
         return CacheIndex();
     }
 
     // Size=0 means Use Destroy instead!
     if (size > mDefaultCapacity || size == 0) 
     {
-        ReportBug(ERROR_MSG_INVALID_ARGUMENT_SIZE, LF_ERROR_INVALID_ARGUMENT, ERROR_API_RUNTIME);
+        ReportBugMsgEx(ERROR_MSG_INVALID_ARGUMENT_SIZE, LF_ERROR_INVALID_ARGUMENT, ERROR_API_RUNTIME);
         return CacheIndex();
     }
 
     if (mName.Empty() || mDefaultCapacity == 0)
     {
-        ReportBug(ERROR_MSG_INVALID_OPERATION_INITIALIZATION_REQUIRED, LF_ERROR_INVALID_OPERATION, ERROR_API_RUNTIME);
+        ReportBugMsgEx(ERROR_MSG_INVALID_OPERATION_INITIALIZATION_REQUIRED, LF_ERROR_INVALID_OPERATION, ERROR_API_RUNTIME);
         return CacheIndex();
     }
 
     // Search:
     if (index.mBlobID >= mBlobs.Size())
     {
-        ReportBug(ERROR_MSG_INVALID_ARGUMENT_INDEX, LF_ERROR_INVALID_ARGUMENT, ERROR_API_RUNTIME);
+        ReportBugMsgEx(ERROR_MSG_INVALID_ARGUMENT_INDEX, LF_ERROR_INVALID_ARGUMENT, ERROR_API_RUNTIME);
         return CacheIndex();
     }
     
     CacheObject object;
     if (!mBlobs[index.mBlobID].GetObject(static_cast<CacheObjectId>(index.mObjectID), object) || object.mUID != index.mUID)
     {
-        ReportBug(ERROR_MSG_INVALID_ARGUMENT_INDEX, LF_ERROR_INVALID_ARGUMENT, ERROR_API_RUNTIME);
+        ReportBugMsgEx(ERROR_MSG_INVALID_ARGUMENT_INDEX, LF_ERROR_INVALID_ARGUMENT, ERROR_API_RUNTIME);
         return CacheIndex();
     }
 
@@ -222,25 +222,25 @@ CacheIndex CacheBlock::Destroy(CacheIndex index)
 {
     if (!index)
     {
-        ReportBug(ERROR_MSG_INVALID_ARGUMENT_INDEX, LF_ERROR_INVALID_ARGUMENT, ERROR_API_RUNTIME);
+        ReportBugMsgEx(ERROR_MSG_INVALID_ARGUMENT_INDEX, LF_ERROR_INVALID_ARGUMENT, ERROR_API_RUNTIME);
         return CacheIndex();
     }
 
     if (mName.Empty() || mDefaultCapacity == 0)
     {
-        ReportBug(ERROR_MSG_INVALID_OPERATION_INITIALIZATION_REQUIRED, LF_ERROR_INVALID_OPERATION, ERROR_API_RUNTIME);
+        ReportBugMsgEx(ERROR_MSG_INVALID_OPERATION_INITIALIZATION_REQUIRED, LF_ERROR_INVALID_OPERATION, ERROR_API_RUNTIME);
         return CacheIndex();
     }
     if (index.mBlobID >= mBlobs.Size())
     {
-        ReportBug(ERROR_MSG_INVALID_ARGUMENT_INDEX, LF_ERROR_INVALID_ARGUMENT, ERROR_API_RUNTIME);
+        ReportBugMsgEx(ERROR_MSG_INVALID_ARGUMENT_INDEX, LF_ERROR_INVALID_ARGUMENT, ERROR_API_RUNTIME);
         return CacheIndex();
     }
 
     CacheObject object;
     if (!mBlobs[index.mBlobID].GetObject(static_cast<CacheObjectId>(index.mObjectID), object) || object.mUID != index.mUID)
     {
-        ReportBug(ERROR_MSG_INVALID_ARGUMENT_INDEX, LF_ERROR_INVALID_ARGUMENT, ERROR_API_RUNTIME);
+        ReportBugMsgEx(ERROR_MSG_INVALID_ARGUMENT_INDEX, LF_ERROR_INVALID_ARGUMENT, ERROR_API_RUNTIME);
         return CacheIndex();
     }
 

@@ -29,6 +29,8 @@
 #include <Windows.h>
 #endif
 
+#include <algorithm>
+
 namespace lf {
 
 const char DIR_CHAR = '\\';
@@ -45,7 +47,7 @@ static bool BeginsWithDirChar(const String& str)
 }
 static bool IsLikelyFilePath(const String& str)
 {
-    for (SizeT i = str.Size() - 1; i >= 0; --i)
+    for (SizeT i = str.Size() - 1; Valid(i); --i)
     {
         if (str[i] == DIR_CHAR || str[i] == TYPE_CHAR)
         {
@@ -88,7 +90,7 @@ bool FileSystem::FileCreate(const String& filename)
     );
 
     bool created = file != INVALID_HANDLE_VALUE;
-    AssertError(CloseHandle(file), LF_ERROR_INTERNAL, ERROR_API_CORE);
+    AssertEx(CloseHandle(file), LF_ERROR_INTERNAL, ERROR_API_CORE);
     return created;
 #else
     LF_STATIC_CRASH("Missing implementation.");
@@ -99,6 +101,28 @@ bool FileSystem::FileCreate(const String& filename)
 bool FileSystem::FileDelete(const String& filename)
 {
 #if defined(LF_OS_WINDOWS)
+    SetLastError(ERROR_SUCCESS);
+    DWORD error = 0;
+    DWORD attribs = 0;
+    
+    attribs = GetFileAttributes(filename.CStr());
+    error = GetLastError();
+
+    // Failed to get file attributes:
+    if (error != ERROR_SUCCESS)
+    {
+        return false;
+    }
+
+    // If files are marked for 'Read Only' make remove the flag so we can delete.
+    if ((attribs & FILE_ATTRIBUTE_READONLY) > 0)
+    {
+        attribs = attribs & ~(FILE_ATTRIBUTE_READONLY);
+        if (SetFileAttributes(filename.CStr(), attribs) == FALSE)
+        {
+            return false;
+        }
+    }
     return DeleteFile(filename.CStr()) == TRUE;
 #else
     LF_STATIC_CRASH("Missing implementation");
@@ -137,7 +161,7 @@ bool FileSystem::FileReserve(const String& filename, FileSize size)
     LARGE_INTEGER cursor;
     cursor.QuadPart = size;
     bool result = SetFilePointerEx(file, cursor, NULL, FILE_BEGIN) == TRUE && SetEndOfFile(file) == TRUE;
-    AssertError(CloseHandle(file), LF_ERROR_INTERNAL, ERROR_API_CORE);
+    AssertEx(CloseHandle(file), LF_ERROR_INTERNAL, ERROR_API_CORE);
     return result;
 #else
     LF_STATIC_CRASH("Missing implementation");
@@ -147,6 +171,54 @@ bool FileSystem::FileReserve(const String& filename, FileSize size)
 bool FileSystem::PathCreate(const String& path)
 {
     return PathRecursiveCreate(path);
+}
+
+bool FileSystem::PathDelete(const String& path)
+{
+#if defined(LF_OS_WINDOWS)
+    return RemoveDirectory(path.CStr()) == TRUE;
+#else
+    LF_STATIC_CRASH("Missing implementation");
+#endif
+}
+
+bool FileSystem::PathDeleteRecursive(const String& path)
+{
+#if defined(LF_OS_WINDOWS)
+    if (!FileSystem::PathExists(path))
+    {
+        return true;
+    }
+
+    TArray<String> paths;
+    FileSystem::GetAllFiles(path, paths);
+
+    for (const String& file : paths)
+    {
+        if (!FileSystem::FileDelete(file))
+        {
+            return false;
+        }
+    }
+
+    paths.Resize(0);
+    FileSystem::GetAllDirectories(path, paths);
+    std::stable_sort(paths.begin(), paths.end(), [](const String& a, const String& b)
+    {
+        return a.Size() > b.Size();
+    });
+
+    for (const String& directory : paths)
+    {
+        if (!FileSystem::PathDelete(directory))
+        {
+            return false;
+        }
+    }
+    return FileSystem::PathDelete(path);
+#else
+    LF_STATIC_CRASH("Missing implementation");
+#endif
 }
 
 bool FileSystem::PathExists(const String& path)
@@ -270,13 +342,125 @@ String FileSystem::PathCorrectPath(const String& path)
 String FileSystem::GetWorkingPath()
 {
 #if defined(LF_OS_WINDOWS)
-    CHAR buffer[LF_MAX_PATH];
+    CHAR buffer[LF_MAX_PATH + 1];
     DWORD result = GetCurrentDirectory(LF_MAX_PATH, buffer);
     if (result == 0 || result > LF_MAX_PATH)
     {
         return String();
     }
+    if (buffer[result] != DIR_CHAR)
+    {
+        buffer[result] = DIR_CHAR;
+        buffer[result + 1] = '\0';
+    }
     return String(buffer);
+#else
+    LF_STATIC_CRASH("Missing implementation");
+#endif
+}
+
+
+void FileSystem::GetFiles(const String& path, TArray<String>& outFiles)
+{
+#if defined(LF_OS_WINDOWS)
+    if (!FileSystem::PathExists(path))
+    {
+        return;
+    }
+    String filter = path + "\\*.*";
+    HANDLE handle;
+    WIN32_FIND_DATA data;
+    handle = FindFirstFile(filter.CStr(), &data);
+    if (handle != INVALID_HANDLE_VALUE)
+    {
+        do
+        {
+            if (data.dwFileAttributes != INVALID_FILE_ATTRIBUTES &&
+                (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != FILE_ATTRIBUTE_DIRECTORY &&
+                (data.dwFileAttributes & FILE_ATTRIBUTE_HIDDEN) != FILE_ATTRIBUTE_HIDDEN)
+            {
+                String filename = data.cFileName;
+                if (filename != "." && filename != "..")
+                {
+                    outFiles.Add(filename);
+                }
+            }
+        } while (FindNextFile(handle, &data));
+        FindClose(handle);
+    }
+#else
+    LF_STATIC_CRASH("Missing implementation");
+#endif
+}
+void FileSystem::GetDirectories(const String& path, TArray<String>& outDirectories)
+{
+#if defined(LF_OS_WINDOWS)
+    if (!FileSystem::PathExists(path))
+    {
+        return;
+    }
+    String filter = path + "\\*.*";
+    HANDLE handle;
+    WIN32_FIND_DATA data;
+    handle = FindFirstFile(filter.CStr(), &data);
+    if (handle != INVALID_HANDLE_VALUE)
+    {
+        do
+        {
+            if (data.dwFileAttributes != INVALID_FILE_ATTRIBUTES &&
+                (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY &&
+                (data.dwFileAttributes & FILE_ATTRIBUTE_HIDDEN) != FILE_ATTRIBUTE_HIDDEN)
+            {
+                String filename = data.cFileName;
+                if (filename != "." && filename != "..")
+                {
+                    outDirectories.Add(filename);
+                }
+            }
+        } while (FindNextFile(handle, &data));
+        FindClose(handle);
+    }
+#else
+    LF_STATIC_CRASH("Missing implementation");
+#endif
+}
+void FileSystem::GetAllFiles(const String& path, TArray<String>& outFiles)
+{
+#if defined(LF_OS_WINDOWS)
+    TArray<String> paths;
+    FileSystem::GetFiles(path, paths);
+    outFiles.Reserve(paths.Size());
+    for (const String& filePath : paths)
+    {
+        outFiles.Add(FileSystem::PathJoin(path, filePath));
+    }
+
+    paths.Resize(0);
+    GetDirectories(path, paths);
+    for (const String& directory : paths)
+    {
+        GetAllFiles(FileSystem::PathJoin(path, directory), outFiles);
+    }
+#else
+    LF_STATIC_CRASH("Missing implementation");
+#endif
+}
+
+void FileSystem::GetAllDirectories(const String& path, TArray<String>& outFiles)
+{
+#if defined(LF_OS_WINDOWS)
+    TArray<String> paths;
+    FileSystem::GetDirectories(path, paths);
+    outFiles.Reserve(paths.Size());
+    for (const String& filePath : paths)
+    {
+        outFiles.Add(FileSystem::PathJoin(path, filePath));
+    }
+
+    for (const String& directory : paths)
+    {
+        GetAllDirectories(FileSystem::PathJoin(path, directory), outFiles);
+    }
 #else
     LF_STATIC_CRASH("Missing implementation");
 #endif

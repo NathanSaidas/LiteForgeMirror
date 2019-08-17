@@ -49,7 +49,7 @@ public:
     LF_FORCE_INLINE Token(const value_type* string, CopyOnWriteTag);
     LF_FORCE_INLINE Token(const String& string);
     LF_FORCE_INLINE Token(const String& string, AcquireTag);
-    LF_FORCE_INLINE ~Token();
+    LF_INLINE ~Token();
 
     LF_INLINE Token& operator=(const Token& other)
     {

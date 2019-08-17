@@ -284,7 +284,7 @@ namespace lf
         if (mContext->mMode == SM_READ)
         {
             File file;
-            file.Open(filename, FF_SHARE_READ, FILE_OPEN_EXISTING);
+            file.Open(filename, FF_READ | FF_SHARE_READ, FILE_OPEN_EXISTING);
             if (file.IsOpen())
             {
                 String text;
