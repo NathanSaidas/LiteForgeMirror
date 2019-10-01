@@ -36,6 +36,8 @@ public:
     MemoryBuffer(MemoryBuffer&& other);
     ~MemoryBuffer();
 
+    MemoryBuffer& operator=(MemoryBuffer&& other);
+
     void Swap(MemoryBuffer& other);
 
     void Allocate(SizeT bytes, SizeT alignment);

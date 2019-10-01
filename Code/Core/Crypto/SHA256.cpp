@@ -21,6 +21,8 @@
 #include "SHA256.h"
 #include <utility>
 
+#include <openssl/sha.h>
+
 namespace lf {
 
 // todo: This is a VERY basic implementation is probably VERY slow compared to something that uses more advanced compile time/constant tricks + SIMD
@@ -190,11 +192,28 @@ void Crypto::SHA256Final(SHA256Context* context, ByteT* hash)
 
 Crypto::SHA256HashType Crypto::SHA256Hash(const ByteT* data, SizeT dataLength)
 {
+    // Crypto::SHA256HashType hash;
+    // Crypto::SHA256Context context;
+    // SHA256Init(&context);
+    // SHA256Update(&context, data, dataLength);
+    // SHA256Final(&context, hash.mData);
+
     Crypto::SHA256HashType hash;
-    Crypto::SHA256Context context;
-    SHA256Init(&context);
-    SHA256Update(&context, data, dataLength);
-    SHA256Final(&context, hash.mData);
+    SHA256_CTX ctx;
+    SHA256_Init(&ctx);
+    SHA256_Update(&ctx, data, dataLength);
+    SHA256_Final(hash.mData, &ctx);
+    return hash;
+}
+
+Crypto::SHA256HashType Crypto::SHA256Hash(const ByteT* data, SizeT dataLength, const ByteT* salt, SizeT saltLength)
+{
+    Crypto::SHA256HashType hash;
+    SHA256_CTX ctx;
+    SHA256_Init(&ctx);
+    SHA256_Update(&ctx, salt, saltLength);
+    SHA256_Update(&ctx, data, dataLength);
+    SHA256_Final(hash.mData, &ctx);
     return hash;
 }
 

@@ -33,9 +33,7 @@
 #endif
 
 namespace lf {
-
-
-
+// todo: Implement an alternative async file io system as GetOverlappedResultEx is not support on Windows 7
 struct FileHandle
 {
 #if defined(LF_OS_WINDOWS)

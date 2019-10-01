@@ -367,7 +367,7 @@ const char* GetThreadName()
 #if defined(LF_DEBUG) || defined(LF_TEST)
     if (gCurrentThread)
     {
-        return gCurrentThread->mDebugName;
+        return gCurrentThread->mDebugName ? gCurrentThread->mDebugName : "";
     }
     if (IsMainThread())
     {

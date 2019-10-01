@@ -65,7 +65,7 @@ LF_CORE_API String  StrTrimRight(const String& string);
 
 LF_INLINE ByteT HexToByte(Char8 c);
 LF_INLINE Char8 ByteToHex(ByteT byte);
-LF_CORE_API String BytesToHex(ByteT* bytes, SizeT length);
+LF_CORE_API String BytesToHex(const ByteT* bytes, SizeT length);
 
 LF_INLINE String ToString(Int32 number);
 LF_INLINE String ToString(UInt32 number);

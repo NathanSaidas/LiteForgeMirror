@@ -25,22 +25,28 @@
 
 namespace lf {
 
+class Stream;
+
 class LF_CORE_API EngineConfig
 {
 public:
     void Open(const String& filename);
     void Close();
 
+    void Serialize(Stream& s);
 
     const String& GetTempDirectory() const { return mResolvedTempDirectory; }
     const String& GetProjectDirectory() const { return mProjectDirectory; }
     const String& GetUserDirectory() const { return mUserDirectory; }
     const String& GetCacheDirectory() const { return mCacheDirectory; }
+    const String& GetLogName() const { return mLogFilename; }
+    void SetLogName(const String& value) { mLogFilename = value; }
 private:
     String mTempDirectory;
     String mProjectDirectory;
     String mUserDirectory;
     String mCacheDirectory;
+    String mLogFilename;
 
     String mResolvedTempDirectory;
     String mResolvedProjectDirectory;

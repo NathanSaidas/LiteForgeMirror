@@ -3,6 +3,14 @@
   "Id": "fcd33a39-9982-4e52-aaf2-06dbb5185320",
   "Items": [
     {
+      "Id": "5aaa2b76-8447-4ff6-a1ae-e304f8a5de12",
+      "Command": "-log /name=Server"
+    },
+    {
+      "Id": "50b74fc8-879a-4e75-8732-a7950abd61ea",
+      "Command": "-log /name=Client"
+    },
+    {
       "Id": "ad639d73-bf7f-4bce-af74-830e02b5770d",
       "Command": "Apps",
       "Items": [
@@ -29,6 +37,14 @@
         {
           "Id": "d59db548-15c7-4537-9efb-6d650c66d51f",
           "Command": "-app /type=DeployBuild"
+        },
+        {
+          "Id": "487b2513-bd8c-49ab-a7d6-175caec5e9c5",
+          "Command": "-app /type=CryptoApp -crypto /rsa=2048 /filename=rsa_2048"
+        },
+        {
+          "Id": "1e6145c6-f8c3-4e47-9e92-5d410e192796",
+          "Command": "-app /type=CryptoApp -crypto /aes=256 /filename=aes_256"
         }
       ]
     },
@@ -54,15 +70,15 @@
         },
         {
           "Id": "db158b84-d89b-4723-9ffb-36b667ff05bb",
-          "Command": "-test /single=CacheStreamTest"
+          "Command": "-test /single=UDPSocketSendReceiveSameSocketTest"
         },
         {
           "Id": "f4d86b48-eb82-4fb2-8cf4-4e27cf82dea8",
-          "Command": "-test /single=FileIOBenchmarkTest"
+          "Command": "-test /single=DynamicPoolHeapTestMultithreaded"
         },
         {
           "Id": "f94a88ca-a61f-406b-bf6b-cb554692a32c",
-          "Command": "-test /single=RSATest"
+          "Command": "-test /single=RSATestStatic /static"
         },
         {
           "Id": "0e1a0fca-d6c8-48e7-91c7-8f4c735dffa2",
@@ -95,6 +111,10 @@
     {
       "Id": "492d3b4e-9eaa-4cd5-8d53-8b43d0a0f63a",
       "Command": "-AnalyzeProject /OBJ=\"D:\\Game Development\\Engine\\MountainGateFramework\\Builds\\Debug64\" /SOURCE=\"D:\\Game Development\\Engine\\MountainGateFramework\""
+    },
+    {
+      "Id": "c2eae452-3e03-40eb-9bc0-94521a94b06c",
+      "Command": "-AnalyzeProject /OBJ=\\\"../Builds/x64Debug\\\" /SOURCE=\\\"../Code\\\""
     }
   ]
 }

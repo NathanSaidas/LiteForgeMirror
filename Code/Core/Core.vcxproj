@@ -27,6 +27,10 @@
     <ClCompile Include="Concurrent\TaskScheduler.cpp" />
     <ClCompile Include="Concurrent\TaskWorker.cpp" />
     <ClCompile Include="Config.cpp" />
+    <ClCompile Include="Crypto\AES.cpp" />
+    <ClCompile Include="Crypto\BCrypt.cpp" />
+    <ClCompile Include="Crypto\RSA.cpp" />
+    <ClCompile Include="Crypto\SecureRandom.cpp" />
     <ClCompile Include="Crypto\SHA256.cpp" />
     <ClCompile Include="IO\BinaryStream.cpp" />
     <ClCompile Include="IO\EngineConfig.cpp" />
@@ -38,13 +42,27 @@
     <ClCompile Include="Math\Random.cpp" />
     <ClCompile Include="Math\Vector2.cpp" />
     <ClCompile Include="Math\Vector3.cpp" />
+    <ClCompile Include="Memory\DynamicPoolHeap.cpp" />
     <ClCompile Include="Memory\Memory.cpp" />
     <ClCompile Include="Memory\MemoryBuffer.cpp" />
+    <ClCompile Include="Memory\PoolHeap.cpp" />
+    <ClCompile Include="Net\ConnectPacket.cpp" />
+    <ClCompile Include="Net\NetFrameworkWindows.cpp" />
+    <ClCompile Include="Net\NetSocket.cpp" />
+    <ClCompile Include="Net\NetTransport.cpp" />
+    <ClCompile Include="Net\NetTransportConfig.cpp" />
+    <ClCompile Include="Net\NetTransportHandler.cpp" />
+    <ClCompile Include="Net\NetTransportImpl.cpp" />
+    <ClCompile Include="Net\NetUtil.cpp" />
+    <ClCompile Include="Net\PacketUtility.cpp" />
+    <ClCompile Include="Net\UDPSocket.cpp" />
+    <ClCompile Include="Net\UDPSocketWindows.cpp" />
     <ClCompile Include="Platform\AsyncIOBuffer.cpp" />
     <ClCompile Include="Platform\AsyncIODevice.cpp" />
     <ClCompile Include="Platform\CriticalSection.cpp" />
     <ClCompile Include="Platform\File.cpp" />
     <ClCompile Include="Platform\FileSystem.cpp" />
+    <ClCompile Include="Platform\RWSpinLock.cpp" />
     <ClCompile Include="Platform\SpinLock.cpp" />
     <ClCompile Include="Platform\Thread.cpp" />
     <ClCompile Include="Platform\ThreadSignal.cpp" />
@@ -87,6 +105,10 @@
     <ClInclude Include="Concurrent\TaskScheduler.h" />
     <ClInclude Include="Concurrent\TaskTypes.h" />
     <ClInclude Include="Concurrent\TaskWorker.h" />
+    <ClInclude Include="Crypto\AES.h" />
+    <ClInclude Include="Crypto\BCrypt.h" />
+    <ClInclude Include="Crypto\SecureRandom.h" />
+    <ClInclude Include="Crypto\RSA.h" />
     <ClInclude Include="Crypto\SHA256.h" />
     <ClInclude Include="IO\BinaryStream.h" />
     <ClInclude Include="IO\EngineConfig.h" />
@@ -116,9 +138,25 @@
     <ClInclude Include="Math\VectorCombined.h" />
     <ClInclude Include="Math\VectorInline.h" />
     <ClInclude Include="Memory\AtomicSmartPointer.h" />
+    <ClInclude Include="Memory\DynamicPoolHeap.h" />
     <ClInclude Include="Memory\Memory.h" />
     <ClInclude Include="Memory\MemoryBuffer.h" />
+    <ClInclude Include="Memory\PoolHeap.h" />
     <ClInclude Include="Memory\SmartPointer.h" />
+    <ClInclude Include="Net\NetConnectionController.h" />
+    <ClInclude Include="Net\ConnectPacket.h" />
+    <ClInclude Include="Net\NetConnection.h" />
+    <ClInclude Include="Net\NetFramework.h" />
+    <ClInclude Include="Net\NetSocket.h" />
+    <ClInclude Include="Net\NetTransport.h" />
+    <ClInclude Include="Net\NetTransportConfig.h" />
+    <ClInclude Include="Net\NetTransportHandler.h" />
+    <ClInclude Include="Net\NetTransportImpl.h" />
+    <ClInclude Include="Net\NetTypes.h" />
+    <ClInclude Include="Net\NetUtil.h" />
+    <ClInclude Include="Net\PacketUtility.h" />
+    <ClInclude Include="Net\UDPSocket.h" />
+    <ClInclude Include="Net\UDPSocketWindows.h" />
     <ClInclude Include="Platform\AsyncIOBuffer.h" />
     <ClInclude Include="Platform\AsyncIODevice.h" />
     <ClInclude Include="Platform\Atomic.h" />
@@ -127,6 +165,7 @@
     <ClInclude Include="Platform\File.h" />
     <ClInclude Include="Platform\FileSystem.h" />
     <ClInclude Include="Platform\PlatformTypes.h" />
+    <ClInclude Include="Platform\RWSpinLock.h" />
     <ClInclude Include="Platform\SpinLock.h" />
     <ClInclude Include="Platform\Thread.h" />
     <ClInclude Include="Platform\ThreadSignal.h" />
@@ -158,7 +197,9 @@
     <ClInclude Include="Utility\Array.h" />
     <ClInclude Include="Utility\ArrayList.h" />
     <ClInclude Include="Utility\Bitfield.h" />
+    <ClInclude Include="Utility\ByteOrder.h" />
     <ClInclude Include="Utility\CmdLine.h" />
+    <ClInclude Include="Utility\Crc32.h" />
     <ClInclude Include="Utility\DateTime.h" />
     <ClInclude Include="Utility\ErrorCore.h" />
     <ClInclude Include="Utility\FNVHash.h" />
@@ -252,7 +293,7 @@
       <WarningLevel>Level4</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)Code\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)Code\;$(SolutionDir)Public\openssl\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <TreatWarningAsError>true</TreatWarningAsError>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <ExceptionHandling>Sync</ExceptionHandling>
@@ -268,7 +309,7 @@
       <AdditionalDependencies>synchronization.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Lib>
     <Link>
-      <AdditionalDependencies>Synchronization.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Synchronization.lib;$(SolutionDir)Public\openssl\lib\libcrypto.lib;$(SolutionDir)Public\openssl\lib\libssl.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <GenerateDebugInformation>DebugFastLink</GenerateDebugInformation>
       <FullProgramDatabaseFile>true</FullProgramDatabaseFile>
     </Link>
@@ -278,7 +319,7 @@
       <WarningLevel>Level4</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)Code\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)Code\;$(SolutionDir)Public\openssl\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <TreatWarningAsError>true</TreatWarningAsError>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <ExceptionHandling>Sync</ExceptionHandling>
@@ -295,7 +336,7 @@
       <AdditionalDependencies>synchronization.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Lib>
     <Link>
-      <AdditionalDependencies>Synchronization.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Synchronization.lib;$(SolutionDir)Public\openssl\lib\libcrypto.lib;$(SolutionDir)Public\openssl\lib\libssl.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
@@ -306,7 +347,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>false</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)Code\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)Code\;$(SolutionDir)Public\openssl\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <TreatWarningAsError>true</TreatWarningAsError>
       <ProgramDataBaseFileName>$(SolutionDir)Code\$(ProjectName)_x64Release.pdb</ProgramDataBaseFileName>
       <PreprocessorDefinitions>_HAS_EXCEPTIONS=0;_ALLOW_RTCc_IN_STL;LF_INTERNAL_RELEASE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -321,7 +362,7 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
     <Lib>
-      <AdditionalDependencies>synchronization.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>synchronization.lib;$(SolutionDir)Public\openssl\lib\libcrypto.lib;$(SolutionDir)Public\openssl\lib\libssl.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Final|x64'">
@@ -331,7 +372,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)Code\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)Code\;$(SolutionDir)Public\openssl\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <TreatWarningAsError>true</TreatWarningAsError>
       <ProgramDataBaseFileName>$(SolutionDir)Code\$(ProjectName)_x64Final.pdb</ProgramDataBaseFileName>
       <PreprocessorDefinitions>_HAS_EXCEPTIONS=0;_ALLOW_RTCc_IN_STL;LF_INTERNAL_FINAL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -344,7 +385,7 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
     <Lib>
-      <AdditionalDependencies>synchronization.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>synchronization.lib;$(SolutionDir)Public\openssl\lib\libcrypto.lib;$(SolutionDir)Public\openssl\lib\libssl.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Lib>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

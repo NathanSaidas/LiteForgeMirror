@@ -41,7 +41,11 @@
 
 #include "Engine/App/Application.h"
 
+#ifdef LF_OS_WINDOWS
+#define NOMINMAX
+#define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
+#endif
 
 namespace lf {
 
@@ -248,6 +252,12 @@ void Program::Execute(SizeT argc, const char** argv)
         gLogGroup[i]->SetConfig(&config);
     }
 
+    String logName;
+    if (CmdLine::GetArgOption("log", "name", logName))
+    {
+        config.SetLogName(logName);
+    }
+
     // system, io, math, util
     Thread logUpdater;
     logUpdater.Fork(UpdateLogs, nullptr);
@@ -298,6 +308,8 @@ void Program::Execute(SizeT argc, const char** argv)
 
 void GenerateReportCommon(const StackTrace& stackTrace)
 {
+    gSysLog.Info(LogMessage("Last Platform Error = ") << gLastPlatformErrorCode);
+
     if ((gAssertFlags & ERROR_FLAG_LOG_THREAD) > 0)
     {
         gSysLog.Info(LogMessage("  Current Thread = [") << GetThreadName() << "] " << GetPlatformThreadId());

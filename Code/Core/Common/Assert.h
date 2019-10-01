@@ -112,6 +112,12 @@
 #define LF_ERROR_TEST_THROW_EX(expression_, trace_, errorCode_, errorApi_)
 #endif
 
+#if defined(LF_OS_WINDOWS)
+#define LF_SET_PLATFORM_ERROR_CODE SetPlatformErrorCode();
+#else
+#define LF_SET_PLATFORM_ERROR_CODE
+#endif
+
 // Assert => Assert
 // AssertError => AssertEx
 // ReportBug => ReportBugMsg
@@ -122,6 +128,7 @@
     do {                                                                                            \
         if (!(expression_))                                                                         \
         {                                                                                           \
+            LF_SET_PLATFORM_ERROR_CODE;                                                             \
             LF_ERROR_STACK_TRACE;                                                                   \
             ::lf::gAssertCallback(#expression_, LF_ERROR_STACK_TRACE_VAR, INVALID32, INVALID32);     \
             LF_ERROR_BREAK;                                                                         \
@@ -135,26 +142,85 @@
     do {                                                                                            \
         if(!(expression_))                                                                          \
         {                                                                                           \
+            LF_SET_PLATFORM_ERROR_CODE;                                                             \
             LF_ERROR_STACK_TRACE;                                                                   \
             ::lf::gAssertCallback(#expression_, LF_ERROR_STACK_TRACE_VAR, errorCode_, errorApi_);   \
             LF_ERROR_BREAK;                                                                         \
             LF_ERROR_THROW_EX(#expression_, LF_ERROR_STACK_TRACE_VAR, errorCode_, errorApi_);       \
         }                                                                                           \
     } while (false);                                                                                \
-}                                                                                                   
+}
+
+#define AssertMsg(message_)                                                                         \
+{                                                                                                   \
+    do {                                                                                            \
+        if(true)                                                                                    \
+        {                                                                                           \
+            LF_SET_PLATFORM_ERROR_CODE;                                                             \
+            LF_ERROR_STACK_TRACE;                                                                   \
+            ::lf::gAssertCallback(message_, LF_ERROR_STACK_TRACE_VAR, INVALID32, INVALID32);        \
+            LF_ERROR_BREAK;                                                                         \
+            LF_ERROR_THROW_EX(message_, LF_ERROR_STACK_TRACE_VAR, INVALID32, INVALID32);            \
+        }                                                                                           \
+    } while (false);                                                                                \
+}
+
+#define AssertMsgEx(message_, errorCode_, errorApi_)                                                \
+{                                                                                                   \
+    do {                                                                                            \
+        if(true)                                                                                \
+        {                                                                                           \
+            LF_SET_PLATFORM_ERROR_CODE;                                                             \
+            LF_ERROR_STACK_TRACE;                                                                   \
+            ::lf::gAssertCallback(message_, LF_ERROR_STACK_TRACE_VAR, errorCode_, errorApi_);       \
+            LF_ERROR_BREAK;                                                                         \
+            LF_ERROR_THROW_EX(message_, LF_ERROR_STACK_TRACE_VAR, errorCode_, errorApi_);           \
+        }                                                                                           \
+    } while (false);                                                                                \
+}
 
 #define ReportBug(expression_)                                                                          \
 {                                                                                                       \
     do {                                                                                                \
         if (!(expression_))                                                                             \
         {                                                                                               \
+            LF_SET_PLATFORM_ERROR_CODE;                                                                 \
             LF_ERROR_STACK_TRACE;                                                                       \
             ::lf::gReportBugCallback(#expression_, LF_ERROR_STACK_TRACE_VAR, INVALID32, INVALID32);     \
-            LF_ERROR_BUG_BREAK;                                                                             \
+            LF_ERROR_BUG_BREAK;                                                                         \
             LF_ERROR_RELEASE_STACK_TRACE;                                                               \
         }                                                                                               \
     } while (false);                                                                                    \
-}                                                                                                       
+}
+
+#define ReportBugEx(expression_, errorCode_, errorApi_)                                                 \
+{                                                                                                       \
+    do {                                                                                                \
+        if (!(expression_))                                                                             \
+        {                                                                                               \
+            LF_SET_PLATFORM_ERROR_CODE;                                                                 \
+            LF_ERROR_STACK_TRACE;                                                                       \
+            ::lf::gReportBugCallback(#expression_, LF_ERROR_STACK_TRACE_VAR, errorCode_, errorApi_);    \
+            LF_ERROR_BUG_BREAK;                                                                         \
+            LF_ERROR_RELEASE_STACK_TRACE;                                                               \
+        }                                                                                               \
+    } while (false);                                                                                    \
+}
+
+#define ReportBugMsg(message_)                                                                          \
+{                                                                                                       \
+    do                                                                                                  \
+    {                                                                                                   \
+        if(true)                                                                                        \
+        {                                                                                               \
+            LF_SET_PLATFORM_ERROR_CODE;                                                                 \
+            LF_ERROR_STACK_TRACE;                                                                       \
+            ::lf::gReportBugCallback(message_, LF_ERROR_STACK_TRACE_VAR, INVALID32, INVALID32);         \
+            LF_ERROR_BUG_BREAK;                                                                         \
+            LF_ERROR_RELEASE_STACK_TRACE;                                                               \
+        }                                                                                               \
+    } while (false);                                                                                    \
+}
 
 #define ReportBugMsgEx(message_, errorCode_, errorApi_)                                                 \
 {                                                                                                       \
@@ -162,15 +228,29 @@
     {                                                                                                   \
         if(true)                                                                                        \
         {                                                                                               \
+            LF_SET_PLATFORM_ERROR_CODE;                                                                 \
             LF_ERROR_STACK_TRACE;                                                                       \
             ::lf::gReportBugCallback(message_, LF_ERROR_STACK_TRACE_VAR, errorCode_, errorApi_);        \
-            LF_ERROR_BUG_BREAK;                                                                             \
+            LF_ERROR_BUG_BREAK;                                                                         \
             LF_ERROR_RELEASE_STACK_TRACE;                                                               \
         }                                                                                               \
     } while (false);                                                                                    \
 }
 
-// #define CriticalAssert(expression_)
+#define CriticalAssert(expression_)                                                                         \
+{                                                                                                           \
+    do                                                                                                      \
+    {                                                                                                       \
+        if (!(expression_))                                                                                 \
+        {                                                                                                   \
+            LF_SET_PLATFORM_ERROR_CODE;                                                                 \
+            LF_ERROR_STACK_TRACE;                                                                           \
+            ::lf::gCriticalAssertCallback(#expression_, LF_ERROR_STACK_TRACE_VAR, INVALID32, INVALID32);    \
+            LF_ERROR_RELEASE_STACK_TRACE;                                                                   \
+            LF_ERROR_FATAL_BREAK;                                                                           \
+        }                                                                                                   \
+    } while (false);                                                                                        \
+}
 
 #define CriticalAssertEx(expression_, errorCode_, errorApi_)                                                \
 {                                                                                                           \
@@ -178,17 +258,30 @@
     {                                                                                                       \
         if (!(expression_))                                                                                 \
         {                                                                                                   \
+            LF_SET_PLATFORM_ERROR_CODE;                                                                 \
             LF_ERROR_STACK_TRACE;                                                                           \
             ::lf::gCriticalAssertCallback(#expression_, LF_ERROR_STACK_TRACE_VAR, errorCode_, errorApi_);   \
             LF_ERROR_RELEASE_STACK_TRACE;                                                                   \
             LF_ERROR_FATAL_BREAK;                                                                           \
         }                                                                                                   \
     } while (false);                                                                                        \
-}                                                                                                           
+}
+
+#define CriticalAssertMsg(message_)                                                                     \
+{                                                                                                       \
+    do {                                                                                                \
+        LF_SET_PLATFORM_ERROR_CODE;                                                                     \
+        LF_ERROR_STACK_TRACE;                                                                           \
+        ::lf::gCriticalAssertCallback(message_, LF_ERROR_STACK_TRACE_VAR, INVALID32, INVALID32);        \
+        LF_ERROR_RELEASE_STACK_TRACE;                                                                   \
+        LF_ERROR_FATAL_BREAK;                                                                           \
+    } while (false);                                                                                    \
+}
 
 #define CriticalAssertMsgEx(message_, errorCode_, errorApi_)                                            \
 {                                                                                                       \
     do {                                                                                                \
+        LF_SET_PLATFORM_ERROR_CODE;                                                                     \
         LF_ERROR_STACK_TRACE;                                                                           \
         ::lf::gCriticalAssertCallback(message_, LF_ERROR_STACK_TRACE_VAR, errorCode_, errorApi_);       \
         LF_ERROR_RELEASE_STACK_TRACE;                                                                   \
@@ -266,10 +359,13 @@ using AssertCallback = void(*)(const char*, const StackTrace&, UInt32, UInt32);
 using CrashCallback  = void(*)(const char*, const StackTrace&, UInt32, UInt32);
 using BugCallback    = void(*)(const char*, const StackTrace&, UInt32, UInt32);
 
+LF_CORE_API extern Int32 gLastPlatformErrorCode;
 LF_CORE_API extern Int32 gAssertFlags;
 LF_CORE_API extern AssertCallback gAssertCallback;
 LF_CORE_API extern CrashCallback  gCriticalAssertCallback;
 LF_CORE_API extern BugCallback    gReportBugCallback;
+
+LF_CORE_API void SetPlatformErrorCode();
 } // namespace lf
 
 

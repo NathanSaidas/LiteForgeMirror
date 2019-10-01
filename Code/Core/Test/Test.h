@@ -29,18 +29,21 @@ namespace lf {
 
 using TestCallback = void(*)();
 struct TestRegristration;
+class EngineConfig;
 
 struct LF_CORE_API TestConfig
 {
     TestConfig();
 
-    bool         mTriggerBreakpoint;
+    bool                mTriggerBreakpoint;
+    const EngineConfig* mEngineConfig;
 };
 
 struct TestContext
 {
-    bool         mTriggerBreakpoint;
-    TestContext* mPrev;
+    bool                mTriggerBreakpoint;
+    const EngineConfig* mEngineConfig;
+    TestContext*        mPrev;
 };
 
 class LF_CORE_API TestFramework
@@ -54,6 +57,7 @@ public:
     static bool HasFailed();
     static void TestReset();
     static bool TriggerBreakPoint();
+    static bool TestAll();
 
     static TestConfig GetConfig();
 private:

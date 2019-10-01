@@ -91,7 +91,7 @@ LF_FORCE_INLINE ValueT* AtomicLoadPointer(ValueT* volatile* target)
     return value;
 }
 template<typename ValueT>
-LF_FORCE_INLINE const ValueT* AtomicLoadPointer(const ValueT* volatile* target)
+LF_FORCE_INLINE const ValueT* AtomicLoadPointer(ValueT* const volatile* target)
 {
     const ValueT* value;
     value = *target;

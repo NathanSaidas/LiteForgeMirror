@@ -32,6 +32,7 @@ void EngineConfig::Open(const String& filename)
     mProjectDirectory = "../Project";
     mUserDirectory = "../User";
     mCacheDirectory = "../Cache";
+    mLogFilename = "Engine";
 
     if (!FileSystem::FileExists(fullpath))
     {
@@ -39,10 +40,7 @@ void EngineConfig::Open(const String& filename)
         if (ts.GetMode() == Stream::SM_WRITE)
         {
             ts.BeginObject("Config", "BaseConfig");
-            SERIALIZE(ts, mTempDirectory, "");
-            SERIALIZE(ts, mProjectDirectory, "");
-            SERIALIZE(ts, mUserDirectory, "");
-            SERIALIZE(ts, mCacheDirectory, "");
+            Serialize(ts);
             ts.EndObject();
             ts.Close();
         }
@@ -53,10 +51,7 @@ void EngineConfig::Open(const String& filename)
         if (ts.GetMode() == Stream::SM_READ)
         {
             ts.BeginObject("Config", "BaseConfig");
-            SERIALIZE(ts, mTempDirectory, "");
-            SERIALIZE(ts, mProjectDirectory, "");
-            SERIALIZE(ts, mUserDirectory, "");
-            SERIALIZE(ts, mCacheDirectory, "");
+            Serialize(ts);
             ts.EndObject();
             ts.Close();
         }
@@ -65,10 +60,7 @@ void EngineConfig::Open(const String& filename)
         if (ts.GetMode() == Stream::SM_WRITE)
         {
             ts.BeginObject("Config", "BaseConfig");
-            SERIALIZE(ts, mTempDirectory, "");
-            SERIALIZE(ts, mProjectDirectory, "");
-            SERIALIZE(ts, mUserDirectory, "");
-            SERIALIZE(ts, mCacheDirectory, "");
+            Serialize(ts);
             ts.EndObject();
             ts.Close();
         }
@@ -92,6 +84,17 @@ void EngineConfig::Close()
     mResolvedProjectDirectory.Clear();
     mResolvedUserDirectory.Clear();
     mResolvedCacheDirectory.Clear();
+
+    mLogFilename.Clear();
+}
+
+void EngineConfig::Serialize(Stream& s)
+{
+    SERIALIZE(s, mTempDirectory, "");
+    SERIALIZE(s, mProjectDirectory, "");
+    SERIALIZE(s, mUserDirectory, "");
+    SERIALIZE(s, mCacheDirectory, "");
+    SERIALIZE(s, mLogFilename, "");
 }
 
 } // namespace lf 

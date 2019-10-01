@@ -46,6 +46,18 @@ MemoryBuffer::~MemoryBuffer()
     Free();
 }
 
+MemoryBuffer& MemoryBuffer::operator=(MemoryBuffer&& other)
+{
+    Free();
+    mData = other.mData;
+    mSize = other.mSize;
+    mCapacity = other.mCapacity;
+    other.mData = nullptr;
+    other.mSize = 0;
+    other.mCapacity = 0;
+    return *this;
+}
+
 void MemoryBuffer::Swap(MemoryBuffer& other)
 {
     std::swap(mData, other.mData);

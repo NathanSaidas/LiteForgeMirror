@@ -43,6 +43,9 @@
     <Filter Include="Crypto">
       <UniqueIdentifier>{6e7860cc-f03e-40a6-8da3-94e80817b78f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Net">
+      <UniqueIdentifier>{ce8d5503-7f08-4352-a435-6dd956fa8c47}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Config.cpp">
@@ -209,6 +212,60 @@
     </ClCompile>
     <ClCompile Include="IO\EngineConfig.cpp">
       <Filter>IO</Filter>
+    </ClCompile>
+    <ClCompile Include="Crypto\RSA.cpp">
+      <Filter>Crypto</Filter>
+    </ClCompile>
+    <ClCompile Include="Crypto\BCrypt.cpp">
+      <Filter>Crypto</Filter>
+    </ClCompile>
+    <ClCompile Include="Crypto\SecureRandom.cpp">
+      <Filter>Crypto</Filter>
+    </ClCompile>
+    <ClCompile Include="Crypto\AES.cpp">
+      <Filter>Crypto</Filter>
+    </ClCompile>
+    <ClCompile Include="Net\NetSocket.cpp">
+      <Filter>Net</Filter>
+    </ClCompile>
+    <ClCompile Include="Net\NetFrameworkWindows.cpp">
+      <Filter>Net</Filter>
+    </ClCompile>
+    <ClCompile Include="Net\NetUtil.cpp">
+      <Filter>Net</Filter>
+    </ClCompile>
+    <ClCompile Include="Net\UDPSocketWindows.cpp">
+      <Filter>Net</Filter>
+    </ClCompile>
+    <ClCompile Include="Net\UDPSocket.cpp">
+      <Filter>Net</Filter>
+    </ClCompile>
+    <ClCompile Include="Net\NetTransport.cpp">
+      <Filter>Net</Filter>
+    </ClCompile>
+    <ClCompile Include="Net\NetTransportImpl.cpp">
+      <Filter>Net</Filter>
+    </ClCompile>
+    <ClCompile Include="Net\ConnectPacket.cpp">
+      <Filter>Net</Filter>
+    </ClCompile>
+    <ClCompile Include="Net\NetTransportHandler.cpp">
+      <Filter>Net</Filter>
+    </ClCompile>
+    <ClCompile Include="Net\NetTransportConfig.cpp">
+      <Filter>Net</Filter>
+    </ClCompile>
+    <ClCompile Include="Net\PacketUtility.cpp">
+      <Filter>Net</Filter>
+    </ClCompile>
+    <ClCompile Include="Memory\PoolHeap.cpp">
+      <Filter>Memory</Filter>
+    </ClCompile>
+    <ClCompile Include="Memory\DynamicPoolHeap.cpp">
+      <Filter>Memory</Filter>
+    </ClCompile>
+    <ClCompile Include="Platform\RWSpinLock.cpp">
+      <Filter>Platform</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -496,6 +553,75 @@
     </ClInclude>
     <ClInclude Include="IO\EngineConfig.h">
       <Filter>IO</Filter>
+    </ClInclude>
+    <ClInclude Include="Crypto\RSA.h">
+      <Filter>Crypto</Filter>
+    </ClInclude>
+    <ClInclude Include="Crypto\BCrypt.h">
+      <Filter>Crypto</Filter>
+    </ClInclude>
+    <ClInclude Include="Crypto\SecureRandom.h">
+      <Filter>Crypto</Filter>
+    </ClInclude>
+    <ClInclude Include="Crypto\AES.h">
+      <Filter>Crypto</Filter>
+    </ClInclude>
+    <ClInclude Include="Net\NetSocket.h">
+      <Filter>Net</Filter>
+    </ClInclude>
+    <ClInclude Include="Net\UDPSocket.h">
+      <Filter>Net</Filter>
+    </ClInclude>
+    <ClInclude Include="Net\NetTypes.h">
+      <Filter>Net</Filter>
+    </ClInclude>
+    <ClInclude Include="Net\NetFramework.h">
+      <Filter>Net</Filter>
+    </ClInclude>
+    <ClInclude Include="Net\NetUtil.h">
+      <Filter>Net</Filter>
+    </ClInclude>
+    <ClInclude Include="Net\UDPSocketWindows.h">
+      <Filter>Net</Filter>
+    </ClInclude>
+    <ClInclude Include="Net\NetTransport.h">
+      <Filter>Net</Filter>
+    </ClInclude>
+    <ClInclude Include="Net\NetTransportImpl.h">
+      <Filter>Net</Filter>
+    </ClInclude>
+    <ClInclude Include="Utility\Crc32.h">
+      <Filter>Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="Utility\ByteOrder.h">
+      <Filter>Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="Net\ConnectPacket.h">
+      <Filter>Net</Filter>
+    </ClInclude>
+    <ClInclude Include="Net\NetTransportHandler.h">
+      <Filter>Net</Filter>
+    </ClInclude>
+    <ClInclude Include="Net\NetTransportConfig.h">
+      <Filter>Net</Filter>
+    </ClInclude>
+    <ClInclude Include="Net\PacketUtility.h">
+      <Filter>Net</Filter>
+    </ClInclude>
+    <ClInclude Include="Memory\PoolHeap.h">
+      <Filter>Memory</Filter>
+    </ClInclude>
+    <ClInclude Include="Net\NetConnection.h">
+      <Filter>Net</Filter>
+    </ClInclude>
+    <ClInclude Include="Net\NetConnectionController.h">
+      <Filter>Net</Filter>
+    </ClInclude>
+    <ClInclude Include="Memory\DynamicPoolHeap.h">
+      <Filter>Memory</Filter>
+    </ClInclude>
+    <ClInclude Include="Platform\RWSpinLock.h">
+      <Filter>Platform</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

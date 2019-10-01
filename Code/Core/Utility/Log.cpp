@@ -128,7 +128,7 @@ void Log::Output(const SStream& buffer)
         OutputDebugString(buffer.CStr());
         printf("%s", buffer.CStr());
 
-        if (!mFile.IsOpen())
+        if (!mFile.IsOpen() && mConfig)
         {
             // Get config
             // Try Load Directory
@@ -144,7 +144,7 @@ void Log::Output(const SStream& buffer)
 
             // todo: Date the log file name.
             FileSystem::PathCreate(tempDirectory);
-            const String path = FileSystem::PathJoin(FileSystem::PathResolve(tempDirectory), mName + ".log");
+            const String path = FileSystem::PathJoin(FileSystem::PathResolve(tempDirectory), mConfig->GetLogName() + ".log");
             if (!mFile.Open(path, FF_READ | FF_WRITE | FF_SHARE_READ, FILE_OPEN_ALWAYS))
             {
                 CriticalAssertMsgEx("Failed to open log file", LF_ERROR_INTERNAL, ERROR_API_CORE);

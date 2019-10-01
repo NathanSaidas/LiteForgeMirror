@@ -26,10 +26,10 @@
 
 namespace lf {
 template<typename T>
-LF_FORCE_INLINE T Max(T a, T b) { return a > b ? a : b; }
+LF_FORCE_INLINE constexpr const T Max(const T a, const T b) { return a > b ? a : b; }
 
 template<typename T>
-LF_FORCE_INLINE T Min(T a, T b) { return a < b ? a : b; }
+LF_FORCE_INLINE constexpr const T Min(const T a, const T b) { return a < b ? a : b; }
 
 LF_FORCE_INLINE SizeT BitCount(UInt32 value)
 {

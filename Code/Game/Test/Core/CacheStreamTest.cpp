@@ -1609,6 +1609,11 @@ REGISTER_TEST(CacheController_Test)
 
 REGISTER_TEST(CacheStreamTest)
 {
+    if (TestFramework::TestAll())
+    {
+        return;
+    }
+
     auto config = TestFramework::GetConfig();
     TestFramework::ExecuteTest("CacheBlob_FailReserveTest", config);
     TestFramework::ExecuteTest("CacheBlob_FailUpdateTest", config);

@@ -56,6 +56,7 @@ public:
     String(const SizeT length, const value_type* string);
     String(value_type character);
     String(const value_type* string, CopyOnWriteTag);
+    String(const SizeT length, const value_type* string, CopyOnWriteTag);
     ~String();
 
     LF_FORCE_INLINE SizeT               Size() const;

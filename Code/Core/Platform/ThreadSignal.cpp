@@ -31,17 +31,22 @@
 
 namespace lf {
 
+// todo: On windows 7 we must implement an alternative way as WakeByAddressAll/WakeByAddressSingle/WaitOnAddress are not supported.
+
 void ThreadSignal::Wait()
 {
     AssertEx(WaitOnAddress(&mValue, &mValueDummy, sizeof(Int32), INFINITE) == TRUE, LF_ERROR_INTERNAL, ERROR_API_CORE);
+    // CriticalAssertMsgEx("Unsupported operation", LF_ERROR_INTERNAL, ERROR_API_CORE);
 }
 void ThreadSignal::WakeOne()
 {
     WakeByAddressSingle(&const_cast<Int32&>(mValue));
+    // CriticalAssertMsgEx("Unsupported operation", LF_ERROR_INTERNAL, ERROR_API_CORE);
 }
 void ThreadSignal::WakeAll()
 {
     WakeByAddressAll(&const_cast<Int32&>(mValue));
+    // CriticalAssertMsgEx("Unsupported operation", LF_ERROR_INTERNAL, ERROR_API_CORE);
 }
 
 }

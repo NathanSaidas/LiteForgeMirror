@@ -54,6 +54,9 @@
 #if defined(LF_DEBUG) || defined(LF_TEST)
 #define LF_USE_EXCEPTIONS
 #endif
+#if defined(LF_DEBUG) || defined(LF_TEST)
+#define LF_MEMORY_DEBUG
+#endif
 
 #define LF_CONCAT_WRAPPER(a,b) a##b
 #define LF_CONCAT(a,b) LF_CONCAT_WRAPPER(a,b)
@@ -145,6 +148,28 @@ LF_FORCE_INLINE bool InvalidEnum(TENUM value)
 {
     return value == TENUM::INVALID_ENUM;
 }
+
+// Define this in builds you want to run 'optimized' classes using the pimpl idiom.
+// 
+// We use pimpl a bit differently then others might.. In our case the code can be inlined and avoid
+// indirection of either vtable or smart pointer.
+// 
+// We'll pay for the vtable/smart pointer indirection when we compile without LF_IMPL_OPAQUE_OPTIMIZE
+// but in release/final builds we can enable the optimized code which will just use the LF_IMPL_OPAQUE
+// 
+// The benefit/motivation of this is to reduce build/iteration times on low-level features while
+// maintaining performance. It is not to hide implementation details in our case or to provide an 
+// abstraction.
+#if defined(LF_FINAL)
+#define LF_IMPL_OPAQUE_OPTIMIZE
+#endif
+
+// Use these macro's to seamlessly convert between the correct names.
+#if defined(LF_IMPL_OPAQUE_OPTIMIZE)
+#define LF_IMPL_OPAQUE(className_) className_
+#else
+#define LF_IMPL_OPAQUE(className_) className_##Impl
+#endif
 
 } // namespace lf
 

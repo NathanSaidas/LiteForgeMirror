@@ -57,6 +57,8 @@ public:
 #if defined(LF_DEBUG) || defined(LF_TEST)
     const char* GetDebugName() const;
     void SetDebugName(const char* name);
+#else
+    void SetDebugName(const char*) {};
 #endif
     
     static void JoinAll(Thread* threadArray, const size_t numThreads);

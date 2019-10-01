@@ -69,6 +69,7 @@ LF_CORE_API void SHA256Final(SHA256Context* context, ByteT* hash);
 // An all in one function that computes the SHA256 Hash for a single set of data.
 // **********************************
 LF_CORE_API SHA256HashType SHA256Hash(const ByteT* data, SizeT dataLength);
+LF_CORE_API SHA256HashType SHA256Hash(const ByteT* data, SizeT dataLength, const ByteT* salt, SizeT saltLength);
 
 
 } // namespace Crypto

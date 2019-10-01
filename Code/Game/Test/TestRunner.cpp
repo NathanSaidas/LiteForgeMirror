@@ -38,6 +38,7 @@ public:
         // -test /all
         // -test /batch=<test_name>,<test_name>,<test_name>
         TestConfig config;
+        config.mEngineConfig = GetConfig();
         if (CmdLine::HasArgOption("test", "opt_no_break"))
         {
             config.mTriggerBreakpoint = false;

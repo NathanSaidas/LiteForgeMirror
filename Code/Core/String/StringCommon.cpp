@@ -417,7 +417,7 @@ String StrTrimRight(const String& string)
     return String();
 }
 
-LF_CORE_API String BytesToHex(ByteT* bytes, SizeT length)
+LF_CORE_API String BytesToHex(const ByteT* bytes, SizeT length)
 {
     String buf;
     buf.Reserve(length * 2);

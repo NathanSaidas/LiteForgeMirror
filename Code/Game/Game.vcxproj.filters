@@ -49,6 +49,19 @@
       <Filter>Test\Core</Filter>
     </ClCompile>
     <ClCompile Include="DeployBuild.cpp" />
+    <ClCompile Include="Test\Core\RSATest.cpp">
+      <Filter>Test\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Test\Core\AESTest.cpp">
+      <Filter>Test\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="CryptoApp.cpp" />
+    <ClCompile Include="Test\Core\MemoryTests.cpp">
+      <Filter>Test\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Test\Core\NetConnectionTest.cpp">
+      <Filter>Test\Core</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AnalyzeProjectApp\AnalyzeProjectApp.h">

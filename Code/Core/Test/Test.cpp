@@ -21,6 +21,7 @@
 #include "Test.h"
 #include "Core/Common/Assert.h"
 #include "Core/String/StringUtil.h"
+#include "Core/Utility/CmdLine.h"
 #include "Core/Utility/Log.h"
 #include "Core/Utility/Time.h"
 
@@ -59,7 +60,8 @@ const char* FormatTimeStr(Float64 time)
 }
 
 TestConfig::TestConfig() :
-mTriggerBreakpoint(true)
+mTriggerBreakpoint(true),
+mEngineConfig(nullptr)
 {}
 
 TestRegristration* FindTest(TestRegristration* root, const Char8* string)
@@ -105,6 +107,7 @@ void TestFramework::ExecuteTest(const Char8* name, const TestConfig& config)
         TestContext context;
         context.mTriggerBreakpoint = config.mTriggerBreakpoint;
         context.mPrev = sTestContextStack;
+        context.mEngineConfig = config.mEngineConfig;
         sTestContextStack = &context;
 
         sFailed = 0;
@@ -148,6 +151,7 @@ void TestFramework::ExecuteAllTests(const TestConfig& config)
         TestContext context;
         context.mTriggerBreakpoint = config.mTriggerBreakpoint;
         context.mPrev = sTestContextStack;
+        context.mEngineConfig = config.mEngineConfig;
         sTestContextStack = &context;
 
         sFailed = 0;
@@ -210,11 +214,16 @@ bool TestFramework::TriggerBreakPoint()
 {
     return sTestContextStack ? sTestContextStack->mTriggerBreakpoint : true;
 }
+bool TestFramework::TestAll()
+{
+    return CmdLine::HasArgOption("test", "all");
+}
 
 TestConfig TestFramework::GetConfig()
 {
     TestConfig config;
     config.mTriggerBreakpoint = TriggerBreakPoint();
+    config.mEngineConfig = sTestContextStack ? sTestContextStack->mEngineConfig : nullptr;
     return config;
 }
 

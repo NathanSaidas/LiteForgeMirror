@@ -65,7 +65,7 @@ namespace lf
 
     struct ScopedStackTrace : public StackTrace
     {
-        ScopedStackTrace() { ReleaseStackTrace(*this); }
+        ~ScopedStackTrace() { ReleaseStackTrace(*this); }
 
     };
 }

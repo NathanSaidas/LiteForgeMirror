@@ -114,6 +114,10 @@ public:
             }
         }
 
+        // OpenSSL DLLs that must be purged.
+        dllTargets.Add("libcrypto-3.dll");
+        dllTargets.Add("libssl-3.dll");
+
         // [optional] -deploy /Code="..."
         // [optional] -deploy /Lib="..."
         // [optional] -deploy /Include="..."
@@ -156,6 +160,7 @@ public:
             String dest = FileSystem::PathJoin(toolsDir, "LiteForgeTool_x64Final.exe");
 
             CopyFile(source, dest);
+
             WaitCopy();
             return;
         }

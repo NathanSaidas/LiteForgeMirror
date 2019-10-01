@@ -103,6 +103,15 @@ mStorage()
     mStorage.heap.end = mStorage.heap.last;
     SetFlag(LF_STRING_COPY_ON_WRITE_FLAG);
 }
+String::String(const SizeT length, const value_type* string, CopyOnWriteTag)
+: mStorage()
+{
+    ZeroBuffer();
+    mStorage.heap.first = const_cast<value_type*>(string);
+    mStorage.heap.last = mStorage.heap.first + length;
+    mStorage.heap.end = mStorage.heap.last;
+    SetFlag(LF_STRING_COPY_ON_WRITE_FLAG);
+}
 String::~String()
 {
     Clear();
