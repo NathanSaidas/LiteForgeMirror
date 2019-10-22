@@ -23,21 +23,26 @@
 
 #include "Core/Common/Types.h"
 #include "Core/Common/API.h"
+#include "Core/Memory/AtomicSmartPointer.h"
 #include "Core/Net/NetTypes.h"
+#include "Core/Net/UDPSocket.h"
 #include "Core/Crypto/AES.h"
+#include "Core/Crypto/HMAC.h"
 #include "Core/Crypto/RSA.h"
 
 namespace lf {
 
-class LF_CORE_API NetConnection
+class LF_CORE_API NetConnection : public TAtomicWeakPointerConvertable<NetConnection>
 {
 public:
     IPEndPointAny   mEndPoint;
     Int64           mLastTick;
     Int32           mID;
     Crypto::RSAKey  mClientKey;
-    Crypto::AESKey  mClientDataKey;
-    ByteT           mIdentity[16];
+    Crypto::RSAKey  mUniqueServerKey;
+    Crypto::AESKey  mSharedKey;
+    ByteT           mHMACKey[Crypto::HMAC_KEY_SIZE];
+    UDPSocket       mSocket;
 };
 
 } // namespace lf

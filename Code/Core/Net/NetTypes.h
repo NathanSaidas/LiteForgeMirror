@@ -25,6 +25,8 @@
 #include "Core/Common/API.h"
 #include "Core/Utility/Bitfield.h"
 
+#include <utility>
+
 namespace lf {
 
 namespace NetConfig {
@@ -96,6 +98,7 @@ namespace NetPacketFlag
         NET_PACKET_FLAG_ACK,         // If this flag is turned on the packet was sent as an ACK corresponding with the packet type
         NET_PACKET_FLAG_SYNC,        // If this flag is turned on the packet is to be processed ASAP vs at end/begin of frame.
         NET_PACKET_FLAG_SECURE,      // If this flag is turned on the packet contains a security header that must be used to decrypt/verify the rest of the packet (connected peers only)
+        NET_PACKET_FLAG_IPV4,        // If this flag is turned on the packet was sent by someone using IPV4 and must be translated back.
 
         MAX_VALUE,
         INVALID_ENUM = NetPacketFlag::MAX_VALUE
@@ -122,6 +125,11 @@ namespace NetAckStatus
     {
         NET_ACK_STATUS_OK,
         NET_ACK_STATUS_CORRUPT,
+        NET_ACK_STATUS_REJECTED,
+        NET_ACK_STATUS_FORBIDDEN,
+        NET_ACK_STATUS_NOT_FOUND,
+        NET_ACK_STATUS_UNAUTHORIZED,
+        NET_ACK_STATUS_INVALID_REQUEST,
 
         MAX_VALUE,
         INVALID_ENUM = NetPacketFlag::MAX_VALUE
@@ -420,9 +428,94 @@ struct LF_ALIGN(4) IPv6EndPoint
 
 struct LF_ALIGN(4) IPEndPointAny
 {
+    IPEndPointAny()
+    : mAddressFamily(NetAddressFamily::INVALID_ENUM)
+    , mPort(0)
+    , mPadding()
+    {
+        memset(mPadding.mBytes, 0, sizeof(mPadding));
+    }
+
+    IPEndPointAny(const IPEndPointAny& other)
+    : mAddressFamily(other.mAddressFamily)
+    , mPort(other.mPort)
+    , mPadding()
+    {
+        memcpy(mPadding.mBytes, other.mPadding.mBytes, sizeof(mPadding));
+    }
+
+    IPEndPointAny(IPEndPointAny&& other)
+    : mAddressFamily(other.mAddressFamily)
+    , mPort(other.mPort)
+    , mPadding()
+    {
+        memcpy(mPadding.mBytes, other.mPadding.mBytes, sizeof(mPadding.mBytes));
+        other.mAddressFamily = NetAddressFamily::INVALID_ENUM;
+        other.mPort = 0;
+        memset(other.mPadding.mBytes, 0, sizeof(other.mPadding));
+    }
+
+    IPEndPointAny& operator=(const IPEndPointAny& other)
+    {
+        if (this != &other)
+        {
+            mAddressFamily = other.mAddressFamily;
+            mPort = other.mPort;
+            memcpy(mPadding.mBytes, other.mPadding.mBytes, sizeof(mPadding));
+        }
+        return *this;
+    }
+
+    IPEndPointAny& operator=(IPEndPointAny&& other)
+    {
+        if (this != &other)
+        {
+            mAddressFamily = other.mAddressFamily;
+            other.mAddressFamily = NetAddressFamily::INVALID_ENUM;
+            mPort = other.mPort;
+            other.mPort = 0;
+            memcpy(mPadding.mBytes, other.mPadding.mBytes, sizeof(mPadding));
+            memset(other.mPadding.mBytes, 0, sizeof(other.mPadding));
+        }
+        return *this;
+    }
+
+    bool operator==(const IPEndPointAny& other) const
+    {
+        return mAddressFamily == other.mAddressFamily && mPort == other.mPort && memcmp(mPadding.mBytes, other.mPadding.mBytes, sizeof(mPadding)) == 0;
+    }
+
+    bool operator!=(const IPEndPointAny& other) const
+    {
+        return mAddressFamily != other.mAddressFamily || mPort != other.mPort || memcmp(mPadding.mBytes, other.mPadding.mBytes, sizeof(mPadding)) != 0;
+    }
+
     UInt16 mAddressFamily;
-    ByteT  mPadding[sizeof(IPv6EndPoint) - sizeof(UInt16)];
+    UInt16 mPort;
+    union {
+        UInt8  mBytes[16];
+        UInt32 mWord[16 / 4];
+    } mPadding;
 };
+
+namespace ConnectionFailureMsg
+{
+    enum Value
+    {
+        // The server may explicitly reject us or we we're unable to decode the 
+        // server's message.
+        CFM_UNKNOWN,
+        // The server did not respond (either our request never made it to them
+        // or they actively chose to not respond).
+        CFM_TIMED_OUT,
+        // The server received our message but explicitly denied us because they
+        // have reached the maximum number of connections they support.
+        CFM_SERVER_FULL,
+
+        MAX_VALUE,
+        INVALID_ENUM = ConnectionFailureMsg::MAX_VALUE
+    };
+}
 
 namespace PacketDataType
 {
@@ -444,6 +537,12 @@ struct PacketData
     UInt32 mType;
     UInt16 mSize;
     UInt16 mRetransmits;
+
+    template<typename T>
+    static void SetZero(T& packet)
+    {
+        memset(&packet, 0, sizeof(T));
+    }
 };
 
 template<SizeT PacketSizeT>
@@ -456,6 +555,9 @@ using PacketData2048 = TPacketData<2048>;
 using PacketData1024 = TPacketData<1024>;
 using PacketData768 = TPacketData<768>;
 using PacketData512 = TPacketData<512>;
+using ConnectionID = Int32;
+
+const ConnectionID INVALID_CONNECTION = INVALID32;
 
 #if defined(LF_OS_WINDOWS)
 class LF_IMPL_OPAQUE(UDPSocketWindows);

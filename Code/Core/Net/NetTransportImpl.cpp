@@ -111,18 +111,60 @@ const char* PACKET_TYPE_NAMES[]=
     "MESSAGE"
 };
 
-void LF_IMPL_OPAQUE(NetTransport)::Start(NetTransportConfig&& config)
+void LF_IMPL_OPAQUE(NetTransport)::Start(NetTransportConfig&& config, const ByteT* clientConnectionBytes, SizeT numBytes)
 {
     if (IsRunning())
     {
         return;
     }
 
-    // Verify Config:
-    if (config.GetPort() == 0) // todo: This is actually valid, only IF the config is for 'client'
+    const bool emptyEndPoint = IPEmpty(config.GetEndPoint());
+
+    if (emptyEndPoint && (clientConnectionBytes || numBytes > 0))
     {
-        gSysLog.Error(LogMessage("NetTransport failed to start. Invalid configuration. 'Port' != 0 "));
+        gSysLog.Warning(LogMessage("NetTransportConfig provided an empty port yet the arguments passed in for NetTransport::Start contained client data. Assuming configuration for server."));
+    }
+    else if (!emptyEndPoint && (!clientConnectionBytes || numBytes == 0))
+    {
+        gSysLog.Error(LogMessage("NetTransportConfig provided a valid port but is missing client connection bytes. It is required you provide client connection bytes generated from ConnectPacket::EncodePacket to initiate a connection."));
         return;
+    }
+    const bool isClient = !emptyEndPoint;
+
+    // Verify Config:
+    if (config.GetPort() == 0 && !isClient) // todo: This is actually valid, only IF the config is for 'client'
+    {
+        gSysLog.Error(LogMessage("NetTransport failed to start. Invalid configuration. 'Port' != 0. Servers require a valid port number."));
+        return;
+    }
+
+    mAppId = config.GetAppId();
+    mAppVersion = config.GetAppVersion();
+    
+    const NetProtocol::Value protocol = isClient ?
+        config.GetEndPoint().mAddressFamily == NetAddressFamily::NET_ADDRESS_FAMILY_IPV4 ? NetProtocol::NET_PROTOCOL_IPV4_UDP : NetProtocol::NET_PROTOCOL_IPV6_UDP :
+        NetProtocol::NET_PROTOCOL_UDP;
+    
+    // Servers require a 'inbound' socket.
+    // Clients can use one socket to send and receive?
+    //
+
+    gSysLog.Info(LogMessage("Creating socket..."));
+    if (!mInbound.Create(protocol))
+    {
+        config.CloseHandlers(false);
+        return;
+    }
+
+    if (!isClient)
+    {
+        gSysLog.Info(LogMessage("Binding socket..."));
+        if (!mInbound.Bind(config.GetPort()))
+        {
+            config.CloseHandlers(false);
+            return;
+        }
+        CriticalAssertEx(IPV4(mBoundEndPoint, "127.0.0.1", config.GetPort()), LF_ERROR_INTERNAL, ERROR_API_CORE);
     }
 
     for (SizeT i = 0; i < LF_ARRAY_SIZE(mHandlers); ++i)
@@ -135,32 +177,21 @@ void LF_IMPL_OPAQUE(NetTransport)::Start(NetTransportConfig&& config)
     }
     config.CloseHandlers();
 
-    mAppId = config.GetAppId();
-    mAppVersion = config.GetAppVersion();
-    
-    
-    // Servers require a 'inbound' socket.
-    // Clients can use one socket to send and receive?
-    //
-
-    gSysLog.Info(LogMessage("Creating socket..."));
-    if (!mInbound.Create(NetProtocol::NET_PROTOCOL_UDP))
-    {
-        return;
-    }
-
-    gSysLog.Info(LogMessage("Binding socket..."));
-    if (!mInbound.Bind(config.GetPort()))
-    {
-        return;
-    }
-    CriticalAssertEx(IPV4(mBoundEndPoint, "127.0.0.1", config.GetPort()), LF_ERROR_INTERNAL, ERROR_API_CORE);
     gSysLog.Info(LogMessage("Initializing NetTransportHandlers..."));
     for (SizeT i = 0; i < LF_ARRAY_SIZE(mHandlers); ++i)
     {
         if (mHandlers[i])
         {
             mHandlers[i]->Initialize();
+        }
+    }
+
+    if (isClient)
+    {
+        mBoundEndPoint = config.GetEndPoint();
+        if (!mInbound.SendTo(clientConnectionBytes, numBytes, mBoundEndPoint))
+        {
+            CriticalAssertMsg("FAILED TO SEND CONNECTION MESSAGE");
         }
     }
 
@@ -182,24 +213,15 @@ void LF_IMPL_OPAQUE(NetTransport)::Stop()
     AtomicStore(&mRunning, 0);
     if (mInbound.IsAwaitingReceive())
     {
-        gSysLog.Info(LogMessage("Flushing receiver..."));
-        
-        UDPSocket flusher;
-        flusher.Create(NetProtocol::NET_PROTOCOL_IPV4_UDP);
-        
-
-        ByteT flushMsg[2] = { 0 };
-        SizeT inOutBytes = sizeof(flushMsg);
-        while (mInbound.IsAwaitingReceive())
-        {
-            gSysLog.Info(LogMessage("Sending flush bytes..."));
-            AssertEx(flusher.SendTo(flushMsg, inOutBytes, mBoundEndPoint), LF_ERROR_INTERNAL, ERROR_API_CORE);
-            SleepCallingThread(1);
-        }
+        mInbound.Shutdown();
     }
 
+
     gSysLog.Info(LogMessage("Joining receiver..."));
-    mInboundThread.Join();
+    if (mInboundThread.IsRunning())
+    {
+        mInboundThread.Join();
+    }
 
     gSysLog.Info(LogMessage("Shutting down NetTransportHandlers..."));
     for (SizeT i = 0; i < LF_ARRAY_SIZE(mHandlers); ++i)
@@ -213,7 +235,6 @@ void LF_IMPL_OPAQUE(NetTransport)::Stop()
     }
 
     mInbound.Close();
-    
 }
 
 bool LF_IMPL_OPAQUE(NetTransport)::IsRunning() const
@@ -229,6 +250,11 @@ void LF_IMPL_OPAQUE(NetTransport)::ProcessReceiveThread(void* self)
 void LF_IMPL_OPAQUE(NetTransport)::ProcessReceive()
 {
     gSysLog.Info(LogMessage("Executing transport receiver..."));
+    if (IPEmpty(mBoundEndPoint))
+    {
+        gSysLog.Warning(LogMessage("The transport receiver thread was started but it does not have a bound end point. For servers you must 'Start' with empty end point. For clients you must start with a valid end point."));
+        return;
+    }
 
     ByteT bytes[2048];
     while (IsRunning())

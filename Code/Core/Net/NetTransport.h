@@ -45,7 +45,7 @@ public:
 
     NetTransport& operator=(NetTransport&& other);
 
-    void Start(NetTransportConfig&& config);
+    void Start(NetTransportConfig&& config, const ByteT* clientConnectionBytes = nullptr, SizeT numBytes = 0);
     void Stop();
 
     bool IsRunning() const;

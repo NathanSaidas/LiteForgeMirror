@@ -186,6 +186,9 @@ namespace lf
             {
                 mStatic[i].~value_type();
             }
+            mFirst = mStatic;
+            mLast = mFirst;
+            mEnd = mFirst + SIZE;
         }
         TArrayStaticData(TArrayStaticData&& other) :
             mStatic(),
@@ -206,9 +209,9 @@ namespace lf
                 mLast = mFirst + size;
                 mEnd = mFirst + capacity;
             }
-            other.mFirst = nullptr;
-            other.mLast = nullptr;
-            other.mEnd = nullptr;
+            other.mFirst = other.mStatic;
+            other.mLast = other.mFirst;
+            other.mEnd = other.mFirst + SIZE;
         }
 
         TArrayStaticData& operator=(TArrayStaticData&& other)
@@ -231,9 +234,9 @@ namespace lf
             {
                 mStatic[i] = std::move(other.mStatic[i]);
             }
-            other.mFirst = nullptr;
-            other.mLast = nullptr;
-            other.mEnd = nullptr;
+            other.mFirst = other.mStatic;
+            other.mLast = other.mFirst;
+            other.mEnd = other.mFirst + SIZE;
             return *this;
         }
 
@@ -415,6 +418,24 @@ namespace lf
     template<typename T, typename DataT = TArrayData<T>>
     class TArray;
 
+    template<typename T>
+    struct ArrayDefaultCapacity
+    {
+        static constexpr SizeT Value = 0;
+    };
+
+    template<typename T, typename AllocatorT>
+    struct ArrayDefaultCapacity<TArrayData<T, AllocatorT>>
+    {
+        static constexpr SizeT Value = 0;
+
+    };
+
+    template<typename T, SizeT SIZE, typename AllocatorT>
+    struct ArrayDefaultCapacity<TArrayStaticData<T, SIZE, AllocatorT>>
+    {
+        static constexpr SizeT Value = SIZE;
+    };
 
     template<typename T>
     class ArrayConstIterator
@@ -1003,7 +1024,7 @@ namespace lf
         bool  Empty() const { return mData.mFirst == mData.mLast; }
         SizeT Size() const { return mData.mLast - mData.mFirst; }
         SizeT Capacity() const { return mData.mEnd - mData.mFirst; }
-
+        static constexpr SizeT DefaultCapacity() { return ArrayDefaultCapacity<DataT>::Value; }
 
         // **********************************
         // Resizes the array either growing or shrinking it depending on the desired size and current size.
@@ -1055,7 +1076,7 @@ namespace lf
                 else
                 {
                     // Construct from current size to new size
-                    Grow(size);
+                    Grow(size, 1);
                     mData.mLast = mData.mFirst + size;
                     pointer it = mData.mFirst + currentSize;
                     while (it != mData.mLast)

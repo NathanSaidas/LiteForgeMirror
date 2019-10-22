@@ -113,14 +113,15 @@ void AESKey::Clear()
 
 static SizeT CalculateCipherTextLength(const AESKey* key, SizeT bytes)
 {
-    SizeT N = 0;  
+    const SizeT BLOCK_SIZE = 16;
+    const SizeT BLOCK_SIZE_MINUS_ONE = BLOCK_SIZE - 1;
+    SizeT M = bytes & BLOCK_SIZE_MINUS_ONE;   // bytes % BLOCK_SIZE
 
     switch (key->GetKeySize())
     {
         case AES_KEY_128:
         case AES_KEY_256: // AES 256 block size is 16 bytes as well.
-            N = bytes / 16;
-            return (N * 16) == bytes ? bytes : 16 * (N + 1);
+            return M != 0 ? bytes + (BLOCK_SIZE - M) : bytes;
         default:
             return 0;
     }

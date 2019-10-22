@@ -39,6 +39,12 @@
 
 namespace lf {
 
+void SetCTitle(const char* title)
+{
+    SetConsoleTitleA(title);
+}
+
+
 WSADATA gWSAData;
 bool gNetInitialized = false;
 
@@ -48,6 +54,8 @@ bool NetInitialize()
     LF_STATIC_ASSERT(sizeof(IPv6EndPoint) <= sizeof(IPEndPointAny));
     LF_STATIC_ASSERT(alignof(IPv4EndPoint) == alignof(IPEndPointAny));
     LF_STATIC_ASSERT(alignof(IPv6EndPoint) == alignof(IPEndPointAny));
+    LF_STATIC_ASSERT(sizeof(IPv6EndPoint::mAddress) == sizeof(IPEndPointAny::mPadding));
+    LF_STATIC_ASSERT(sizeof(IPv4EndPoint::mAddress) <= sizeof(IPEndPointAny::mPadding));
 
     if (IsNetInitialized())
     {
@@ -123,6 +131,7 @@ const char* GetNetworkErrorString(Int32 errorCode)
         LF_WSA_ERROR_STRING(WSAEISCONN);
         LF_WSA_ERROR_STRING(WSAEOPNOTSUPP);
         LF_WSA_ERROR_STRING(WSAEMSGSIZE);
+        LF_WSA_ERROR_STRING(WSAEINTR);
         default:
             return "Unknown socket error.";
     }
@@ -212,6 +221,101 @@ bool IPV6(IPEndPointAny& endPoint, const char* address, UInt16 port)
         LogSocketOperationFailure("inet_pton");
     }
     return false;
+}
+
+bool IPEmpty(const IPv4EndPoint& endPoint)
+{
+    return InvalidEnum(static_cast<NetAddressFamily::Value>(endPoint.mAddressFamily));
+}
+
+bool IPEmpty(const IPv6EndPoint& endPoint)
+{
+    return InvalidEnum(static_cast<NetAddressFamily::Value>(endPoint.mAddressFamily));
+}
+
+bool IPEmpty(const IPEndPointAny& endPoint)
+{
+    return InvalidEnum(static_cast<NetAddressFamily::Value>(endPoint.mAddressFamily));
+}
+
+bool IPCast(const IPEndPointAny& endPoint, IPv4EndPoint& outEndPoint)
+{
+    if (endPoint.mAddressFamily != NetAddressFamily::NET_ADDRESS_FAMILY_IPV4)
+    {
+        return false;
+    }
+    outEndPoint.mAddressFamily = endPoint.mAddressFamily;
+    outEndPoint.mPort = endPoint.mPort;
+    outEndPoint.mAddress.mWord = endPoint.mPadding.mWord[0];
+    return true;
+}
+bool IPCast(const IPEndPointAny& endPoint, IPv6EndPoint& outEndPoint)
+{
+    if (endPoint.mAddressFamily != NetAddressFamily::NET_ADDRESS_FAMILY_IPV6)
+    {
+        return false;
+    }
+    outEndPoint.mAddressFamily = endPoint.mAddressFamily;
+    outEndPoint.mPort = endPoint.mPort;
+    memcpy(outEndPoint.mAddress.mBytes, endPoint.mPadding.mBytes, sizeof(outEndPoint.mAddress));
+    return true;
+}
+bool IPCast(const IPv4EndPoint& endPoint, IPEndPointAny& outEndPoint)
+{
+    outEndPoint = IPEndPointAny();
+    outEndPoint.mAddressFamily = endPoint.mAddressFamily;
+    outEndPoint.mPort = endPoint.mPort;
+    outEndPoint.mPadding.mWord[0] = endPoint.mAddress.mWord;
+    return true;
+}
+bool IPCast(const IPv6EndPoint& endPoint, IPEndPointAny& outEndPoint)
+{
+    outEndPoint = IPEndPointAny();
+    outEndPoint.mAddressFamily = endPoint.mAddressFamily;
+    outEndPoint.mPort = endPoint.mPort;
+    memcpy(outEndPoint.mPadding.mBytes, endPoint.mAddress.mBytes, sizeof(outEndPoint.mPadding));
+    return true;
+}
+
+String IPToString(const IPEndPointAny& endPoint)
+{
+    if (IPEmpty(endPoint))
+    {
+        return String();
+    }
+
+    switch (endPoint.mAddressFamily)
+    {
+        case NetAddressFamily::NET_ADDRESS_FAMILY_IPV4:
+        {
+            in_addr addr;
+            char buffer[64];
+
+            memset(buffer, 0, sizeof(buffer));
+            memcpy(&addr, endPoint.mPadding.mBytes, sizeof(addr));
+
+            if (inet_ntop(AF_INET, &addr, buffer, sizeof(buffer)) == NULL)
+            {
+                return String();
+            }
+            return String(buffer) + ":" + ToString(endPoint.mPort);
+        } break;
+        case NetAddressFamily::NET_ADDRESS_FAMILY_IPV6:
+        {
+            in_addr6 addr;
+            char buffer[64];
+
+            memset(buffer, 0, sizeof(buffer));
+            memcpy(&addr, endPoint.mPadding.mBytes, sizeof(addr));
+
+            if (inet_ntop(AF_INET6, &addr, buffer, sizeof(buffer)) == NULL)
+            {
+                return String();
+            }
+            return String(buffer) + ":" + ToString(endPoint.mPort);
+        } break;
+    }
+    return String();
 }
 
 } // namespace lf

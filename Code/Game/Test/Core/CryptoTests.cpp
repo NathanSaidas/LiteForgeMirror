@@ -20,9 +20,14 @@
 // ********************************************************************
 
 #include "Core/Test/Test.h"
+#include "Core/Crypto/HMAC.h"
+#include "Core/Crypto/SecureRandom.h"
 #include "Core/Crypto/SHA256.h"
-#include "Core/String/SStream.h"
 #include "Core/Math/Random.h"
+#include "Core/Platform/Atomic.h"
+#include "Core/Platform/Thread.h"
+#include "Core/String/SStream.h"
+#include "Core/String/StringCommon.h"
 #include "Core/Utility/Log.h"
 #include <utility>
 #include <cmath>
@@ -59,6 +64,77 @@ REGISTER_TEST(SHA256_Test)
         Crypto::SHA256Update(&ctx, text3, LF_ARRAY_SIZE(text3) - 1);
     Crypto::SHA256Final(&ctx, buf);
     TEST(!memcmp(hash3, buf, Crypto::SHA256_BLOCK_SIZE));
+}
+
+REGISTER_TEST(HMAC_Test)
+{
+    String shortMessage = "This is a short message";
+    String longMessage = "This is a very long message we are going to use to test the behavior of the HMAC. Will it work? Will it fail? Find out next time on dbz.";
+
+    ByteT randomKey[16];
+    Crypto::SecureRandomBytes(randomKey, LF_ARRAY_SIZE(randomKey));
+
+    ByteT shortHMAC[32];
+    TEST(Crypto::HMACCompute(randomKey, reinterpret_cast<const ByteT*>(shortMessage.CStr()), shortMessage.Size(), shortHMAC));
+
+    ByteT longHMAC[32];
+    TEST(Crypto::HMACCompute(randomKey, reinterpret_cast<const ByteT*>(longMessage.CStr()), longMessage.Size(), longHMAC));
+
+    String shortHMACstr = BytesToHex(shortHMAC, LF_ARRAY_SIZE(shortHMAC));
+    String longHMACstr = BytesToHex(longHMAC, LF_ARRAY_SIZE(longHMAC));
+
+    TEST(Crypto::HMACCompute(randomKey, reinterpret_cast<const ByteT*>(shortMessage.CStr()), shortMessage.Size(), shortHMAC));
+    TEST(Crypto::HMACCompute(randomKey, reinterpret_cast<const ByteT*>(longMessage.CStr()), longMessage.Size(), longHMAC));
+
+    TEST(shortHMACstr == BytesToHex(shortHMAC, LF_ARRAY_SIZE(shortHMAC)));
+    TEST(longHMACstr == BytesToHex(longHMAC, LF_ARRAY_SIZE(longHMAC)));
+}
+
+struct HMACTestOutput
+{
+    ByteT mKey[Crypto::HMAC_KEY_SIZE];
+    ByteT mHMAC[Crypto::HMAC_HASH_SIZE];
+    String mContent;
+    volatile Atomic32 mRunning;
+};
+
+static void HMACThread(void* data)
+{
+    HMACTestOutput* testOutput = reinterpret_cast<HMACTestOutput*>(data);
+
+    while (AtomicLoad(&testOutput->mRunning) == 0) {}
+
+    const ByteT* bytes = reinterpret_cast<const ByteT*>(testOutput->mContent.CStr());
+    const SizeT bytesLength = testOutput->mContent.Size();
+
+    for (SizeT i = 0; i < 10000; ++i)
+    {
+        ByteT hmac[Crypto::HMAC_HASH_SIZE];
+        TEST(Crypto::HMACCompute(testOutput->mKey, bytes, bytesLength, hmac));
+        TEST(memcmp(hmac, testOutput->mHMAC, Crypto::HMAC_HASH_SIZE) == 0);
+    }
+}
+
+REGISTER_TEST(HMACThreadSafety_Test)
+{
+    HMACTestOutput testOutput;
+    testOutput.mContent = "This is a very long message we are going to use to test the behavior of the HMAC. Will it work? Will it fail? Find out next time on dbz.";
+    Crypto::SecureRandomBytes(testOutput.mKey, Crypto::HMAC_KEY_SIZE);
+
+    TEST(Crypto::HMACCompute(testOutput.mKey, reinterpret_cast<const ByteT*>(testOutput.mContent.CStr()), testOutput.mContent.Size(), testOutput.mHMAC));
+
+    AtomicStore(&testOutput.mRunning, 0);
+    Thread threads[16];
+    for (SizeT i = 0; i < LF_ARRAY_SIZE(threads); ++i)
+    {
+        threads[i].Fork(HMACThread, &testOutput);
+    }
+
+    AtomicStore(&testOutput.mRunning, 1);
+    for (SizeT i = 0; i < LF_ARRAY_SIZE(threads); ++i)
+    {
+        threads[i].Join();
+    }
 }
 
 static UInt64 CMod(UInt64 base, UInt64 exponent, UInt64 modulus)

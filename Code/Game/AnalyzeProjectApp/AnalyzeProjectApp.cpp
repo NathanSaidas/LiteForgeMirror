@@ -351,7 +351,7 @@ static void ExportSymbols(const TArray<ObjectFile>& objFiles, SizeT fileCount, S
             for (SizeT k = activeIndex; k < i; ++k)
             {
                 dumpbinProcesses[k].Close();
-                ReportBug(dumpbinProcesses[k].GetReturnCode() == 0);
+                ReportBug(dumpbinProcesses[k].GetReturnCode() == 0 || dumpbinProcesses[k].GetReturnCode() == 259);
             }
         }
 

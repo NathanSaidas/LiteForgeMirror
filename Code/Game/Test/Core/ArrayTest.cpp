@@ -36,6 +36,21 @@
 
 namespace lf
 {
+    
+
+    static void TestDefaultCapacity()
+    {
+        using NormalArray = TArray<int>;
+        using Array4 = TStaticArray<int, 4>;
+        using Array8 = TStaticArray<int, 8>;
+        using Array420 = TStaticArray<int, 420>;
+
+        LF_STATIC_ASSERT(NormalArray::DefaultCapacity() == 0);
+        LF_STATIC_ASSERT(Array4::DefaultCapacity() == 4);
+        LF_STATIC_ASSERT(Array8::DefaultCapacity() == 8);
+        LF_STATIC_ASSERT(Array420::DefaultCapacity() == 420);
+    }
+
     using IntPtr = TStrongPointer<int>;
     static IntPtr MakePtr(int v)
     {
@@ -188,7 +203,7 @@ namespace lf
         
         TEST(a.Empty());
         TEST(a.Size() == 0);
-        TEST(a.Capacity() == 0);
+        TEST(a.Capacity() == T::DefaultCapacity());
         a.Add(MakePtr(5));
         TEST(a.Size() == 1);
         TEST(a.Capacity() >= 1);
@@ -253,7 +268,7 @@ namespace lf
 
         TEST(a.Empty());
         TEST(a.Size() == 0);
-        TEST(a.Capacity() == 0);
+        TEST(a.Capacity() == T::DefaultCapacity());
         a.Add(MakePtr(5));
         TEST(a.Size() == 1);
         TEST(a.Capacity() >= 1);
@@ -316,22 +331,24 @@ namespace lf
         T a;
         IntPtr x = MakePtr(30);
         IntPtr y = MakePtr(42);
+        
+        const SizeT defaultCapacity = a.Capacity();
 
         SizeT used = LFGetBytesAllocated();
         TEST(a.Empty());
         TEST(a.Size() == 0);
-        TEST(a.Capacity() == 0);
+        TEST(a.Capacity() == T::DefaultCapacity());
         // Do nothing:
         a.Resize(0);
         TEST(a.Empty());
         TEST(a.Size() == 0);
-        TEST(a.Capacity() == 0);
+        TEST(a.Capacity() == T::DefaultCapacity());
 
         // Grow:
         a.Resize(3);
         TEST(!a.Empty());
         TEST(a.Size() == 3);
-        TEST(a.Capacity() >= 3);
+        TEST(a.Capacity() == Max(defaultCapacity, SizeT(3)));
         for (IntPtr& item : a)
         {
             TEST(item == NULL_PTR);
@@ -339,13 +356,10 @@ namespace lf
         a[0] = x;
         a[2] = y;
 
-        // Keep Capacity:
-        SizeT capacityBefore = a.Capacity();
         a.Resize(5);
-        TEST(capacityBefore == a.Capacity());
         TEST(!a.Empty());
         TEST(a.Size() == 5);
-        TEST(a.Capacity() >= 5);
+        TEST(a.Capacity() == Max(defaultCapacity, SizeT(5)));
         TEST(a[0] == x);
         TEST(a[2] == y);
 
@@ -353,7 +367,7 @@ namespace lf
         a.Resize(7);
         TEST(!a.Empty());
         TEST(a.Size() == 7);
-        TEST(a.Capacity() >= 7);
+        TEST(a.Capacity() == Max(defaultCapacity, SizeT(7)));
         TEST(a[0] == x);
         TEST(a[2] == y);
 
@@ -361,7 +375,7 @@ namespace lf
         a.Resize(2);
         TEST(!a.Empty());
         TEST(a.Size() == 2);
-        TEST(a.Capacity() >= 2);
+        TEST(a.Capacity() == Max(defaultCapacity, SizeT(7)));
         TEST(a[0] == x);
 
         TEST(x.GetStrongRefs() == 2);
@@ -372,7 +386,7 @@ namespace lf
     }
 
     template<typename T>
-    static void TestArrayReserve(SizeT staticSize)
+    static void TestArrayReserve()
     {
         T a;
         IntPtr x = MakePtr(30);
@@ -381,12 +395,12 @@ namespace lf
         SizeT used = LFGetBytesAllocated();
         TEST(a.Empty());
         TEST(a.Size() == 0);
-        TEST(a.Capacity() == 0);
+        TEST(a.Capacity() == T::DefaultCapacity());
 
         a.Reserve(3);
         TEST(a.Empty());
         TEST(a.Size() == 0);
-        TEST(a.Capacity() == Max<SizeT>(3, staticSize));
+        TEST(a.Capacity() == Max<SizeT>(3, T::DefaultCapacity()));
 
         a.Add(x);
         a.Add(NULL_PTR);
@@ -522,7 +536,7 @@ namespace lf
         {
             T a;
             TEST(a.Empty());
-            TEST(a.Capacity() == 0);
+            TEST(a.Capacity() == T::DefaultCapacity());
         }
 
         // Initializer List Ctor
@@ -642,10 +656,12 @@ namespace lf
 
     REGISTER_TEST(ArrayTest)
     {
+        TestDefaultCapacity();
+
         TestArrayAddRemove<TArray<IntPtr>>();
         TestArraySwapRemove<TArray<IntPtr>>();
         TestArrayResize<TArray<IntPtr>>();
-        TestArrayReserve<TArray<IntPtr>>(0);
+        TestArrayReserve<TArray<IntPtr>>();
         TestCollapse<TArray<IntPtr>>();
         TestInsert<TArray<IntPtr>>();
         TestArrayConstructors<TArray<IntPtr>>();
@@ -656,7 +672,7 @@ namespace lf
         TestArrayAddRemove<TStaticArray<IntPtr, 4>>();
         TestArraySwapRemove<TStaticArray<IntPtr, 4>>();
         TestArrayResize<TStaticArray<IntPtr, 4>>();
-        TestArrayReserve<TStaticArray<IntPtr, 4>>(4);
+        TestArrayReserve<TStaticArray<IntPtr, 4>>();
         TestCollapse<TStaticArray<IntPtr, 4>>();
         TestInsert<TStaticArray<IntPtr, 4>>();
         TestArrayConstructors<TStaticArray<IntPtr, 4>>();

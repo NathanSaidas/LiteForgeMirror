@@ -92,6 +92,9 @@ public:
     bool Bind(UInt16 port);
     // **********************************
     // Blocks and receives data. The socket must be bound before it can receive data.
+    // 
+    // note: If this method returns false, it doesn't necessarilly mean that it failed,
+    //       it could have simply been unblocked by a shutdown operation.
     //
     // @param outBytes   -- A pointer to memory that the received bytes will be written to
     // @param inOutBytes -- The number of bytes indicating the size of the buffer. If the
@@ -123,6 +126,12 @@ public:
     // @return Returns true if the socket is currently calling receive.
     // **********************************
     bool IsAwaitingReceive() const;
+    // **********************************
+    // Closes the socket under the assumption that it is currently awaiting to receive some data. (Blocking)
+    // 
+    // @return Returns true if the socket was successfully closed.
+    // **********************************
+    bool Shutdown();
 private:
     using ImplType = LF_IMPL_OPAQUE(UDPSocket);
     using ImplPtr = TStrongPointer<ImplType>;

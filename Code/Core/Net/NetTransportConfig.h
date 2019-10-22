@@ -41,11 +41,13 @@ public:
     void SetPort(UInt16 value) { mPort = value; }
     void SetAppId(UInt16 value) { mAppId = value; }
     void SetAppVersion(UInt16 value) { mAppVersion = value; }
+    void SetEndPoint(const IPEndPointAny& value) { mEndPoint = value; }
     void SetTransportHandler(NetPacketType::Value packetType, NetTransportHandler* transportHandler);
 
     UInt16 GetPort() const { return mPort; }
     UInt16 GetAppId() const { return mAppId; }
     UInt16 GetAppVersion() const { return mAppVersion; }
+    const IPEndPointAny& GetEndPoint() const { return mEndPoint; }
     NetTransportHandler* GetTransportHandler(NetPacketType::Value packetType) { return mHandlers[packetType]; }
 
     void CloseHandlers(bool unset = true);
@@ -53,6 +55,7 @@ private:
     UInt16 mPort;
     UInt16 mAppId;
     UInt16 mAppVersion;
+    IPEndPointAny mEndPoint;
     NetTransportHandler* mHandlers[NetPacketType::MAX_VALUE];
 };
 

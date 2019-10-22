@@ -92,12 +92,12 @@ public:
     StrongType& operator=(const NullPtr&);
     StrongType& operator=(StrongType&& other);
 
-    bool operator==(const StrongType& other);
-    bool operator==(const WeakType& other);
-    bool operator==(const NullPtr&);
-    bool operator!=(const StrongType& other);
-    bool operator!=(const WeakType& other);
-    bool operator!=(const NullPtr&);
+    bool operator==(const StrongType& other) const;
+    bool operator==(const WeakType& other) const;
+    bool operator==(const NullPtr&) const;
+    bool operator!=(const StrongType& other) const;
+    bool operator!=(const WeakType& other) const;
+    bool operator!=(const NullPtr&) const;
 
     operator bool() const;
     operator Pointer() { return AtomicLoadPointer(&mNode->mPointer); }
@@ -225,12 +225,12 @@ public:
     WeakType& operator=(WeakType&& other);
 
 
-    bool operator==(const StrongType& other);
-    bool operator==(const WeakType& other);
-    bool operator==(const NullPtr&);
-    bool operator!=(const StrongType& other);
-    bool operator!=(const WeakType& other);
-    bool operator!=(const NullPtr&);
+    bool operator==(const StrongType& other) const;
+    bool operator==(const WeakType& other) const;
+    bool operator==(const NullPtr&) const;
+    bool operator!=(const StrongType& other) const;
+    bool operator!=(const WeakType& other) const;
+    bool operator!=(const NullPtr&) const;
 
     operator bool() const;
     operator Pointer() { return AtomicLoadPointer(&mNode->mPointer); }
@@ -273,12 +273,59 @@ private:
                     ReleaseNode();
                 }
             }
-            AtomicStorePointer(&mNode, nullptr);
+            NodeType* null = nullptr;
+            AtomicStorePointer(&mNode, null);
         }
     }
 
     NodeType* volatile mNode;
 };
+
+// Convertable Smart Atomic Pointers
+// usage:
+// class MyType : public TAtomicWeakPointerConvertable
+// 
+// ptr = MakeConvertableAtomicPtr<MyType>();
+// wptr = GetAtomicPointer(rawPtr);
+//
+
+template<typename T>
+struct TAtomicWeakPointerConvertable
+{
+public:
+    const TAtomicWeakPointer<T>& GetWeakPointer() const { return mPointer; }
+    TAtomicWeakPointer<T>& GetWeakPointer() { return mPointer; }
+private:
+    TAtomicWeakPointer<T> mPointer;
+};
+
+template<typename T>
+TAtomicStrongPointer<T> MakeConvertableAtomicPtr()
+{
+    TAtomicStrongPointer<T> ptr(LFNew<T>());
+    ptr->GetWeakPointer() = ptr;
+    return ptr;
+}
+
+template<typename T>
+TAtomicWeakPointer<T> GetAtomicPointer(T* self)
+{
+    if (!self)
+    {
+        return NULL_PTR;
+    }
+    return self->GetWeakPointer();
+}
+
+template<typename T>
+const TAtomicWeakPointer<T>& GetAtomicPointer(const T* self)
+{
+    if (!self)
+    {
+        return *reinterpret_cast<const TAtomicWeakPointer<T>*>(&NULL_PTR);
+    }
+    return self->GetWeakPointer();
+}
 
 template<typename T>
 TAtomicStrongPointer<T>::TAtomicStrongPointer() : mNode(reinterpret_cast<NodeType*>(&gNullAtomicPointerNode))
@@ -390,34 +437,33 @@ typename TAtomicStrongPointer<T>::StrongType& TAtomicStrongPointer<T>::operator=
     return *this;
 }
 
-
 template<typename T>
-bool TAtomicStrongPointer<T>::operator==(const StrongType& other)
+bool TAtomicStrongPointer<T>::operator==(const StrongType& other) const
 {
     return AtomicLoadPointer(&other.mNode->mPointer) == AtomicLoadPointer(&mNode->mPointer);
 }
 template<typename T>
-bool TAtomicStrongPointer<T>::operator==(const WeakType& other)
+bool TAtomicStrongPointer<T>::operator==(const WeakType& other) const
 {
     return AtomicLoadPointer(&other.mNode->mPointer) == AtomicLoadPointer(&mNode->mPointer);
 }
 template<typename T>
-bool TAtomicStrongPointer<T>::operator==(const NullPtr&)
+bool TAtomicStrongPointer<T>::operator==(const NullPtr&) const
 {
     return AtomicLoadPointer(&mNode->mPointer) == nullptr;
 }
 template<typename T>
-bool TAtomicStrongPointer<T>::operator!=(const StrongType& other)
+bool TAtomicStrongPointer<T>::operator!=(const StrongType& other) const
 {
     return AtomicLoadPointer(&other.mNode->mPointer) != AtomicLoadPointer(&mNode->mPointer);
 }
 template<typename T>
-bool TAtomicStrongPointer<T>::operator!=(const WeakType& other)
+bool TAtomicStrongPointer<T>::operator!=(const WeakType& other) const
 {
     return AtomicLoadPointer(&other.mNode->mPointer) != AtomicLoadPointer(&mNode->mPointer);
 }
 template<typename T>
-bool TAtomicStrongPointer<T>::operator!=(const NullPtr&)
+bool TAtomicStrongPointer<T>::operator!=(const NullPtr&) const
 {
     return AtomicLoadPointer(&mNode->mPointer) != nullptr;
 }
@@ -545,39 +591,39 @@ typename TAtomicWeakPointer<T>::WeakType& TAtomicWeakPointer<T>::operator=(WeakT
     }
     DecrementRef();
     AtomicStorePointer(&mNode, other.mNode);
-    AtomicStorePointer(other.mNode, reinterpret_cast<NodeType*>(&gNullAtomicPointerNode));
+    AtomicStorePointer(&other.mNode, reinterpret_cast<NodeType*>(&gNullAtomicPointerNode));
     other.IncrementRef();
     return *this;
 }
 
 
 template<typename T>
-bool TAtomicWeakPointer<T>::operator==(const StrongType& other)
+bool TAtomicWeakPointer<T>::operator==(const StrongType& other) const
 {
     return AtomicLoadPointer(&mNode->mPointer) == AtomicLoadPointer(&other.mNode->mPointer);
 }
 template<typename T>
-bool TAtomicWeakPointer<T>::operator==(const WeakType& other)
+bool TAtomicWeakPointer<T>::operator==(const WeakType& other) const
 {
     return AtomicLoadPointer(&mNode->mPointer) == AtomicLoadPointer(&other.mNode->mPointer);
 }
 template<typename T>
-bool TAtomicWeakPointer<T>::operator==(const NullPtr&)
+bool TAtomicWeakPointer<T>::operator==(const NullPtr&) const
 {
     return AtomicLoadPointer(&mNode->mPointer) == nullptr;
 }
 template<typename T>
-bool TAtomicWeakPointer<T>::operator!=(const StrongType& other)
+bool TAtomicWeakPointer<T>::operator!=(const StrongType& other) const
 {
     return AtomicLoadPointer(&mNode->mPointer) != AtomicLoadPointer(&other.mNode->mPointer);
 }
 template<typename T>
-bool TAtomicWeakPointer<T>::operator!=(const WeakType& other)
+bool TAtomicWeakPointer<T>::operator!=(const WeakType& other) const
 {
     return AtomicLoadPointer(&mNode->mPointer) != AtomicLoadPointer(&other.mNode->mPointer);
 }
 template<typename T>
-bool TAtomicWeakPointer<T>::operator!=(const NullPtr&)
+bool TAtomicWeakPointer<T>::operator!=(const NullPtr&) const
 {
     return AtomicLoadPointer(&mNode->mPointer) != nullptr;
 }

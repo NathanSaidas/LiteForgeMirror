@@ -30,6 +30,7 @@ NetTransportConfig::NetTransportConfig()
 : mPort(0)
 , mAppId(0)
 , mAppVersion(0)
+, mEndPoint()
 , mHandlers()
 {
     for (SizeT i = 0; i < LF_ARRAY_SIZE(mHandlers); ++i)
@@ -41,6 +42,7 @@ NetTransportConfig::NetTransportConfig(NetTransportConfig&& other)
 : mPort(other.mPort)
 , mAppId(other.mAppId)
 , mAppVersion(other.mAppVersion)
+, mEndPoint(std::move(other.mEndPoint))
 , mHandlers()
 {
     other.mPort = 0;
@@ -71,6 +73,7 @@ NetTransportConfig& NetTransportConfig::operator=(NetTransportConfig&& other)
     mPort = other.mPort;
     mAppId = other.mAppId;
     mAppVersion = other.mAppVersion;
+    mEndPoint = std::move(other.mEndPoint);
     other.mPort = 0;
     other.mAppId = 0;
     other.mAppVersion = 0;
@@ -108,8 +111,11 @@ void NetTransportConfig::CloseHandlers(bool unset)
     {
         for (SizeT i = 0; i < LF_ARRAY_SIZE(mHandlers); ++i)
         {
-            LFDelete(mHandlers[i]);
-            mHandlers[i] = nullptr;
+            if (mHandlers[i])
+            {
+                LFDelete(mHandlers[i]);
+                mHandlers[i] = nullptr;
+            }
         }
     }
 }

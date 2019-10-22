@@ -23,8 +23,14 @@
 
 #include "Core/Common/Types.h"
 #include "Core/Common/API.h"
-
+#include "Core/Net/NetTypes.h"
+#include "Core/Memory/AtomicSmartPointer.h"
+#include "Core/Utility/StdMap.h"
+#include "Core/Utility/UniqueNumber.h"
 namespace lf {
+
+DECLARE_ATOMIC_PTR(NetConnection);
+DECLARE_ATOMIC_WPTR(NetConnection);
 
 // This class will server the purpose of simply allocating a 'connection' and unique 'connection id'
 // 
@@ -35,7 +41,17 @@ namespace lf {
 class LF_CORE_API NetConnectionController
 {
 public:
-    
+    using ConnectionMap = TMap<ConnectionID, NetConnectionAtomicPtr>;
+    using UniqueNumberGen = UniqueNumber<ConnectionID, 100>;
+
+    NetConnection* FindConnection(ConnectionID id);
+    NetConnection* InsertConnection();
+    bool DeleteConnection(ConnectionID id);
+
+private:
+    ConnectionMap mConnections;
+    UniqueNumberGen mIDGenerator;
+
     // Resolve(EndPointAny) : Nullable<Connection>
     // Create(EndPointAny) : Nullable<Connection>
     // Drop(EndPointAny): Nullable<Connection>

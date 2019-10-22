@@ -48,15 +48,15 @@ LF_CORE_API void  LFFree(void* pointer);
 LF_CORE_API SizeT LFGetBytesAllocated();
 LF_CORE_API SizeT LFGetAllocations();
 
-template<typename T>
-T* LFNew(MemoryMarkupTag tag = MMT_GENERAL)
+template<typename T, typename... ARGS>
+T* LFNew(MemoryMarkupTag tag = MMT_GENERAL, ARGS... constructorArgs)
 {
     void* pointer = LFAlloc(sizeof(T), alignof(T), tag);
     if (!pointer)
     {
         return nullptr;
     }
-    return new(pointer)T();
+    return new(pointer)T(constructorArgs...);
 }
 template<typename T>
 void LFDelete(T* pointer)

@@ -21,6 +21,7 @@
 #ifndef LF_CORE_CONNECT_PACKET_H
 #define LF_CORE_CONNECT_PACKET_H
 #include "Core/Net/NetTypes.h"
+#include "Core/Crypto/HMAC.h"
 
 namespace lf {
 
@@ -49,16 +50,10 @@ class RSAKey;
 class LF_CORE_API ConnectPacket
 {
 public:
-    struct Signature
-    {
-        ByteT mIV[16];
-        ByteT mKey[32];
-        ByteT mSalt[32];
-        ByteT mHash[32];
-    };
-
-    using SignatureType = Signature;
     using HeaderType = PacketHeader;
+    using AckHeaderType = AckPacketHeader;
+
+    static const SizeT CHALLENGE_SIZE = 32;
 
     // Static class cannot be instantiated.
     ConnectPacket() = delete;
@@ -66,62 +61,47 @@ public:
     ConnectPacket(ConnectPacket&& other) = delete;
     ~ConnectPacket() = delete;
 
-    // Packet Structure:
-    //   Request -> Ack -> Response -> Ack
-    //   Message -> Ack
-    //
-    //
-    // todo: This could become a static class.
-    //
-    // void Client:Connect()
-    //      generate ClientKey;
-    //      generate SharedKey;
-    //      load     ServerKey;
-    //      Construct(...)
-    //      Send(bytes, byteLength)
-    //      
-    // void Server:OnReceive()
-    //      Verify(AppID,AppVersion).OnFail( Drop() )
-    //      VerifyCrc32().OnFail( Ack(Corrupt) )
-    //      VerifyFlagTypeLogic().OnFail( Drop() )
-    //      VerifyHandler().OnFail( Drop() )
-    //      Ack(Success)
-    //      Handler[Connect].OnPacket()
-    //      Deconstruct(...).OnFail( Drop() )
-    //      CreateConnection().OnMaxConnection( SecureSend(MaxConnection) )
-    //      Connection.CreateKeyPair()
-    //      ConnectResponse().Construct(...)
-    //      Send(bytes, byteLength)
-    //      Free()
-    //
-    // void Client:OnReceive()
-    //      Verify(AppID,AppVersion).OnFail( Drop() )
-    //      VerifyCrc32().OnFail( Ack(Corrupt) )
-    //      VerifyFlagTypeLogic().OnFail( Drop() )
-    //      VerifyHandler().OnFail( Drop() )
-    //      Ack(Success)
-    //      Handler[Connect].OnPacket()
-    //      Deconstruct(...).OnFail( Drop() )
-    //      SaveConnection()
-    //      Free()
-    //
-    // void Server:OnReceive()
-    static SizeT RequestSize(const Crypto::RSAKey& clientKey, const Crypto::AESKey& sharedKey);
-
-    static bool ConstructRequest(
-        ByteT* packetBytes,
+    static bool EncodePacket(
+        ByteT* packetBytes, 
         SizeT& packetBytesLength,
         const Crypto::RSAKey& clientKey,
         const Crypto::RSAKey& serverKey,
-        const Crypto::AESKey& sharedKey);
+        const Crypto::AESKey& sharedKey,
+        const ByteT hmacKey[Crypto::HMAC_KEY_SIZE],
+        const ByteT challenge[CHALLENGE_SIZE]);
 
-    static bool DeconstructRequest(
-        const ByteT* packetBytes, 
+    static bool DecodePacket(
+        const ByteT* packetBytes,
         SizeT packetBytesLength,
         const Crypto::RSAKey& serverKey,
         Crypto::RSAKey& clientKey,
         Crypto::AESKey& sharedKey,
+        ByteT hmacKey[Crypto::HMAC_KEY_SIZE],
+        ByteT challenge[CHALLENGE_SIZE],
         HeaderType& header);
+
+    static bool EncodeAckPacket(
+        ByteT* packetBytes,
+        SizeT& packetBytesLength,
+        const Crypto::RSAKey& clientKey,
+        const Crypto::RSAKey& uniqueKey,
+        const Crypto::AESKey& sharedKey,
+        const ByteT hmacKey[Crypto::HMAC_KEY_SIZE],
+        const ByteT challenge[CHALLENGE_SIZE],
+        ConnectionID connectionID);
+
+    static bool DecodeAckPacket(
+        const ByteT* packetBytes,
+        SizeT packetBytesLength,
+        const Crypto::RSAKey& clientKey,
+        Crypto::RSAKey& uniqueKey,
+        const Crypto::AESKey& sharedKey,
+        const ByteT hmacKey[Crypto::HMAC_KEY_SIZE],
+        ByteT challenge[CHALLENGE_SIZE],
+        ConnectionID& connectionID,
+        AckHeaderType& header);
+
+
 };
 } // namespace lf
 

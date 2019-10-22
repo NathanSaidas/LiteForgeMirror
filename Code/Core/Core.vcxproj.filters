@@ -46,6 +46,9 @@
     <Filter Include="Net">
       <UniqueIdentifier>{ce8d5503-7f08-4352-a435-6dd956fa8c47}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Net\TransportHandlers">
+      <UniqueIdentifier>{b1cd1959-ffa4-4596-8b4e-02943d84b8bf}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Config.cpp">
@@ -266,6 +269,27 @@
     </ClCompile>
     <ClCompile Include="Platform\RWSpinLock.cpp">
       <Filter>Platform</Filter>
+    </ClCompile>
+    <ClCompile Include="Crypto\HMAC.cpp">
+      <Filter>Crypto</Filter>
+    </ClCompile>
+    <ClCompile Include="Utility\Debug.cpp">
+      <Filter>Utility</Filter>
+    </ClCompile>
+    <ClCompile Include="Net\NetConnectionController.cpp">
+      <Filter>Net</Filter>
+    </ClCompile>
+    <ClCompile Include="Net\TransportHandlers\ServerConnectionHandler.cpp">
+      <Filter>Net\TransportHandlers</Filter>
+    </ClCompile>
+    <ClCompile Include="Net\TransportHandlers\ClientConnectionHandler.cpp">
+      <Filter>Net\TransportHandlers</Filter>
+    </ClCompile>
+    <ClCompile Include="Net\NetClientController.cpp">
+      <Filter>Net</Filter>
+    </ClCompile>
+    <ClCompile Include="Net\NetServerController.cpp">
+      <Filter>Net</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -622,6 +646,27 @@
     </ClInclude>
     <ClInclude Include="Platform\RWSpinLock.h">
       <Filter>Platform</Filter>
+    </ClInclude>
+    <ClInclude Include="Crypto\HMAC.h">
+      <Filter>Crypto</Filter>
+    </ClInclude>
+    <ClInclude Include="Utility\Debug.h">
+      <Filter>Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="Utility\UniqueNumber.h">
+      <Filter>Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="Net\TransportHandlers\ServerConnectionHandler.h">
+      <Filter>Net\TransportHandlers</Filter>
+    </ClInclude>
+    <ClInclude Include="Net\TransportHandlers\ClientConnectionHandler.h">
+      <Filter>Net\TransportHandlers</Filter>
+    </ClInclude>
+    <ClInclude Include="Net\NetClientController.h">
+      <Filter>Net</Filter>
+    </ClInclude>
+    <ClInclude Include="Net\NetServerController.h">
+      <Filter>Net</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

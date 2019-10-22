@@ -65,5 +65,7 @@ NetProtocol::Value UDPSocket::GetProtocol() const { return mImpl->GetProtocol();
 UInt16 UDPSocket::GetBoundPort() const { return mImpl->GetBoundPort(); }
 bool UDPSocket::IsAwaitingReceive() const { return mImpl->IsAwaitingReceive(); }
 
+bool UDPSocket::Shutdown() { return mImpl->Shutdown(); }
+
 } // namespace lf
 #endif // LF_IMPL_OPAQUE_OPTIMIZE

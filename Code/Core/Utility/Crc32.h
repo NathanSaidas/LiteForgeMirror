@@ -101,6 +101,8 @@ const UInt32 CRC_32_TABLE[] =
     0xB40BBE37,  0xC30C8EA1,  0x5A05DF1B,  0x2D02EF8D
 };
 
+// https://create.stephan-brumme.com/crc32/ We can make it faster probably.
+// https://github.com/stbrumme/crc32
 LF_INLINE UInt32 Crc32(const ByteT* data, SizeT dataLength)
 {
     if (!data || dataLength == 0)

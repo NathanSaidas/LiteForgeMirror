@@ -23,6 +23,8 @@
 #include "Core/Memory/DynamicPoolHeap.h"
 #include "Core/Memory/Memory.h"
 #include "Core/Memory/PoolHeap.h"
+#include "Core/Memory/AtomicSmartPointer.h"
+#include "Core/Memory/SmartPointer.h"
 #include "Core/Platform/Atomic.h"
 #include "Core/Platform/Thread.h"
 #include "Core/Platform/ThreadSignal.h"
@@ -920,6 +922,89 @@ REGISTER_TEST(DynamicPoolHeapTestMultithreaded)
     // multithreaded_allocate_free
     // multithreaded_allocate_free_gc
 
+}
+
+struct ConvertableAtomicPtr : public TAtomicWeakPointerConvertable<ConvertableAtomicPtr>
+{
+
+};
+
+struct ConvertablePtr : public TWeakPointerConvertable<ConvertablePtr>
+{
+
+};
+
+REGISTER_TEST(ConvertableSmartPointersTest)
+{
+    {
+        TAtomicStrongPointer<ConvertableAtomicPtr> ptr = MakeConvertableAtomicPtr<ConvertableAtomicPtr>();
+
+        TEST(ptr == GetAtomicPointer(ptr.AsPtr()));
+        TEST(ptr.GetStrongRefs() == 1);
+        TEST(ptr.GetWeakRefs() == 1);
+        {
+            ConvertableAtomicPtr* rawPtr = ptr.AsPtr();
+            const ConvertableAtomicPtr* constRawPtr = ptr.AsPtr();
+
+            auto wptr = GetAtomicPointer(rawPtr);
+            const auto& wptrRef = GetAtomicPointer(constRawPtr);
+            TEST(ptr.GetStrongRefs() == 1);
+            TEST(ptr.GetWeakRefs() == 2);
+
+            TEST(wptr == ptr);
+            TEST(wptrRef == ptr);
+
+            rawPtr = nullptr;
+            constRawPtr = nullptr;
+
+            wptr = GetAtomicPointer(rawPtr);
+            const auto& nullRef = GetAtomicPointer(constRawPtr);
+            TEST(nullRef == NULL_PTR);
+            TEST(wptr == NULL_PTR);
+
+            TEST(ptr.GetStrongRefs() == 1);
+            TEST(ptr.GetWeakRefs() == 1);
+        }
+
+        TAtomicWeakPointer<ConvertableAtomicPtr> wptrCheck = ptr;
+        ptr = NULL_PTR;
+        TEST(wptrCheck == NULL_PTR);
+    }
+
+    {
+        TStrongPointer<ConvertablePtr> ptr = MakeConvertablePtr<ConvertablePtr>();
+
+        TEST(ptr == GetPointer(ptr.AsPtr()));
+        TEST(ptr.GetStrongRefs() == 1);
+        TEST(ptr.GetWeakRefs() == 1);
+        {
+            ConvertablePtr* rawPtr = ptr.AsPtr();
+            const ConvertablePtr* constRawPtr = ptr.AsPtr();
+
+            auto wptr = GetPointer(rawPtr);
+            const auto& wptrRef = GetPointer(constRawPtr);
+            TEST(ptr.GetStrongRefs() == 1);
+            TEST(ptr.GetWeakRefs() == 2);
+
+            TEST(wptr == ptr);
+            TEST(wptrRef == ptr);
+
+            rawPtr = nullptr;
+            constRawPtr = nullptr;
+
+            wptr = GetPointer(rawPtr);
+            const auto& nullRef = GetPointer(constRawPtr);
+            TEST(nullRef == NULL_PTR);
+            TEST(wptr == NULL_PTR);
+
+            TEST(ptr.GetStrongRefs() == 1);
+            TEST(ptr.GetWeakRefs() == 1);
+        }
+
+        TWeakPointer<ConvertablePtr> wptrCheck = ptr;
+        ptr = NULL_PTR;
+        TEST(wptrCheck == NULL_PTR);
+    }
 }
 
 

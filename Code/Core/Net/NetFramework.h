@@ -22,6 +22,10 @@
 #include "Core/Net/NetTypes.h"
 
 namespace lf {
+class String;
+
+LF_CORE_API void SetCTitle(const char* title);
+
 // **********************************
 // This must be called before using any networking functions/objects as it will
 // initialize the Network Sub Systems
@@ -83,5 +87,16 @@ LF_CORE_API bool IPV4(IPEndPointAny& endPoint, const char* address, UInt16 port)
 // @return Returns true if the address was successfully parsed.
 // **********************************
 LF_CORE_API bool IPV6(IPEndPointAny& endPoint, const char* address, UInt16 port);
+
+LF_CORE_API bool IPEmpty(const IPv4EndPoint& endPoint);
+LF_CORE_API bool IPEmpty(const IPv6EndPoint& endPoint);
+LF_CORE_API bool IPEmpty(const IPEndPointAny& endPoint);
+
+LF_CORE_API bool IPCast(const IPEndPointAny& endPoint, IPv4EndPoint& outEndPoint);
+LF_CORE_API bool IPCast(const IPEndPointAny& endPoint, IPv6EndPoint& outEndPoint);
+LF_CORE_API bool IPCast(const IPv4EndPoint& endPoint, IPEndPointAny& outEndPoint);
+LF_CORE_API bool IPCast(const IPv6EndPoint& endPoint, IPEndPointAny& outEndPoint);
+
+LF_CORE_API String IPToString(const IPEndPointAny& endPoint);
 
 }

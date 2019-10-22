@@ -46,7 +46,7 @@ namespace lf {
         return *this;
     }
 
-    void NetTransport::Start(NetTransportConfig&& config) { mImpl->Start(std::forward<NetTransportConfig>(config)); }
+    void NetTransport::Start(NetTransportConfig&& config, const ByteT* clientConnectionBytes, SizeT numBytes) { mImpl->Start(std::forward<NetTransportConfig>(config), clientConnectionBytes, numBytes); }
     void NetTransport::Stop() { mImpl->Stop(); }
     bool NetTransport::IsRunning() const { return mImpl->IsRunning(); }
 } // namespace lf

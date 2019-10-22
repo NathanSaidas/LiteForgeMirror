@@ -66,15 +66,15 @@
         },
         {
           "Id": "00c6995c-010b-4710-abfa-376ad6f6db76",
-          "Command": "-test /single=CacheController_Test /opt_debug"
+          "Command": "-test /single=TestLookUpTime"
         },
         {
           "Id": "db158b84-d89b-4723-9ffb-36b667ff05bb",
-          "Command": "-test /single=UDPSocketSendReceiveSameSocketTest"
+          "Command": "-test /single=NetConnectionTest"
         },
         {
           "Id": "f4d86b48-eb82-4fb2-8cf4-4e27cf82dea8",
-          "Command": "-test /single=DynamicPoolHeapTestMultithreaded"
+          "Command": "-test /single=RSASignatureReplayAttack"
         },
         {
           "Id": "f94a88ca-a61f-406b-bf6b-cb554692a32c",

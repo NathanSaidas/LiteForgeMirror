@@ -78,6 +78,13 @@ namespace lf {
 const UInt16 TEST_PORT = 27015;
 const char* TEST_IPV4_TARGET = "127.0.0.1";
 const char* TEST_IPV6_TARGET = "::1";
+const NetProtocol::Value TEST_PROTOCOL = NetProtocol::NET_PROTOCOL_IPV6_UDP;
+UInt16 gSenderPort = 0;
+
+#define MAKE_TEST_IPV4(EndPoint_) IPV4(EndPoint_, TEST_IPV4_TARGET, TEST_PORT)
+#define MAKE_TEST_IPV6(EndPoint_) IPV6(EndPoint_, TEST_IPV6_TARGET, TEST_PORT)
+#define MAKE_TEST_IP(EndPoint_) MAKE_TEST_IPV6(EndPoint_)
+
 
 void RecvThread(void* ptr)
 {
@@ -112,8 +119,28 @@ void RecvThread(void* ptr)
     // {
     // 
     // }
+    SleepCallingThread(200);
+
+    gSenderPort = SwapBytes(sender.mPort);
+
+    IPEndPointAny localSender;
+    IPV6(localSender, "::1", SwapBytes(sender.mPort));
+    
+
+    gTestLog.Info(LogMessage("Local Sender =") << IPToString(localSender));
+    gTestLog.Info(LogMessage("Actual Sender=") << IPToString(sender));
+    gTestLog.Sync();
+
+
+    UDPSocket sn;
+    sn.Create(TEST_PROTOCOL);
+    if (!sn.SendTo(bytes, inOutBytes, sender))
+    {
+        gTestLog.Error(LogMessage("Server failed to respond!"));
+    }
 
     socket->ReceiveFrom(bytes, inOutBytes, sender);
+    gTestLog.Info(LogMessage("Server Done!"));
 }
 
 void SendThread(void* ptr)
@@ -123,21 +150,34 @@ void SendThread(void* ptr)
     SleepCallingThread(1000);
     UDPSocket* socket = reinterpret_cast<UDPSocket*>(ptr);
 
-    String message = "Hello Socket!";
+    ByteT byteMessage[2000];
+    Crypto::SecureRandomBytes(byteMessage, sizeof(byteMessage));
+
+
+    String message; //  = "Hello Socket!";
+    message.Resize(sizeof(byteMessage));
+    memcpy(const_cast<char*>(message.CStr()), byteMessage, sizeof(byteMessage));
+
     SizeT inOutBytes = message.Size();
 
     IPEndPointAny endPoint;
-    TEST_CRITICAL(IPV4(endPoint, TEST_IPV4_TARGET, TEST_PORT));
+    TEST_CRITICAL(MAKE_TEST_IP(endPoint));
 
-    SizeT sentBytes = socket->SendTo(reinterpret_cast<const ByteT*>(message.CStr()), inOutBytes, endPoint);
-    if (Invalid(sentBytes))
+    bool result = socket->SendTo(reinterpret_cast<const ByteT*>(message.CStr()), inOutBytes, endPoint);
+    if (!result || inOutBytes != message.Size())
     {
         gTestLog.Error(LogMessage("Client failed to send bytes."));
     }
     else
     {
-        gTestLog.Info(LogMessage("Client sent ") << sentBytes << "/" << message.Size() << " bytes.");
+        gTestLog.Info(LogMessage("Client sent ") << inOutBytes << "/" << message.Size() << " bytes.");
     }
+
+    socket->ReceiveFrom(byteMessage, inOutBytes, endPoint);
+    gTestLog.Info(LogMessage("Client Wait!"));
+
+    socket->ReceiveFrom(byteMessage, inOutBytes, endPoint);
+    gTestLog.Info(LogMessage("Client Done!"));
 }
 
 REGISTER_TEST(BasicNetSocketTest)
@@ -147,7 +187,7 @@ REGISTER_TEST(BasicNetSocketTest)
 
     {
         UDPSocket socket;
-        socket.Create(NetProtocol::NET_PROTOCOL_IPV4_UDP);
+        socket.Create(TEST_PROTOCOL);
     }
 
     {
@@ -157,33 +197,69 @@ REGISTER_TEST(BasicNetSocketTest)
         
         TEST(receiver.Create(NetProtocol::NET_PROTOCOL_UDP));
         // TEST(receiverB.Create(NetProtocol::NET_PROTOCOL_UDP));
-        TEST(sender.Create(NetProtocol::NET_PROTOCOL_IPV4_UDP));
+        TEST(sender.Create(TEST_PROTOCOL));
         
-        Thread recvThread; recvThread.Fork(RecvThread, &receiver);
         // Thread recvThreadB; recvThreadB.Fork(RecvThread, &receiverB);
+        Thread recvThread; recvThread.Fork(RecvThread, &receiver);
         Thread sendThread; sendThread.Fork(SendThread, &sender);
+
+        SleepCallingThread(2000);
+        
+
         
         // recvThreadB.Join();
+        SleepCallingThread(500);
+        // sendThread.Join();
         SleepCallingThread(2500);
-        sendThread.Join();
-        SleepCallingThread(1500);
 
-        if (receiver.IsAwaitingReceive())
-        {
-            String flushCmd = "flush";
-            IPEndPointAny flushEndPoint;
-            IPV4(flushEndPoint, "127.0.0.1", receiver.GetBoundPort());
-            UDPSocket flush;
-            flush.Create(NetProtocol::NET_PROTOCOL_IPV4_UDP);
-            while (receiver.IsAwaitingReceive())
-            {
-                SizeT inOutBytes = sizeof(flushCmd.Size());
-                flush.SendTo(reinterpret_cast<const ByteT*>(flushCmd.CStr()), inOutBytes, flushEndPoint);
-                SleepCallingThread(1);
-            }
-            receiver.Close();
-        }
+        TEST(!receiver.IsAwaitingReceive() || receiver.Shutdown());
         recvThread.Join();
+
+        TEST(!sender.IsAwaitingReceive() || sender.Shutdown());
+        sendThread.Join();
+
+        // if (receiver.IsAwaitingReceive())
+        // {
+        //     String flushCmd = "flush";
+        //     IPEndPointAny flushEndPoint;
+        //     IPV4(flushEndPoint, "127.0.0.1", receiver.GetBoundPort());
+        // 
+        //     UDPSocket flush;
+        //     flush.Create(NetProtocol::NET_PROTOCOL_IPV4_UDP);
+        //     while (receiver.IsAwaitingReceive())
+        //     {
+        //         SizeT inOutBytes = sizeof(flushCmd.Size());
+        //         flush.SendTo(reinterpret_cast<const ByteT*>(flushCmd.CStr()), inOutBytes, flushEndPoint);
+        //         SleepCallingThread(1);
+        //     }
+        //     receiver.Close();
+        // }
+        // recvThread.Join();
+        // 
+        // if (sender.IsAwaitingReceive())
+        // {
+        //     String flushCmd = "flush";
+        //     IPEndPointAny flushEndPoint;
+        //     if (sender.GetProtocol() == NetAddressFamily::NET_ADDRESS_FAMILY_IPV6)
+        //     {
+        //         IPV6(flushEndPoint, "::1", gSenderPort);
+        //     }
+        //     else
+        //     {
+        //         IPV4(flushEndPoint, "127.0.0.1", gSenderPort);
+        //     }
+        // 
+        //     UDPSocket flush;
+        //     flush.Create(sender.GetProtocol());
+        //     while (sender.IsAwaitingReceive())
+        //     {
+        //         SizeT inOutBytes = sizeof(flushCmd.Size());
+        //         flush.SendTo(reinterpret_cast<const ByteT*>(flushCmd.CStr()), inOutBytes, flushEndPoint);
+        //         SleepCallingThread(1);
+        //     }
+        //     sender.Close();
+        // }
+        // sendThread.Join();
     }
 
     TEST(NetShutdown());
@@ -482,6 +558,84 @@ REGISTER_TEST(NetTransportSecureCommunicationTest)
     Crypto::RSAKey serverPrivateKey;
     Crypto::RSAKey serverConnectionKey;
     Crypto::AESKey serverConnectionMessageKey;
+    ByteT serverHMACKey[Crypto::HMAC_KEY_SIZE];
+    ByteT serverChallenge[ConnectPacket::CHALLENGE_SIZE];
+
+    // Client:
+    Crypto::RSAKey clientServerKey;
+    Crypto::RSAKey clientKey;
+    Crypto::AESKey clientMessageKey;
+    ByteT clientHMACKey[Crypto::HMAC_KEY_SIZE];
+    ByteT clientChallenge[ConnectPacket::CHALLENGE_SIZE];
+
+    TEST_CRITICAL(serverPrivateKey.LoadPrivateKey(ReadRSAKey("rsa_2048_private.key")));
+    TEST_CRITICAL(clientServerKey.LoadPublicKey(ReadRSAKey("rsa_2048_public.key")));
+    TEST(!clientServerKey.HasPrivateKey());
+
+    TEST_CRITICAL(clientKey.LoadPrivateKey(ReadRSAKey("rsa_2048_client_private.key")));
+    TEST_CRITICAL(ReadAESKey("aes_256.key", clientMessageKey) && clientMessageKey.GetKey());
+
+    TEST_CRITICAL(serverPrivateKey.GetKeySize() == Crypto::RSA_KEY_2048);
+    TEST_CRITICAL(clientServerKey.GetKeySize() == Crypto::RSA_KEY_2048);
+    TEST_CRITICAL(clientMessageKey.GetKeySize() == Crypto::AES_KEY_256);
+    TEST(serverPrivateKey.GetPublicKey() == clientServerKey.GetPublicKey());
+    TEST(clientKey.GetPublicKey() != clientServerKey.GetPublicKey());
+    
+    // Simulate Key Exchange:
+    ByteT packetBytes[1024];
+    SizeT packetBytesLength = sizeof(packetBytes);
+    TEST_CRITICAL(ConnectPacket::EncodePacket(packetBytes, packetBytesLength, clientKey, clientServerKey, clientMessageKey, clientHMACKey, clientChallenge));
+
+    // memsearch:
+    {
+        // todo: ConnectPacket::GetSecureData(out IV, out HMAC);
+
+        String packetMem(packetBytesLength, reinterpret_cast<const char*>(packetBytes), COPY_ON_WRITE);
+        String searchKey(clientMessageKey.GetKeySizeBytes(), reinterpret_cast<const char*>(clientMessageKey.GetKey()), COPY_ON_WRITE);
+        String searchHmacKey(Crypto::HMAC_KEY_SIZE, reinterpret_cast<const char*>(clientHMACKey), COPY_ON_WRITE);
+        String searchChallenge(ConnectPacket::CHALLENGE_SIZE, reinterpret_cast<const char*>(clientChallenge), COPY_ON_WRITE);
+        // The message key SHOULD be encrypted and we shouldn't be able to find sensitive data very easily in the packet.
+        TEST(Invalid(packetMem.Find(searchKey)));
+        TEST(Invalid(packetMem.Find(clientKey.GetPublicKey())));
+        TEST(Invalid(packetMem.Find(searchHmacKey)));
+        TEST(Invalid(packetMem.Find(searchChallenge)));
+    }
+
+    // Verify we're sending the right header.
+    const PacketHeader* header = reinterpret_cast<const PacketHeader*>(packetBytes);
+    TEST(header->mAppID == NetConfig::NET_APP_ID);
+    TEST(header->mAppVersion == NetConfig::NET_APP_VERSION);
+    TEST(header->mCrc32 == PacketUtility::CalcCrc32(packetBytes, packetBytesLength));
+    TEST(header->mType == NetPacketType::NET_PACKET_TYPE_CONNECT);
+    NetPacketFlag::BitfieldType flags(header->mFlags);
+    TEST(flags.Is(0));
+
+    // Verify Server Receive
+
+    ConnectPacket::HeaderType outHeader;
+    TEST_CRITICAL(ConnectPacket::DecodePacket(packetBytes, packetBytesLength, serverPrivateKey, serverConnectionKey, serverConnectionMessageKey, serverHMACKey, serverChallenge, outHeader));
+    TEST(outHeader.mAppID == header->mAppID);
+    TEST(outHeader.mAppVersion == header->mAppVersion);
+    TEST(outHeader.mCrc32 == header->mCrc32);
+    TEST(outHeader.mFlags == header->mFlags);
+    TEST(outHeader.mType == header->mType);
+
+    // Verify Keys..
+    TEST(serverConnectionKey.GetPublicKey() == clientKey.GetPublicKey());
+    TEST(serverConnectionMessageKey.GetKeySize() == clientMessageKey.GetKeySize());
+    TEST(memcmp(serverConnectionMessageKey.GetKey(), clientMessageKey.GetKey(), clientMessageKey.GetKeySizeBytes()) == 0);
+    TEST(memcmp(serverHMACKey, clientHMACKey, sizeof(clientHMACKey)) == 0);
+    TEST(memcmp(serverChallenge, clientChallenge, sizeof(clientChallenge)) == 0);
+
+    // todo: Encode/Decode AckPacket
+}
+
+REGISTER_TEST(RSASignatureReplayAttack)
+{
+    // Server:
+    Crypto::RSAKey serverPrivateKey;
+    Crypto::RSAKey serverConnectionKey;
+    Crypto::AESKey serverConnectionMessageKey;
 
     // Client:
     Crypto::RSAKey clientServerKey;
@@ -500,52 +654,8 @@ REGISTER_TEST(NetTransportSecureCommunicationTest)
     TEST_CRITICAL(clientMessageKey.GetKeySize() == Crypto::AES_KEY_256);
     TEST(serverPrivateKey.GetPublicKey() == clientServerKey.GetPublicKey());
     TEST(clientKey.GetPublicKey() != clientServerKey.GetPublicKey());
-    
-    // Simulate Key Exchange:
-    ByteT packetBytes[1024];
-    SizeT packetBytesLength = sizeof(packetBytes);
-    TEST_CRITICAL(ConnectPacket::ConstructRequest(packetBytes, packetBytesLength, clientKey, clientServerKey, clientMessageKey));
-
-    // memsearch:
-    {
-        String packetMem(packetBytesLength, reinterpret_cast<const char*>(packetBytes), COPY_ON_WRITE);
-        // String searchIV(16, reinterpret_cast<const char*>(clientMessageKey.GetIV()), COPY_ON_WRITE); // todo: We could add an argument to ConstructRequest to get the IV...
-        String searchKey(32, reinterpret_cast<const char*>(clientMessageKey.GetKey()), COPY_ON_WRITE);
-        // The message key SHOULD be encrypted and we shouldn't be able to find it very easily in the packet.
-        // TEST(Invalid(packetMem.Find(searchIV)));
-        TEST(Invalid(packetMem.Find(searchKey)));
-        // Shouldn't be able to find the client public key either.
-        TEST(Invalid(packetMem.Find(clientKey.GetPublicKey())));
-    }
-
-    // Verify we're sending the right header.
-    const PacketHeader* header = reinterpret_cast<const PacketHeader*>(packetBytes);
-    TEST(header->mAppID == NetConfig::NET_APP_ID);
-    TEST(header->mAppVersion == NetConfig::NET_APP_VERSION);
-    TEST(header->mCrc32 == Crc32(&packetBytes[PacketHeader::CRC_OFFSET], packetBytesLength - PacketHeader::CRC_OFFSET));
-    NetPacketFlag::BitfieldType flags(header->mFlags);
-    TEST(flags.Has(NetPacketFlag::NET_PACKET_FLAG_RELIABILITY));
-    TEST(header->mType == NetPacketType::NET_PACKET_TYPE_CONNECT); // Connection requests cannot be ordered as they don't have a sequence ID
-    TEST(!flags.Has(NetPacketFlag::NET_PACKET_FLAG_ORDER_STRICT));
-    TEST(!flags.Has(NetPacketFlag::NET_PACKET_FLAG_ORDER_WEAK));
-    TEST(!flags.Has(NetPacketFlag::NET_PACKET_FLAG_ACK));          // Servers should not be receiving ACKs for connection
-
-    // Verify Server Receive
-
-    ConnectPacket::HeaderType outHeader;
-    TEST_CRITICAL(ConnectPacket::DeconstructRequest(packetBytes, packetBytesLength, serverPrivateKey, serverConnectionKey, serverConnectionMessageKey, outHeader));
-    TEST(outHeader.mAppID == header->mAppID);
-    TEST(outHeader.mAppVersion == header->mAppVersion);
-    TEST(outHeader.mCrc32 == header->mCrc32);
-    TEST(outHeader.mFlags == header->mFlags);
-    TEST(outHeader.mType == header->mType);
-
-    // Verify Keys..
-    TEST(serverConnectionKey.GetPublicKey() == clientKey.GetPublicKey());
-    TEST(serverConnectionMessageKey.GetKeySize() == clientMessageKey.GetKeySize());
-    TEST(memcmp(serverConnectionMessageKey.GetKey(), clientMessageKey.GetKey(), clientMessageKey.GetKeySizeBytes()) == 0);
-
-    // Verify Secure Communication
+    TEST_CRITICAL(serverConnectionMessageKey.Load(clientMessageKey.GetKeySize(), clientMessageKey.GetKey()));
+    TEST_CRITICAL(serverConnectionKey.LoadPublicKey(clientKey.GetPublicKey()));
 
     struct Message { ByteT mData[1024]; };
     TStaticArray<String, 512> signatures;

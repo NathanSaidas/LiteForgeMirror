@@ -36,6 +36,9 @@ enum AESKeySize
     AES_KEY_Unknown
 };
 
+const SizeT AES_MAX_KEY_SIZE = 32;
+const SizeT AES_IV_SIZE = 16;
+
 class LF_CORE_API AESKey
 {
 public:

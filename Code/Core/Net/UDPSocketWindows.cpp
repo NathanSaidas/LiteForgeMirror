@@ -254,7 +254,10 @@ bool LF_IMPL_OPAQUE(UDPSocketWindows)::ReceiveFrom(ByteT* outBytes, SizeT& inOut
     inOutBytes = 0;
     if (result == SOCKET_ERROR)
     {
-        LogSocketOperationFailure("recvfrom");
+        if (WSAGetLastError() != WSAEINTR)
+        {
+            LogSocketOperationFailure("recvfrom");
+        }
         return false;
     }
     CriticalAssertEx(result >= 0, LF_ERROR_BAD_STATE, ERROR_API_CORE); // We expect the result to be >= 0 at this point.
@@ -305,7 +308,7 @@ bool LF_IMPL_OPAQUE(UDPSocketWindows)::SendTo(const ByteT* bytes, SizeT& inOutBy
     {
         if (mProtocol == NetProtocol::NET_PROTOCOL_IPV4_UDP)
         {
-            LogSocketError("SendTo", "Cannot send to IPV6 address family as the socket has been created for the IPV6 address family.");
+            LogSocketError("SendTo", "Cannot send to IPV6 address family as the socket has been created for the IPV4 address family.");
             return false;
         }
 
@@ -403,6 +406,26 @@ UInt16 LF_IMPL_OPAQUE(UDPSocketWindows)::GetBoundPort() const
 bool LF_IMPL_OPAQUE(UDPSocketWindows)::IsAwaitingReceive() const
 {
     return AtomicLoad(&mReceiving) > 0;
+}
+
+bool LF_IMPL_OPAQUE(UDPSocketWindows)::Shutdown()
+{
+    AssertEx(IsAwaitingReceive(), LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+
+    bool success = true;
+    if (mSocket != INVALID_SOCKET)
+    {
+        // if (shutdown(mSocket, SD_RECEIVE) != 0)
+        if(closesocket(mSocket) != 0)
+        {
+            LogSocketOperationFailure("shutdown");
+            success = false;
+        }
+        mSocket = INVALID_SOCKET;
+        mProtocol = NetProtocol::INVALID_ENUM;
+        mBoundPort = 0;
+    }
+    return success;
 }
 
 } // namespace lf

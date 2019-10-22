@@ -716,6 +716,7 @@ namespace lf {
         bool Empty() const { return mItemCount == 0; }
         SizeT Size() const { return mItemCount; }
         SizeT Capacity() const { return mBlockCount * BLOCK_SIZE; }
+        static constexpr SizeT DefaultCapacity() { return 0; }
         SizeT GetBlockCount() const { return mBlockCount; }
 
         // I'm not sure this makes sense...

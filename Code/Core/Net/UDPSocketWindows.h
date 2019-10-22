@@ -45,6 +45,7 @@ public:
     NetProtocol::Value GetProtocol() const { return mProtocol; }
     UInt16 GetBoundPort() const;
     bool IsAwaitingReceive() const; 
+    bool Shutdown();
 private:
     using SocketType = UIntPtrT;
     SocketType         mSocket;

@@ -86,12 +86,12 @@ public:
     StrongType& operator=(const NullPtr&);
     StrongType& operator=(StrongType&& other);
 
-    bool operator==(const StrongType& other);
-    bool operator==(const WeakType& other);
-    bool operator==(const NullPtr&);
-    bool operator!=(const StrongType& other);
-    bool operator!=(const WeakType& other);
-    bool operator!=(const NullPtr&);
+    bool operator==(const StrongType& other) const;
+    bool operator==(const WeakType& other) const;
+    bool operator==(const NullPtr&) const;
+    bool operator!=(const StrongType& other) const;
+    bool operator!=(const WeakType& other) const;
+    bool operator!=(const NullPtr&) const;
 
     operator bool() const;
     operator Pointer() { return mNode->mPointer; }
@@ -211,12 +211,12 @@ public:
     WeakType& operator=(WeakType&& other);
 
 
-    bool operator==(const StrongType& other);
-    bool operator==(const WeakType& other);
-    bool operator==(const NullPtr&);
-    bool operator!=(const StrongType& other);
-    bool operator!=(const WeakType& other);
-    bool operator!=(const NullPtr&);
+    bool operator==(const StrongType& other) const;
+    bool operator==(const WeakType& other) const;
+    bool operator==(const NullPtr&) const;
+    bool operator!=(const StrongType& other) const;
+    bool operator!=(const WeakType& other) const;
+    bool operator!=(const NullPtr&) const;
 
     operator bool() const;
     operator Pointer() { return mNode->mPointer; }
@@ -265,6 +265,51 @@ private:
 
     NodeType* mNode;
 };
+
+// Convertable Smart Pointers
+// usage:
+// class MyType : public TWeakPointerConvertable
+// 
+// ptr = MakeConvertablePtr<MyType>();
+// wptr = GetPointer(rawPtr);
+//
+template<typename T>
+struct TWeakPointerConvertable
+{
+public:
+    const TWeakPointer<T>& GetWeakPointer() const { return mPointer; }
+    TWeakPointer<T>& GetWeakPointer() { return mPointer; }
+private:
+    TWeakPointer<T> mPointer;
+};
+
+template<typename T>
+TStrongPointer<T> MakeConvertablePtr()
+{
+    TStrongPointer<T> ptr(LFNew<T>());
+    ptr->GetWeakPointer() = ptr;
+    return ptr;
+}
+
+template<typename T>
+TWeakPointer<T> GetPointer(T* self)
+{
+    if (!self)
+    {
+        return NULL_PTR;
+    }
+    return self->GetWeakPointer();
+}
+
+template<typename T>
+const TWeakPointer<T>& GetPointer(const T* self)
+{
+    if (!self)
+    {
+        return *reinterpret_cast<const TWeakPointer<T>*>(&NULL_PTR);
+    }
+    return self->GetWeakPointer();
+}
 
 template<typename T>
 TStrongPointer<T>::TStrongPointer() : mNode(reinterpret_cast<NodeType*>(&gNullPointerNode))
@@ -378,32 +423,32 @@ typename TStrongPointer<T>::StrongType& TStrongPointer<T>::operator=(StrongType&
 
 
 template<typename T>
-bool TStrongPointer<T>::operator==(const StrongType& other)
+bool TStrongPointer<T>::operator==(const StrongType& other) const
 {
     return other.mNode->mPointer == mNode->mPointer;
 }
 template<typename T>
-bool TStrongPointer<T>::operator==(const WeakType& other)
+bool TStrongPointer<T>::operator==(const WeakType& other) const
 {
     return other.mNode->mPointer == mNode->mPointer;
 }
 template<typename T>
-bool TStrongPointer<T>::operator==(const NullPtr&)
+bool TStrongPointer<T>::operator==(const NullPtr&) const
 {
     return mNode->mPointer == nullptr;
 }
 template<typename T>
-bool TStrongPointer<T>::operator!=(const StrongType& other)
+bool TStrongPointer<T>::operator!=(const StrongType& other) const
 {
     return other.mNode->mPointer != mNode->mPointer;
 }
 template<typename T>
-bool TStrongPointer<T>::operator!=(const WeakType& other)
+bool TStrongPointer<T>::operator!=(const WeakType& other) const
 {
     return other.mNode->mPointer != mNode->mPointer;
 }
 template<typename T>
-bool TStrongPointer<T>::operator!=(const NullPtr&)
+bool TStrongPointer<T>::operator!=(const NullPtr&) const
 {
     return mNode->mPointer != nullptr;
 }
@@ -540,32 +585,32 @@ typename TWeakPointer<T>::WeakType& TWeakPointer<T>::operator=(WeakType&& other)
 
 
 template<typename T>
-bool TWeakPointer<T>::operator==(const StrongType& other)
+bool TWeakPointer<T>::operator==(const StrongType& other) const
 {
     return mNode->mPointer == other.mNode->mPointer;
 }
 template<typename T>
-bool TWeakPointer<T>::operator==(const WeakType& other)
+bool TWeakPointer<T>::operator==(const WeakType& other) const
 {
     return mNode->mPointer == other.mNode->mPointer;
 }
 template<typename T>
-bool TWeakPointer<T>::operator==(const NullPtr&)
+bool TWeakPointer<T>::operator==(const NullPtr&) const
 {
     return mNode->mPointer == nullptr;
 }
 template<typename T>
-bool TWeakPointer<T>::operator!=(const StrongType& other)
+bool TWeakPointer<T>::operator!=(const StrongType& other) const
 {
     return mNode->mPointer != other.mNode->mPointer;
 }
 template<typename T>
-bool TWeakPointer<T>::operator!=(const WeakType& other)
+bool TWeakPointer<T>::operator!=(const WeakType& other) const
 {
     return mNode->mPointer != other.mNode->mPointer;
 }
 template<typename T>
-bool TWeakPointer<T>::operator!=(const NullPtr&)
+bool TWeakPointer<T>::operator!=(const NullPtr&) const
 {
     return mNode->mPointer != nullptr;
 }

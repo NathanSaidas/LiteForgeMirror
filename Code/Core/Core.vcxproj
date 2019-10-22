@@ -29,6 +29,7 @@
     <ClCompile Include="Config.cpp" />
     <ClCompile Include="Crypto\AES.cpp" />
     <ClCompile Include="Crypto\BCrypt.cpp" />
+    <ClCompile Include="Crypto\HMAC.cpp" />
     <ClCompile Include="Crypto\RSA.cpp" />
     <ClCompile Include="Crypto\SecureRandom.cpp" />
     <ClCompile Include="Crypto\SHA256.cpp" />
@@ -47,7 +48,10 @@
     <ClCompile Include="Memory\MemoryBuffer.cpp" />
     <ClCompile Include="Memory\PoolHeap.cpp" />
     <ClCompile Include="Net\ConnectPacket.cpp" />
+    <ClCompile Include="Net\NetClientController.cpp" />
+    <ClCompile Include="Net\NetConnectionController.cpp" />
     <ClCompile Include="Net\NetFrameworkWindows.cpp" />
+    <ClCompile Include="Net\NetServerController.cpp" />
     <ClCompile Include="Net\NetSocket.cpp" />
     <ClCompile Include="Net\NetTransport.cpp" />
     <ClCompile Include="Net\NetTransportConfig.cpp" />
@@ -55,6 +59,8 @@
     <ClCompile Include="Net\NetTransportImpl.cpp" />
     <ClCompile Include="Net\NetUtil.cpp" />
     <ClCompile Include="Net\PacketUtility.cpp" />
+    <ClCompile Include="Net\TransportHandlers\ClientConnectionHandler.cpp" />
+    <ClCompile Include="Net\TransportHandlers\ServerConnectionHandler.cpp" />
     <ClCompile Include="Net\UDPSocket.cpp" />
     <ClCompile Include="Net\UDPSocketWindows.cpp" />
     <ClCompile Include="Platform\AsyncIOBuffer.cpp" />
@@ -87,6 +93,7 @@
     <ClCompile Include="Test\Test.cpp" />
     <ClCompile Include="Utility\CmdLine.cpp" />
     <ClCompile Include="Utility\DateTime.cpp" />
+    <ClCompile Include="Utility\Debug.cpp" />
     <ClCompile Include="Utility\Guid.cpp" />
     <ClCompile Include="Utility\Log.cpp" />
     <ClCompile Include="Utility\StackTrace.cpp" />
@@ -107,6 +114,7 @@
     <ClInclude Include="Concurrent\TaskWorker.h" />
     <ClInclude Include="Crypto\AES.h" />
     <ClInclude Include="Crypto\BCrypt.h" />
+    <ClInclude Include="Crypto\HMAC.h" />
     <ClInclude Include="Crypto\SecureRandom.h" />
     <ClInclude Include="Crypto\RSA.h" />
     <ClInclude Include="Crypto\SHA256.h" />
@@ -143,10 +151,12 @@
     <ClInclude Include="Memory\MemoryBuffer.h" />
     <ClInclude Include="Memory\PoolHeap.h" />
     <ClInclude Include="Memory\SmartPointer.h" />
+    <ClInclude Include="Net\NetClientController.h" />
     <ClInclude Include="Net\NetConnectionController.h" />
     <ClInclude Include="Net\ConnectPacket.h" />
     <ClInclude Include="Net\NetConnection.h" />
     <ClInclude Include="Net\NetFramework.h" />
+    <ClInclude Include="Net\NetServerController.h" />
     <ClInclude Include="Net\NetSocket.h" />
     <ClInclude Include="Net\NetTransport.h" />
     <ClInclude Include="Net\NetTransportConfig.h" />
@@ -155,6 +165,8 @@
     <ClInclude Include="Net\NetTypes.h" />
     <ClInclude Include="Net\NetUtil.h" />
     <ClInclude Include="Net\PacketUtility.h" />
+    <ClInclude Include="Net\TransportHandlers\ClientConnectionHandler.h" />
+    <ClInclude Include="Net\TransportHandlers\ServerConnectionHandler.h" />
     <ClInclude Include="Net\UDPSocket.h" />
     <ClInclude Include="Net\UDPSocketWindows.h" />
     <ClInclude Include="Platform\AsyncIOBuffer.h" />
@@ -201,6 +213,7 @@
     <ClInclude Include="Utility\CmdLine.h" />
     <ClInclude Include="Utility\Crc32.h" />
     <ClInclude Include="Utility\DateTime.h" />
+    <ClInclude Include="Utility\Debug.h" />
     <ClInclude Include="Utility\ErrorCore.h" />
     <ClInclude Include="Utility\FNVHash.h" />
     <ClInclude Include="Utility\Guid.h" />
@@ -211,6 +224,7 @@
     <ClInclude Include="Utility\StdMap.h" />
     <ClInclude Include="Utility\StreamTypes.h" />
     <ClInclude Include="Utility\Time.h" />
+    <ClInclude Include="Utility\UniqueNumber.h" />
     <ClInclude Include="Utility\Utility.h" />
   </ItemGroup>
   <ItemGroup>
@@ -304,6 +318,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <MinimalRebuild>false</MinimalRebuild>
       <OmitFramePointers>false</OmitFramePointers>
+      <ProgramDataBaseFileName>$(IntDir)%(Filename).pdb</ProgramDataBaseFileName>
     </ClCompile>
     <Lib>
       <AdditionalDependencies>synchronization.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -326,7 +341,7 @@
       <PreprocessorDefinitions>_ALLOW_RTCc_IN_STL;LF_INTERNAL_TEST;LF_INTERNAL_EXPORT_CORE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
-      <ProgramDataBaseFileName>$(SolutionDir)Code\$(ProjectName)_x64Test.pdb</ProgramDataBaseFileName>
+      <ProgramDataBaseFileName>$(IntDir)%(Filename).pdb</ProgramDataBaseFileName>
       <SmallerTypeCheck>true</SmallerTypeCheck>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <MinimalRebuild>false</MinimalRebuild>
@@ -349,7 +364,7 @@
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>$(SolutionDir)Code\;$(SolutionDir)Public\openssl\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <ProgramDataBaseFileName>$(SolutionDir)Code\$(ProjectName)_x64Release.pdb</ProgramDataBaseFileName>
+      <ProgramDataBaseFileName>$(IntDir)%(Filename).pdb</ProgramDataBaseFileName>
       <PreprocessorDefinitions>_HAS_EXCEPTIONS=0;_ALLOW_RTCc_IN_STL;LF_INTERNAL_RELEASE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <ExceptionHandling>false</ExceptionHandling>
@@ -374,7 +389,7 @@
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>$(SolutionDir)Code\;$(SolutionDir)Public\openssl\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <ProgramDataBaseFileName>$(SolutionDir)Code\$(ProjectName)_x64Final.pdb</ProgramDataBaseFileName>
+      <ProgramDataBaseFileName>$(IntDir)%(Filename).pdb</ProgramDataBaseFileName>
       <PreprocessorDefinitions>_HAS_EXCEPTIONS=0;_ALLOW_RTCc_IN_STL;LF_INTERNAL_FINAL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <OmitFramePointers>false</OmitFramePointers>

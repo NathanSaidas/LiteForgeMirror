@@ -22,6 +22,7 @@
 #include "Core/Common/Assert.h"
 #include "Core/String/StringUtil.h"
 #include "Core/Utility/CmdLine.h"
+#include "Core/Utility/Debug.h"
 #include "Core/Utility/Log.h"
 #include "Core/Utility/Time.h"
 
@@ -212,6 +213,10 @@ void TestFramework::TestReset()
 
 bool TestFramework::TriggerBreakPoint()
 {
+    if (!HasDebugger())
+    {
+        return false;
+    }
     return sTestContextStack ? sTestContextStack->mTriggerBreakpoint : true;
 }
 bool TestFramework::TestAll()
