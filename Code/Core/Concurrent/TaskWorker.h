@@ -27,6 +27,7 @@
 namespace lf {
 
 class ThreadSignal;
+class ThreadFence;
 
 class TaskWorker
 {
@@ -56,7 +57,13 @@ public:
     // @param async -- If true then a background thread will be spun up to process items, otherwise
     //                 the caller must call UpdateSync to process items.
     // **********************************
-    void Initialize(RingBufferType* dispatcherQueue, ThreadSignal* dispatcherSignal, bool async);
+    void Initialize(RingBufferType* dispatcherQueue
+                    , ThreadFence* dispatcherFence
+                    , bool async
+#if defined(LF_DEBUG) || defined(LF_TEST)
+                    , const char* workerName = nullptr
+#endif
+    );
     // **********************************
     // Marks the worker as not running then waits for it to complete it's current work item
     // and releases resources used. (Thread handles)
@@ -92,7 +99,7 @@ private:
     // The MPMC collection we 'consume' from.
     RingBufferType*     mDispatcherQueue;
     // A signal we can wait on if there is no work todo (pauses thread execution)
-    ThreadSignal*       mDispatcherSignal;
+    ThreadFence*        mDispatcherFence;
     // Property to contain the async or not state
     bool                mAsync;
 };

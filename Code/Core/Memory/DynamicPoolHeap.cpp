@@ -258,6 +258,16 @@ SizeT DynamicPoolHeap::GetMaxAllocations() const
     return mTop.GetHeap().GetObjectCount() * mMaxHeaps;
 }
 
+SizeT DynamicPoolHeap::GetObjectSize() const
+{
+    return mTop.GetHeap().GetObjectSize();
+}
+
+SizeT DynamicPoolHeap::GetObjectAlignment() const
+{
+    return mTop.GetHeap().GetObjectAlignment();
+}
+
 void DynamicPoolHeap::RecursiveFree(Node* node)
 {
     if (node)

@@ -158,6 +158,12 @@ static UInt64 CMod(UInt64 base, UInt64 exponent, UInt64 modulus)
 
 REGISTER_TEST(CryptoTheory)
 {
+    if (!TestFramework::GetConfig().mStress)
+    {
+        gTestLog.Info(LogMessage("Ignoring test, stress tests not enabled..."));
+        return;
+    }
+
     UInt64 e = 17;
     UInt64 n = 3233;
     UInt64 d = 2753;

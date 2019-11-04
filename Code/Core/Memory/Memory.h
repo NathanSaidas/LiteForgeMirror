@@ -30,8 +30,8 @@ namespace lf {
 enum MemoryMarkupTag
 {
     MMT_GENERAL,
-    MMT_MAX_VALUE,
-    MMT_POINTER_NODE
+    MMT_POINTER_NODE,
+    MMT_MAX_VALUE
 };
 struct MemoryMarkup
 {

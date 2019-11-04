@@ -21,30 +21,29 @@
 #ifndef LF_CORE_CLIENT_CONNECTION_HANDLER_H
 #define LF_CORE_CLIENT_CONNECTION_HANDLER_H
 
-#include "Core/Memory/DynamicPoolHeap.h"
 #include "Core/Net/NetTransportHandler.h"
+#include "Core/Net/PacketAllocator.h"
 
 namespace lf {
 
 class TaskScheduler;
 class NetClientController;
+class NetEventController;
+class NetDriver;
 
 class LF_CORE_API ClientConnectionHandler : public NetTransportHandler
 {
 public:
     using Super = NetTransportHandler;
+    using PacketType = PacketDataType::ConnectAckPacketData;
+    using AllocatorType = TPacketAllocator<PacketType>;
 
-    struct ConnectAckPacketData : public PacketData1024
-    {
-        IPEndPointAny mSender;
-    };
-
-    ClientConnectionHandler(TaskScheduler* taskScheduler, NetClientController* clientController);
+    ClientConnectionHandler(TaskScheduler* taskScheduler, NetClientController* clientController, NetEventController* eventController, NetDriver* driver);
     ClientConnectionHandler(ClientConnectionHandler&& other);
     virtual ~ClientConnectionHandler();
     ClientConnectionHandler& operator=(ClientConnectionHandler&& other);
 
-    void DecodePacket(ConnectAckPacketData* packetData);
+    void DecodePacket(PacketType* packetData);
 
 protected:
     void OnInitialize() final;
@@ -53,15 +52,15 @@ protected:
     void OnUpdateFrame() final;
 
 private:
-    ConnectAckPacketData* AllocatePacket();
-    void FreePacket(ConnectAckPacketData* packet);
 
     // 'Context':
     TaskScheduler* mTaskScheduler;
     NetClientController* mClientController;
+    NetEventController* mEventController;
+    NetDriver* mDriver;
 
     // Outputs:
-    DynamicPoolHeap mPacketPool;
+    AllocatorType mAllocator;
 };
 
 } // namespace lf

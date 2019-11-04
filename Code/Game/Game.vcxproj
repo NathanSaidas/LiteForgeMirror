@@ -175,6 +175,7 @@
   <ItemGroup>
     <ClCompile Include="AnalyzeProjectApp\AnalyzeProjectApp.cpp" />
     <ClCompile Include="AnalyzeProjectApp\DumpbinProcess.cpp" />
+    <ClCompile Include="BasicNetApp.cpp" />
     <ClCompile Include="Config.cpp" />
     <ClCompile Include="CryptoApp.cpp" />
     <ClCompile Include="DeployBuild.cpp" />
@@ -190,6 +191,7 @@
     <ClCompile Include="Test\Core\NetConnectionTest.cpp" />
     <ClCompile Include="Test\Core\RSATest.cpp" />
     <ClCompile Include="Test\Core\TextStreamTest.cpp" />
+    <ClCompile Include="Test\Runtime\AsyncTests.cpp" />
     <ClCompile Include="Test\TestRunner.cpp" />
     <ClCompile Include="ThreadQueueApp.cpp" />
   </ItemGroup>

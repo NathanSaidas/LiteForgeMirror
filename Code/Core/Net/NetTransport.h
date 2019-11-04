@@ -50,6 +50,9 @@ public:
 
     bool IsRunning() const;
 
+    IPEndPointAny GetBoundEndPoint() const;
+    bool Send(const ByteT* bytes, SizeT numBytes, const IPEndPointAny& endPoint);
+
 private:
     using ImplType = LF_IMPL_OPAQUE(NetTransport);
     using ImplPtr = TStrongPointer<ImplType>;

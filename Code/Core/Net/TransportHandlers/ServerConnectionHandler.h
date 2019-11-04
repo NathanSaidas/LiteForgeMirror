@@ -21,8 +21,8 @@
 #ifndef LF_CORE_SERVER_CONNECTION_HANDLER_H
 #define LF_CORE_SERVER_CONNECTION_HANDLER_H
 
-#include "Core/Memory/DynamicPoolHeap.h"
 #include "Core/Net/NetTransportHandler.h"
+#include "Core/Net/PacketAllocator.h"
 
 namespace lf {
 
@@ -31,20 +31,16 @@ class RSAKey;
 } // namespace Crypto
 class TaskScheduler;
 class NetConnectionController;
+class NetEventController;
 class NetServerController;
+class NetDriver;
 
 class LF_CORE_API ServerConnectionHandler : public NetTransportHandler
 {
 public:
     using Super = NetTransportHandler;
-
-    // todo: We should define these 'packet data' types somewhere else? common header?
-    // Connect Messages are anywhere from 750 bytes to 1000 bytes...
-    // using ConnectPacketData = PacketData1024;
-    struct ConnectPacketData : public PacketData1024
-    {
-        IPEndPointAny mSender;
-    };
+    using PacketType = PacketDataType::ConnectPacketData;
+    using AllocatorType = TPacketAllocator<PacketType>;
 
 
     // Basic overview of the structure:
@@ -60,15 +56,20 @@ public:
     //   Establish Connection [ Network Task Thread ]
     //   Generate Unique Key  [ Network Task Thread ]
     //   Acknowledge          [ Network Task Thread ]
-    //  
-    // 
 
-    ServerConnectionHandler(TaskScheduler* taskScheduler, NetConnectionController* connectionController, NetServerController* serverController);
+    ServerConnectionHandler
+    (
+        TaskScheduler* taskScheduler, 
+        NetConnectionController* connectionController, 
+        NetServerController* serverController,
+        NetEventController* eventController,
+        NetDriver* driver
+    );
     ServerConnectionHandler(ServerConnectionHandler&& other);
     virtual ~ServerConnectionHandler();
     ServerConnectionHandler& operator=(ServerConnectionHandler&& other);
 
-    void DecodePacket(ConnectPacketData* packetData);
+    void DecodePacket(PacketType* packetData);
 
 protected:
     void OnInitialize() final;
@@ -77,16 +78,16 @@ protected:
     void OnUpdateFrame() final;
 
 private:
-    ConnectPacketData* AllocatePacket();
-    void FreePacket(ConnectPacketData* packet);
 
     // 'Context':
     TaskScheduler* mTaskScheduler;
     NetConnectionController* mConnectionController;
+    NetEventController* mEventController;
     NetServerController* mServerController;
+    NetDriver* mDriver;
 
     // Outputs:
-    DynamicPoolHeap mPacketPool;
+    AllocatorType mAllocator;
 
 };
 

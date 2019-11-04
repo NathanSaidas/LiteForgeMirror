@@ -296,7 +296,7 @@ public:
 
         TaskScheduler::OptionsType options;
         options.mNumWorkerThreads = numConsumers;
-        options.mNumDeliveryThreads = numProducers;
+        // options.mNumDeliveryThreads = numProducers; // todo: deprecated: MPMC_EXP only.
         TaskScheduler scheduler;
         AtomicStorePointer(&mScheduler, &scheduler);
         scheduler.Initialize(options, true);

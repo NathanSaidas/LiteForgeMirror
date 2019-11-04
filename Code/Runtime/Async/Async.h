@@ -33,8 +33,31 @@ class TaskHandle;
 class LF_RUNTIME_API Async
 {
 public:
+    // **********************************
+    // Pushes a promise into the task scheduler immediately for execution.
+    // 
+    // Chained tasks (Then/Error) are not guaranteed to be executed.
+    // **********************************
     virtual void RunPromise(PromiseWrapper promise) = 0;
+    // **********************************
+    // Pushes a promise into the 'next-frame' queue. (note: If a frame takes an 
+    // excessively long time to execute (more than 100ms) then the promise is
+    // pushed into the task scheduler for execution.
+    // **********************************
+    virtual void QueuePromise(PromiseWrapper promise) = 0;
+    // **********************************
+    // Pushes a simple task into the thread scheduler
+    // **********************************
     virtual TaskHandle RunTask(const TaskCallback& callback, void* param = nullptr) = 0;
+    // **********************************
+    // Use this to yield your thread execution until the 'next-frame'. This is not to be used
+    // on the main thread, except for testing.
+    // **********************************
+    virtual void WaitForSync() = 0;
+    // **********************************
+    // Signals to dispatch queued promises.
+    // **********************************
+    virtual void Signal() = 0;
 
     template<typename LambdaT>
     TaskHandle RunTask(const LambdaT& lambda, void* param = nullptr)
@@ -42,6 +65,10 @@ public:
         return RunTask(TaskCallback::CreateLambda(lambda), param);
     }
 
+    // **********************************
+    // Function function designed for the use of waiting on a collection
+    // of promises using iterators.
+    // **********************************
     template<typename T, typename P>
     static LF_INLINE void WaitAll(T first, T last, P pred)
     {

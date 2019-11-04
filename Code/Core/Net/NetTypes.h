@@ -240,8 +240,8 @@ struct AckConnectedPacketHeader
 {
     using Base = AckPacketHeader;
     static const SizeT CRC_OFFSET = PacketHeader::CRC_OFFSET;
-    static const SizeT RUNTIME_SIZE = 20;
-    static const SizeT ACTUAL_SIZE = RUNTIME_SIZE - 3;
+    static const SizeT RUNTIME_SIZE = 16;
+    static const SizeT ACTUAL_SIZE = RUNTIME_SIZE - 1;
 
     UInt16 mAppID;          //  0,  2 => 2
     UInt16 mAppVersion;     //  2,  2 => 4
@@ -249,9 +249,8 @@ struct AckConnectedPacketHeader
     UInt8  mFlags;          //  8,  1 => 9
     UInt8  mType;           //  9,  1 => 10
     UInt8  mStatus;         // 10,  1 => 11
-    UInt8  mConnectionID[2];// 11,  2 => 13
-    UInt8  mPacketUID[4];   // 13,  4 => 17
-    UInt8  mPadding[3];
+    UInt8  mPacketUID[4];   // 11,  4 => 15
+    UInt8  mPadding[1];
 };
 LF_STATIC_ASSERT(sizeof(AckConnectedPacketHeader) == AckConnectedPacketHeader::RUNTIME_SIZE);
 
@@ -340,6 +339,7 @@ struct LF_ALIGN(4) IPv4EndPoint
     }
 
     UInt16 mAddressFamily;
+    // The port of the end point in network byte order.
     UInt16 mPort;
     union {
         UInt8  mBytes[4];
@@ -419,6 +419,7 @@ struct LF_ALIGN(4) IPv6EndPoint
     }
 
     UInt16 mAddressFamily;
+    // The port of the end point in network byte order.
     UInt16 mPort;
     union {
         UInt8  mBytes[16];
@@ -491,6 +492,7 @@ struct LF_ALIGN(4) IPEndPointAny
     }
 
     UInt16 mAddressFamily;
+    // The port of the end point in network byte order.
     UInt16 mPort;
     union {
         UInt8  mBytes[16];
@@ -537,6 +539,7 @@ struct PacketData
     UInt32 mType;
     UInt16 mSize;
     UInt16 mRetransmits;
+    IPEndPointAny mSender;
 
     template<typename T>
     static void SetZero(T& packet)
@@ -557,7 +560,15 @@ using PacketData768 = TPacketData<768>;
 using PacketData512 = TPacketData<512>;
 using ConnectionID = Int32;
 
+namespace PacketDataType
+{
+    using ConnectPacketData = PacketData1024;
+    using ConnectAckPacketData = PacketData1024;
+}
+
 const ConnectionID INVALID_CONNECTION = INVALID32;
+const SizeT NET_CLIENT_CHALLENGE_SIZE = 32;
+const SizeT NET_HEARTBEAT_NONCE_SIZE = 32;
 
 #if defined(LF_OS_WINDOWS)
 class LF_IMPL_OPAQUE(UDPSocketWindows);
@@ -567,6 +578,56 @@ using LF_IMPL_OPAQUE(UDPSocket) = LF_IMPL_OPAQUE(UDPSocketWindows);
 #endif
 
 class LF_IMPL_OPAQUE(NetTransport);
+
+LF_INLINE void SetPacketUID(ConnectedPacketHeader& header, UInt32 uid)
+{
+    LF_STATIC_ASSERT(sizeof(header.mPacketUID) == sizeof(uid));
+    header.mPacketUID = uid;
+}
+LF_INLINE void SetPacketUID(AckConnectedPacketHeader& header, UInt32 uid)
+{
+    LF_STATIC_ASSERT(sizeof(header.mPacketUID) == sizeof(uid));
+    memcpy(header.mPacketUID, &uid, sizeof(uid));
+}
+LF_INLINE void SetPacketUID(SecureConnectedPacketHeader& header, UInt32 uid)
+{
+    LF_STATIC_ASSERT(sizeof(header.mPacketUID) == sizeof(uid));
+    header.mPacketUID = uid;
+    // memcpy(header.mPacketUID, &uid, sizeof(uid));
+}
+// void SetPacketUID(AckSecureConnectedPacketHeader& header, UInt32 uid)
+// {
+//     // todo:
+//     // LF_STATIC_ASSERT(sizeof(header.mPacketUID) == sizeof(uid));
+//     (header);
+//     (uid);
+//     
+// }
+
+LF_INLINE UInt32 GetPacketUID(const ConnectedPacketHeader& header)
+{
+    LF_STATIC_ASSERT(sizeof(header.mPacketUID) == sizeof(UInt32));
+    return header.mPacketUID;
+}
+
+LF_INLINE UInt32 GetPacketUID(const AckConnectedPacketHeader& header)
+{
+    LF_STATIC_ASSERT(sizeof(header.mPacketUID) == sizeof(UInt32));
+    UInt32 value;
+    memcpy(&value, header.mPacketUID, sizeof(UInt32));
+    return value;
+}
+
+LF_INLINE UInt32 GetPacketUID(const SecureConnectedPacketHeader& header)
+{
+    LF_STATIC_ASSERT(sizeof(header.mPacketUID) == sizeof(UInt32));
+    return header.mPacketUID;
+}
+
+// todo: 
+// void GetPacketUID(const AckSecureConnectedPacketHeader& header)
+
+
 
 }
 

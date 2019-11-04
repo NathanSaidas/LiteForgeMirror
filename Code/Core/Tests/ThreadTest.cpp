@@ -19,8 +19,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
 #include "ThreadTest.h"
+#include "Core/Platform/Atomic.h"
 #include "Core/Platform/Thread.h"
+#include "Core/Platform/ThreadFence.h"
 #include "Core/Test/Test.h"
+#include "Core/Utility/Log.h"
 
 namespace lf {
 
@@ -43,6 +46,77 @@ REGISTER_TEST(ThreadTest)
     {
         Thread thread;
     }
+}
+
+struct TestEventData
+{
+    ThreadFence mFence;
+};
+static volatile Atomic32 gTestValue = 0;
+
+static void TestEventCallback(void* ptr)
+{
+    TestEventData* e = reinterpret_cast<TestEventData*>(ptr);
+    gTestLog.Info(LogMessage("Waiting for fence..."));
+    gTestLog.Sync();
+    TEST(e->mFence.Wait() == ThreadFence::WS_SUCCESS);
+
+    gTestLog.Info(LogMessage("Fence signal received!"));
+    gTestLog.Sync();
+    AtomicIncrement32(&gTestValue);
+
+    gTestLog.Info(LogMessage("Waiting for event again..."));
+    gTestLog.Sync();
+    TEST(e->mFence.Wait() == ThreadFence::WS_SUCCESS);
+
+    gTestLog.Info(LogMessage("Fence signal received!"));
+    gTestLog.Sync();
+    AtomicIncrement32(&gTestValue);
+
+}
+
+REGISTER_TEST(ThreadFenceTest)
+{
+    AtomicStore(&gTestValue, 0);
+
+    TestEventData e;
+    e.mFence.Initialize();
+
+
+    gTestLog.Info(LogMessage("Forking threads..."));
+    gTestLog.Sync();
+
+    Thread thread;
+    thread.Fork(TestEventCallback, &e);
+
+    Thread threadB;
+    threadB.Fork(TestEventCallback, &e);
+
+    gTestLog.Info(LogMessage("Waiting for 3 seconds..."));
+    gTestLog.Sync();
+    SleepCallingThread(3000);
+
+    gTestLog.Info(LogMessage("Signal fence."));
+    gTestLog.Sync();
+    TEST(e.mFence.Signal());
+
+    gTestLog.Info(LogMessage("Waiting for 5 seconds..."));
+    gTestLog.Sync();
+    SleepCallingThread(5000);
+    TEST(AtomicLoad(&gTestValue) == 2);
+
+
+    gTestLog.Info(LogMessage("Signal fence."));
+    gTestLog.Sync();
+    TEST(e.mFence.Signal());
+
+    gTestLog.Info(LogMessage("Waiting for thread to finish..."));
+    gTestLog.Sync();
+
+    thread.Join();
+    SleepCallingThread(1000);
+    TEST(AtomicLoad(&gTestValue) == 4);
+
 }
 
 }

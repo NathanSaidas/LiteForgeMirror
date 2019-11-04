@@ -108,6 +108,10 @@ public:
     // todo:
     // **********************************
     SizeT GetMaxAllocations() const;
+
+    SizeT GetObjectSize() const;
+
+    SizeT GetObjectAlignment() const;
 private:
     void RecursiveFree(Node* node);
 

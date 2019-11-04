@@ -45,6 +45,8 @@ const ErrorCode LF_ERROR_DEADLOCK = 7;
 const ErrorCode LF_ERROR_RESOURCE_LEAK = 8;
 // For code paths in development, used to indicate an implementation needs to be done.
 const ErrorCode LF_ERROR_MISSING_IMPLEMENTATION = 9;
+// Error raised when a heap detects memory corruption
+const ErrorCode LF_ERROR_MEMORY_CORRUPTION = 10;
 
 
 } // namespace lf

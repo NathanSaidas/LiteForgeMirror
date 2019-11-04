@@ -580,6 +580,25 @@ void* PoolHeap::Allocate()
             AtomicIncrement16(&mStatus[index]);
         }
     }
+
+    // Write 0xBA 'bad memory' to the extra memory in the page thats not used by the object.
+    // That block of memory should still read 0xBA when the object is freed, if not there was some
+    // corruption somewhere.
+    if ((mFlags & PHF_DETECT_LOCAL_HEAP_CORRUPTION) > 0)
+    {
+        MEMORY_BASIC_INFORMATION memInfo;
+        CriticalAssert(VirtualQuery(pointer, &memInfo, sizeof(memInfo)) == sizeof(memInfo));
+
+        SYSTEM_INFO sysInfo;
+        GetSystemInfo(&sysInfo);
+
+        const SizeT PAGE_SIZE = static_cast<SizeT>(sysInfo.dwPageSize);
+        const SizeT numObjectPages = CalculateNumPages(mObjectSize + mObjectAlignment, PAGE_SIZE);
+        const SizeT pagedObjectSize = numObjectPages * PAGE_SIZE;
+
+        memset(pointer, 0xBA, pagedObjectSize);
+        memset(pointer, 0x00, mObjectSize);
+    }
 #endif
 
     return pointer;
@@ -629,6 +648,26 @@ void PoolHeap::Free(void* pointer)
             SizeT index = (reinterpret_cast<UIntPtrT>(pointer) - reinterpret_cast<UIntPtrT>(mBase)) / mObjectSize;
             CriticalAssert(index < mSize);
             AssertEx(AtomicDecrement16(&mStatus[index]) >= 0, LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+        }
+    }
+
+    if ((mFlags & PHF_DETECT_LOCAL_HEAP_CORRUPTION) > 0)
+    {
+        MEMORY_BASIC_INFORMATION memInfo;
+        CriticalAssert(VirtualQuery(pointer, &memInfo, sizeof(memInfo)) == sizeof(memInfo));
+
+        SYSTEM_INFO sysInfo;
+        GetSystemInfo(&sysInfo);
+
+        const SizeT PAGE_SIZE = static_cast<SizeT>(sysInfo.dwPageSize);
+        const SizeT numObjectPages = CalculateNumPages(mObjectSize + mObjectAlignment, PAGE_SIZE);
+        const SizeT pagedObjectSize = numObjectPages * PAGE_SIZE;
+        
+        const ByteT* pagedMemory = reinterpret_cast<const ByteT*>(reinterpret_cast<UIntPtrT>(pointer) + mObjectSize);
+        const SizeT pagedMemorySize = pagedObjectSize - mObjectSize;
+        for(SizeT i = 0; i < pagedMemorySize; ++i)
+        {
+            AssertEx(pagedMemory[i] == 0xBA, LF_ERROR_MEMORY_CORRUPTION, ERROR_API_CORE);
         }
     }
 #endif

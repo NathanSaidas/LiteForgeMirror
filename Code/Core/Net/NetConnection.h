@@ -23,12 +23,13 @@
 
 #include "Core/Common/Types.h"
 #include "Core/Common/API.h"
-#include "Core/Memory/AtomicSmartPointer.h"
-#include "Core/Net/NetTypes.h"
-#include "Core/Net/UDPSocket.h"
 #include "Core/Crypto/AES.h"
 #include "Core/Crypto/HMAC.h"
 #include "Core/Crypto/RSA.h"
+#include "Core/Memory/AtomicSmartPointer.h"
+#include "Core/Net/NetTypes.h"
+#include "Core/Net/UDPSocket.h"
+#include "Core/Platform/RWSpinLock.h"
 
 namespace lf {
 
@@ -43,6 +44,10 @@ public:
     Crypto::AESKey  mSharedKey;
     ByteT           mHMACKey[Crypto::HMAC_KEY_SIZE];
     UDPSocket       mSocket;
+    RWSpinLock      mLock;
+
+    ByteT           mServerNonce[NET_HEARTBEAT_NONCE_SIZE];
+    ByteT           mClientNonce[NET_HEARTBEAT_NONCE_SIZE];
 };
 
 } // namespace lf

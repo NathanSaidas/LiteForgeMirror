@@ -49,6 +49,9 @@ namespace lf {
     void NetTransport::Start(NetTransportConfig&& config, const ByteT* clientConnectionBytes, SizeT numBytes) { mImpl->Start(std::forward<NetTransportConfig>(config), clientConnectionBytes, numBytes); }
     void NetTransport::Stop() { mImpl->Stop(); }
     bool NetTransport::IsRunning() const { return mImpl->IsRunning(); }
+    IPEndPointAny NetTransport::GetBoundEndPoint() const { return mImpl->GetBoundEndPoint(); }
+    bool NetTransport::Send(const ByteT* bytes, SizeT numBytes, const IPEndPointAny& endPoint) { return mImpl->Send(bytes, numBytes, endPoint); }
+
 } // namespace lf
 
 #endif // LF_IMPL_OPAQUE_OPTIMIZE

@@ -36,15 +36,18 @@ public:
 
     PromiseImpl() : Super()
     {}
-    PromiseImpl(PromiseCallback executor) : Super(executor)
+    PromiseImpl(PromiseCallback executor, Async* async = nullptr) : Super(executor, async)
     {}
     template<typename LambdaT>
-    PromiseImpl(LambdaT executor) : Super(PromiseCallback::CreateLambda(executor))
+    PromiseImpl(LambdaT executor, Async* async = nullptr) : Super(PromiseCallback::CreateLambda(executor), async)
     {}
 
     PromiseImpl& Then(ResolverCallbackType callback)
     {
-        mResolverCallbacks.Add(callback.GetHandle());
+        if (AtomicLoad(&mState) <= PROMISE_QUEUED)
+        {
+            mResolverCallbacks.Add(callback.GetHandle());
+        }
         return *this;
     }
     template<typename LambdaT>
@@ -56,7 +59,10 @@ public:
 
     PromiseImpl& Catch(ErrorCallbackType callback)
     {
-        mErrorCallbacks.Add(callback.GetHandle());
+        if (AtomicLoad(&mState) <= PROMISE_QUEUED)
+        {
+            mErrorCallbacks.Add(callback.GetHandle());
+        }
         return *this;
     }
     template<typename LambdaT>
@@ -72,8 +78,21 @@ public:
         promise->mErrorCallbacks.swap(mErrorCallbacks);
         promise->mResolverCallbacks.swap(mResolverCallbacks);
         promise->mExecutor = std::move(mExecutor);
+        promise->mAsync = mAsync;
         PromiseWrapper wrapped(promise);
         GetAsync().RunPromise(wrapped);
+        return wrapped;
+    }
+
+    PromiseWrapper Queue()
+    {
+        PromiseImpl* promise = LFNew<PromiseImpl>();
+        promise->mErrorCallbacks.swap(mErrorCallbacks);
+        promise->mResolverCallbacks.swap(mResolverCallbacks);
+        promise->mExecutor = std::move(mExecutor);
+        promise->mAsync = mAsync;
+        PromiseWrapper wrapped(promise);
+        GetAsync().QueuePromise(wrapped);
         return wrapped;
     }
 };

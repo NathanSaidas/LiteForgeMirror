@@ -45,6 +45,26 @@
         {
           "Id": "1e6145c6-f8c3-4e47-9e92-5d410e192796",
           "Command": "-app /type=CryptoApp -crypto /aes=256 /filename=aes_256"
+        },
+        {
+          "Id": "3cc69173-0ad2-4f3b-aceb-5e3101aee24f",
+          "Command": "-app /type=BasicNetApp -log /name=Server"
+        },
+        {
+          "Id": "aecc28db-183e-4150-b1ad-5eaa08789a95",
+          "Command": "-app /type=BasicNetApp -log /name=Client -net /client"
+        },
+        {
+          "Id": "20d77c1a-4126-4480-8f71-a990ff81cea2",
+          "Command": "-app /type=BasicNetApp -log /name=Client2 -net /client"
+        },
+        {
+          "Id": "6bdb5fe1-b266-4316-af72-ce4fb9a4f276",
+          "Command": "-app /type=BasicNetApp -log /name=Client3 -net /client"
+        },
+        {
+          "Id": "8ef70aaa-c9f2-44e4-9aee-b6910e84bc96",
+          "Command": "-app /type=BasicNetApp -log /name=Client4 -net /client"
         }
       ]
     },
@@ -66,15 +86,15 @@
         },
         {
           "Id": "00c6995c-010b-4710-abfa-376ad6f6db76",
-          "Command": "-test /single=TestLookUpTime"
+          "Command": "-test /single=CacheWriter_WriteAsyncTest"
         },
         {
           "Id": "db158b84-d89b-4723-9ffb-36b667ff05bb",
-          "Command": "-test /single=NetConnectionTest"
+          "Command": "-test /single=NetClientServerConnectionTest"
         },
         {
           "Id": "f4d86b48-eb82-4fb2-8cf4-4e27cf82dea8",
-          "Command": "-test /single=RSASignatureReplayAttack"
+          "Command": "-test /single=PromiseTest"
         },
         {
           "Id": "f94a88ca-a61f-406b-bf6b-cb554692a32c",

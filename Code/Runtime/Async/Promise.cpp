@@ -19,22 +19,27 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
 #include "Promise.h"
+#include "Async.h"
 
 namespace lf {
 
-Promise::Promise() :
-    mResolverCallbacks(),
-    mErrorCallbacks(),
-    mExecutor(),
-    mTask(),
-    mState(PROMISE_NULL)
+Promise::Promise() 
+: mResolverCallbacks()
+, mErrorCallbacks()
+, mExecutor()
+, mTask()
+, mAsync(&GetAsync())
+, mStateSignaller()
+, mState(PROMISE_NULL)
 {}
-Promise::Promise(const PromiseCallback& executor) :
-    mResolverCallbacks(),
-    mErrorCallbacks(),
-    mExecutor(executor),
-    mTask(),
-    mState(PROMISE_NULL)
+Promise::Promise(const PromiseCallback& executor, Async* async) 
+: mResolverCallbacks()
+, mErrorCallbacks()
+, mExecutor(executor)
+, mTask()
+, mAsync(async ? async : &GetAsync())
+, mStateSignaller()
+, mState(PROMISE_NULL)
 {}
 
 
@@ -68,11 +73,19 @@ bool Promise::SetState(PromiseState state)
                 return false;
             }
         } break;
-        case PROMISE_PENDING:
+        case PROMISE_QUEUED:
         {
             if (AtomicLoad(&mState) != PROMISE_NULL)
             {
-                ReportBugMsgEx("Invalid promise state transition NOT PROMISE_NULL -> PROMISE_PENDING", LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+                ReportBugMsgEx("Invalid promise state transition NOT PROMISE_NULL -> PROMISE_QUEUED", LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+                return false;
+            }
+        } break;
+        case PROMISE_PENDING:
+        {
+            if (AtomicLoad(&mState) != PROMISE_NULL && !IsQueued())
+            {
+                ReportBugMsgEx("Invalid promise state transition NOT PROMISE_NULL -> PROMISE_PENDING or NOT PROMISE_QUEUED -> PROMISE_PENDING", LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
                 return false;
             }
         } break;
@@ -106,7 +119,7 @@ bool Promise::SetState(PromiseState state)
 
 void Promise::Wait()
 {
-    if (IsPending())
+    if (IsPending() || IsQueued())
     {
         if (mTask)
         {
@@ -121,7 +134,7 @@ void Promise::Wait()
 }
 void Promise::LazyWait()
 {
-    while (IsPending())
+    while (IsPending() || IsQueued())
     {
         if (!mTask)
         {

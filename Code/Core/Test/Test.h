@@ -35,6 +35,7 @@ struct LF_CORE_API TestConfig
 {
     TestConfig();
 
+    bool                mStress;
     bool                mTriggerBreakpoint;
     const EngineConfig* mEngineConfig;
 };

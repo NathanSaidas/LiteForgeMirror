@@ -24,8 +24,10 @@
 #include "Core/Crypto/AES.h"
 #include "Core/Crypto/RSA.h"
 #include "Core/Net/ConnectPacket.h"
-#include "Core/Net/NetClientController.h"
+#include "Core/Net/Controllers/NetClientController.h"
+#include "Core/Net/Controllers/NetEventController.h"
 #include "Core/Net/PacketUtility.h"
+#include "Core/Net/NetDriver.h"
 
 #include <utility>
 
@@ -36,24 +38,36 @@ static const Crypto::RSAKeySize REQUIRED_RSA_SIZE = Crypto::RSA_KEY_2048;
 static const Crypto::AESKeySize REQUIRED_AES_SIZE = Crypto::AES_KEY_256;
 static const SizeT REQUIRED_PACKET_SIZE = ConnectPacket::HeaderType::ACTUAL_SIZE + 256;
 
-ClientConnectionHandler::ClientConnectionHandler(TaskScheduler* taskScheduler, NetClientController* clientController)
+ClientConnectionHandler::ClientConnectionHandler
+(
+    TaskScheduler* taskScheduler, 
+    NetClientController* clientController,
+    NetEventController* eventController,
+    NetDriver* driver
+)
 : mTaskScheduler(taskScheduler)
 , mClientController(clientController)
-, mPacketPool()
+, mEventController(eventController)
+, mDriver(driver)
+, mAllocator()
 {
 
 }
 ClientConnectionHandler::ClientConnectionHandler(ClientConnectionHandler&& other)
 : mTaskScheduler(other.mTaskScheduler)
 , mClientController(other.mClientController)
-, mPacketPool(std::move(other.mPacketPool))
+, mEventController(other.mEventController)
+, mDriver(other.mDriver)
+, mAllocator(std::move(other.mAllocator))
 {
     other.mTaskScheduler = nullptr;
     other.mClientController = nullptr;
+    other.mEventController = nullptr;
+    other.mDriver = nullptr;
 }
 ClientConnectionHandler::~ClientConnectionHandler()
 {
-    CriticalAssert(mPacketPool.GetHeapCount() == 0);
+    CriticalAssert(mAllocator.GetHeap().GetHeapCount() == 0);
 }
 ClientConnectionHandler& ClientConnectionHandler::operator=(ClientConnectionHandler&& other)
 {
@@ -61,17 +75,22 @@ ClientConnectionHandler& ClientConnectionHandler::operator=(ClientConnectionHand
     {
         mTaskScheduler = other.mTaskScheduler;
         mClientController = other.mClientController;
-        mPacketPool = std::move(other.mPacketPool);
+        mEventController = other.mEventController;
+        mDriver = other.mDriver;
+        mAllocator = std::move(other.mAllocator);
         other.mTaskScheduler = nullptr;
         other.mClientController = nullptr;
+        other.mEventController = nullptr;
+        other.mDriver = nullptr;
     }
     return *this;
 }
 
-void ClientConnectionHandler::DecodePacket(ConnectAckPacketData* packetData)
+void ClientConnectionHandler::DecodePacket(PacketType* packetData)
 {
     Crypto::RSAKey uniqueKey;
     ByteT challenge[ConnectPacket::CHALLENGE_SIZE];
+    ByteT serverNonce[ConnectPacket::NONCE_SIZE];
     ConnectionID connectionID;
     ConnectPacket::AckHeaderType header;
 
@@ -87,26 +106,45 @@ void ClientConnectionHandler::DecodePacket(ConnectAckPacketData* packetData)
             uniqueKey,
             mClientController->GetSharedKey(),
             mClientController->GetHMACKey(),
-            challenge, 
+            challenge,
+            serverNonce,
             connectionID, 
             header
         )
     )
     {
-        mClientController->OnConnectFailed(ConnectionFailureMsg::CFM_UNKNOWN);
-        FreePacket(packetData);
+        NetConnectFailedEvent* event = mEventController->Allocate<NetConnectFailedEvent>();
+        NET_EVENT_DEBUG_INFO(event);
+        event->mReason = ConnectionFailureMsg::CFM_UNKNOWN;
+        mDriver->SendEvent(event->GetType(), event);
         return;
     }
 
     if (memcmp(challenge, mClientController->GetChallenge(), sizeof(challenge)) != 0)
     {
-        mClientController->OnConnectFailed(ConnectionFailureMsg::CFM_UNKNOWN);
-        FreePacket(packetData);
+        NetConnectFailedEvent* event = mEventController->Allocate<NetConnectFailedEvent>();
+        NET_EVENT_DEBUG_INFO(event);
+        event->mReason = ConnectionFailureMsg::CFM_UNKNOWN;
+        mDriver->SendEvent(event->GetType(), event);
         return;
     }
 
-    mClientController->OnConnectSuccess(connectionID, std::move(uniqueKey));
-    FreePacket(packetData);
+    if (!mClientController->SetConnectionID(connectionID, std::move(uniqueKey), serverNonce))
+    {
+        NetConnectFailedEvent* event = mEventController->Allocate<NetConnectFailedEvent>();
+        NET_EVENT_DEBUG_INFO(event);
+        event->mReason = ConnectionFailureMsg::CFM_UNKNOWN;
+        mDriver->SendEvent(event->GetType(), event);
+        return;
+    }
+    else
+    {
+
+        NetConnectSuccessEvent* event = mEventController->Allocate<NetConnectSuccessEvent>();
+        NET_EVENT_DEBUG_INFO(event);
+        memcpy(event->mServerNonce, serverNonce, sizeof(serverNonce));
+        mDriver->SendEvent(event->GetType(), event);
+    }
 }
 
 void ClientConnectionHandler::OnInitialize()
@@ -115,14 +153,14 @@ void ClientConnectionHandler::OnInitialize()
     const SizeT POOL_MAX_HEAPS = 3;
     const UInt32 POOL_FLAGS = PoolHeap::PHF_DOUBLE_FREE;
 
-    CriticalAssert(mPacketPool.Initialize(sizeof(ConnectAckPacketData), alignof(ConnectAckPacketData), POOL_OBJECT_COUNT, POOL_MAX_HEAPS, POOL_FLAGS));
+    CriticalAssert(mAllocator.Initialize(POOL_OBJECT_COUNT, POOL_MAX_HEAPS, POOL_FLAGS));
     CriticalAssert(mClientController->GetKey().GetKeySize() == REQUIRED_RSA_SIZE);
     CriticalAssert(mClientController->GetSharedKey().GetKeySize() == REQUIRED_AES_SIZE);
 }
 
 void ClientConnectionHandler::OnShutdown()
 {
-    mPacketPool.Release();
+    mAllocator.Release();
 }
 
 void ClientConnectionHandler::OnReceivePacket(const ByteT* bytes, SizeT byteLength, const IPEndPointAny& sender)
@@ -137,7 +175,7 @@ void ClientConnectionHandler::OnReceivePacket(const ByteT* bytes, SizeT byteLeng
         return;
     }
 
-    ConnectAckPacketData* connectPacket = AllocatePacket();
+    PacketType* connectPacket = mAllocator.Allocate();
     if(!connectPacket)
     {
         return;
@@ -151,32 +189,13 @@ void ClientConnectionHandler::OnReceivePacket(const ByteT* bytes, SizeT byteLeng
     mTaskScheduler->RunTask([connectPacket, this](void*)
     {
         DecodePacket(connectPacket);
+        mAllocator.Free(connectPacket);
     });
 }
 
 void ClientConnectionHandler::OnUpdateFrame()
 {
-    mPacketPool.GCCollect();
-}
-
-ClientConnectionHandler::ConnectAckPacketData* ClientConnectionHandler::AllocatePacket()
-{
-    void* object = mPacketPool.Allocate();
-    if (object)
-    {
-        return new(object)ConnectAckPacketData();
-    }
-    return nullptr;
-}
-
-void ClientConnectionHandler::FreePacket(ConnectAckPacketData* packet)
-{
-    if (packet)
-    {
-        packet->~ConnectAckPacketData();
-        PacketData::SetZero(*packet);
-        mPacketPool.Free(packet);
-    }
+    mAllocator.GCCollect();
 }
 
 }

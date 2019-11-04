@@ -289,6 +289,7 @@ struct RSAAckMsg
     ByteT mIV[16];
     ByteT mHMAC[Crypto::HMAC_HASH_SIZE];
     ByteT mChallenge[32];
+    ByteT mServerNonce[32];
     ConnectionID mID;
 };
 
@@ -305,6 +306,7 @@ bool ConnectPacket::EncodeAckPacket(
     const Crypto::AESKey& sharedKey,
     const ByteT hmacKey[Crypto::HMAC_KEY_SIZE],
     const ByteT challenge[CHALLENGE_SIZE],
+    const ByteT serverNonce[NONCE_SIZE],
     ConnectionID connectionID)
 {
     if (!clientKey.HasPublicKey())
@@ -343,6 +345,7 @@ bool ConnectPacket::EncodeAckPacket(
     // RSA
     RSAAckMsg rsa;
     memcpy(rsa.mChallenge, challenge, sizeof(rsa.mChallenge));
+    memcpy(rsa.mServerNonce, serverNonce, sizeof(rsa.mServerNonce));
     rsa.mID = connectionID;
     Crypto::SecureRandomBytes(rsa.mIV, sizeof(rsa.mIV));
 
@@ -422,6 +425,7 @@ bool ConnectPacket::DecodeAckPacket(
     const Crypto::AESKey& sharedKey,
     const ByteT hmacKey[Crypto::HMAC_KEY_SIZE],
     ByteT challenge[CHALLENGE_SIZE],
+    ByteT serverNonce[NONCE_SIZE],
     ConnectionID& connectionID,
     AckHeaderType& header)
 {
@@ -519,6 +523,7 @@ bool ConnectPacket::DecodeAckPacket(
         return false;
     }
     memcpy(challenge, rsa->mChallenge, sizeof(rsa->mChallenge));
+    memcpy(serverNonce, rsa->mServerNonce, sizeof(rsa->mServerNonce));
     connectionID = rsa->mID;
     header = *packetHeader;
     return true;

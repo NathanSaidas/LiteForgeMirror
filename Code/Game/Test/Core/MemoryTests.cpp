@@ -237,7 +237,11 @@ static void ProcessPoolHeapThreadTest(void* data)
 
 REGISTER_TEST(PoolHeapMultithreaded)
 {
-
+    if (!TestFramework::GetConfig().mStress)
+    {
+        gTestLog.Info(LogMessage("Ignoring test, stress tests not enabled..."));
+        return;
+    }
     // If we have 4 threads... and 200 objects..
     // We can allocate 50 objects foreach thread.
     // From this we should be able to verify that each thread has their own object.
@@ -391,6 +395,12 @@ static void Writers(void* data)
 
 REGISTER_TEST(ReaderWriteLockTest)
 {
+    if (!TestFramework::GetConfig().mStress)
+    {
+        gTestLog.Info(LogMessage("Ignoring test, stress tests not enabled..."));
+        return;
+    }
+
     ReaderWriterState state;
     AtomicStore(&state.mExecute, 0);
     AtomicStore(&state.mMultiReaders, 0);

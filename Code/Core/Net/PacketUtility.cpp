@@ -141,7 +141,6 @@ static bool PrepareAckHeader(
             ack->mFlags = NetPacketFlag::BitfieldType({ NetPacketFlag::NET_PACKET_FLAG_ACK }).value;
             ack->mType = header->mType;
             ack->mStatus = static_cast<UInt8>(ackStatus);
-            *reinterpret_cast<UInt16*>(&ack->mConnectionID[0]) = header->mConnectionID;
             *reinterpret_cast<UInt32*>(&ack->mPacketUID[0]) = header->mPacketUID;
             ack->mCrc32 = Crc32(&outPacketBytes[AckConnectedPacketHeader::CRC_OFFSET], inOutPacketBytesLength - AckConnectedPacketHeader::CRC_OFFSET);
 

@@ -21,7 +21,7 @@
 #ifndef LF_CORE_TASK_SCHEDULER_H
 #define LF_CORE_TASK_SCHEDULER_H
 
-#include "Core/Platform/ThreadSignal.h"
+#include "Core/Platform/ThreadFence.h"
 #include "Core/Concurrent/TaskTypes.h"
 #include "Core/Concurrent/TaskHandle.h"
 
@@ -95,7 +95,7 @@ private:
     void SetRunning(bool value) { AtomicStore(&mRunning, value ? 1 : 0); }
 
     RingBufferType mDispatcherQueue;
-    ThreadSignal   mDispatcherSignal;
+    ThreadFence    mDispatcherFence;
     // Workers:
     TArray<TaskWorker> mWorkerThreads;
 

@@ -28,6 +28,7 @@
 
 namespace lf {
 
+class Async;
 class Promise;
 using PromiseCallback = TCallback<void, Promise*>;
 using PromiseWrapper = TAtomicStrongPointer<Promise>;
@@ -50,6 +51,8 @@ public:
     {
         // Execute has not been called yet
         PROMISE_NULL,
+        // Queued to be started 'next-frame'
+        PROMISE_QUEUED,
         // Waiting to be executed
         PROMISE_PENDING,
         // Promise was resolved
@@ -59,7 +62,7 @@ public:
     };
 
     Promise();
-    Promise(const PromiseCallback& executor);
+    Promise(const PromiseCallback& executor, Async* async = nullptr);
     // **********************************
     // Invokes the executor callback that created the promise
     // **********************************
@@ -82,6 +85,7 @@ public:
     void LazyWait();
 
     bool IsPending() const { return AtomicLoad(&mState) == PROMISE_PENDING; }
+    bool IsQueued() const { return AtomicLoad(&mState) == PROMISE_QUEUED; }
     bool IsDone() const { return AtomicLoad(&mState) >= PROMISE_RESOLVED; }
     bool IsResolved() const { return AtomicLoad(&mState) == PROMISE_RESOLVED; }
     bool IsRejected() const { return AtomicLoad(&mState) == PROMISE_REJECTED; }
@@ -138,6 +142,7 @@ protected:
     TArray<CallbackHandle> mErrorCallbacks;
     PromiseCallback        mExecutor;
     TaskHandle             mTask;
+    Async*                 mAsync;
     ThreadSignal           mStateSignaller;
     volatile Atomic32      mState;
 };

@@ -23,10 +23,12 @@
 #include "Core/Concurrent/TaskScheduler.h"
 #include "Core/Crypto/AES.h"
 #include "Core/Crypto/RSA.h"
+#include "Core/Net/Controllers/NetConnectionController.h"
+#include "Core/Net/Controllers/NetEventController.h"
+#include "Core/Net/Controllers/NetServerController.h"
 #include "Core/Net/ConnectPacket.h"
 #include "Core/Net/NetConnection.h"
-#include "Core/Net/NetConnectionController.h"
-#include "Core/Net/NetServerController.h"
+#include "Core/Net/NetDriver.h"
 #include "Core/Net/PacketUtility.h"
 #include "Core/Utility/Time.h"
 
@@ -41,11 +43,20 @@ static const Crypto::RSAKeySize REQUIRED_KEY_SIZE = Crypto::RSA_KEY_2048;
 static const SizeT REQUIRED_PACKET_SIZE = ConnectPacket::HeaderType::ACTUAL_SIZE + 256;
 
 
-ServerConnectionHandler::ServerConnectionHandler(TaskScheduler* taskScheduler, NetConnectionController* connectionController, NetServerController* serverController)
+ServerConnectionHandler::ServerConnectionHandler
+(
+    TaskScheduler* taskScheduler, 
+    NetConnectionController* connectionController, 
+    NetServerController* serverController,
+    NetEventController* eventController,
+    NetDriver* driver
+)
 : mTaskScheduler(taskScheduler)
 , mConnectionController(connectionController)
+, mEventController(eventController)
 , mServerController(serverController)
-, mPacketPool()
+, mDriver(driver)
+, mAllocator()
 {
 
 }
@@ -53,17 +64,21 @@ ServerConnectionHandler::ServerConnectionHandler(TaskScheduler* taskScheduler, N
 ServerConnectionHandler::ServerConnectionHandler(ServerConnectionHandler&& other)
 : mTaskScheduler(other.mTaskScheduler)
 , mConnectionController(other.mConnectionController)
+, mEventController(other.mEventController)
 , mServerController(other.mServerController)
-, mPacketPool(std::move(other.mPacketPool))
+, mDriver(other.mDriver)
+, mAllocator(std::move(other.mAllocator))
 {
     other.mTaskScheduler = nullptr;
     other.mConnectionController = nullptr;
+    other.mEventController = nullptr;
     other.mServerController = nullptr;
+    other.mDriver = nullptr;
 }
 
 ServerConnectionHandler::~ServerConnectionHandler()
 {
-    CriticalAssert(mPacketPool.GetHeapCount() == 0);
+    CriticalAssert(mAllocator.GetHeap().GetHeapCount() == 0);
 }
 ServerConnectionHandler& ServerConnectionHandler::operator=(ServerConnectionHandler&& other)
 {
@@ -71,17 +86,21 @@ ServerConnectionHandler& ServerConnectionHandler::operator=(ServerConnectionHand
     {
         mTaskScheduler = other.mTaskScheduler;
         mConnectionController = other.mConnectionController;
+        mEventController = other.mEventController;
         mServerController = other.mServerController;
-        mPacketPool = std::move(other.mPacketPool);
+        mDriver = other.mDriver;
+        mAllocator = std::move(other.mAllocator);
 
         other.mTaskScheduler = nullptr;
         other.mConnectionController = nullptr;
+        other.mEventController = nullptr;
         other.mServerController = nullptr;
+        other.mDriver = nullptr;
     }
     return *this;
 }
 
-void ServerConnectionHandler::DecodePacket(ConnectPacketData* packetData)
+void ServerConnectionHandler::DecodePacket(PacketType* packetData)
 {
     // Under the assumption we're calling it from our internal function.
 
@@ -106,7 +125,6 @@ void ServerConnectionHandler::DecodePacket(ConnectPacketData* packetData)
         )
     )
     {
-        FreePacket(packetData);
         // mTelemetryController->DecodePacketFailure(CONNECT)
         return;
     }
@@ -115,7 +133,6 @@ void ServerConnectionHandler::DecodePacket(ConnectPacketData* packetData)
     NetConnection* connection = mConnectionController->InsertConnection();
     if (!connection)
     {
-        FreePacket(packetData);
         // mTelemetryController->ConnectionAllocationFailure()
         return;
     }
@@ -128,7 +145,7 @@ void ServerConnectionHandler::DecodePacket(ConnectPacketData* packetData)
     connection->mUniqueServerKey.GeneratePair(REQUIRED_KEY_SIZE);
     
     PacketData1024 ackPacket;
-    SizeT ackPacketBytes = sizeof(PacketData1024);
+    SizeT ackPacketBytes = sizeof(ackPacket.mBytes);
     if 
     (
         !ConnectPacket::EncodeAckPacket
@@ -140,30 +157,35 @@ void ServerConnectionHandler::DecodePacket(ConnectPacketData* packetData)
             connection->mSharedKey,
             connection->mHMACKey,
             challenge,
+            connection->mServerNonce,
             connection->mID
         )
     )
     {
-        FreePacket(packetData);
         // mTelemetryController->EncodeAckPacketFailure(CONNECT)
         return;
     }
 
+    // todo: Support both IPV4/IPV6 instead of one or the other.
     // connection->mSocket.Create(connection->mEndPoint.mAddressFamily == NetAddressFamily::NET_ADDRESS_FAMILY_IPV4 ? NetProtocol::NET_PROTOCOL_IPV4_UDP : NetProtocol::NET_PROTOCOL_IPV6_UDP);
     // connection->mSocket.Create(NetProtocol::NET_PROTOCOL_IPV4_UDP);
     connection->mSocket.Create(NetProtocol::NET_PROTOCOL_IPV6_UDP);
-
     connection->mLastTick = GetClockTime(); // todo: May be worth to tick on the date time?
     
     SizeT sentBytes = ackPacketBytes;
-
-
     if (!connection->mSocket.SendTo(ackPacket.mBytes, sentBytes, connection->mEndPoint) || sentBytes != ackPacketBytes)
     {
         // mTelemetryController->SocketSendFailure()
     }
     PacketData::SetZero(ackPacket);
-    FreePacket(packetData);
+
+    // todo: This event MUST be processed before we can 'deallocate the connection ID.
+    // a) Put some sort of 'lock' on the connection until event is processed.
+    // b) Pass atomic wptr of the connection
+    NetConnectionCreatedEvent* event = mEventController->Allocate<NetConnectionCreatedEvent>();
+    NET_EVENT_DEBUG_INFO(event);
+    event->mConnectionID = connection->mID;
+    mDriver->SendEvent(event->GetType(), event);
 }
 
 void ServerConnectionHandler::OnInitialize()
@@ -172,12 +194,12 @@ void ServerConnectionHandler::OnInitialize()
     const SizeT POOL_MAX_HEAPS = 3;
     const UInt32 POOL_FLAGS = PoolHeap::PHF_DOUBLE_FREE;
 
-    CriticalAssert(mPacketPool.Initialize(sizeof(ConnectPacketData), alignof(ConnectPacketData), POOL_OBJECT_COUNT, POOL_MAX_HEAPS, POOL_FLAGS));
+    CriticalAssert(mAllocator.Initialize(POOL_OBJECT_COUNT, POOL_MAX_HEAPS, POOL_FLAGS));
     CriticalAssert(mServerController->GetServerKey().GetKeySize() == REQUIRED_KEY_SIZE);
 }
 void ServerConnectionHandler::OnShutdown()
 {
-    mPacketPool.Release();
+    mAllocator.Release();
 }
 void ServerConnectionHandler::OnReceivePacket(const ByteT* bytes, SizeT byteLength, const IPEndPointAny& sender)
 {
@@ -193,7 +215,7 @@ void ServerConnectionHandler::OnReceivePacket(const ByteT* bytes, SizeT byteLeng
         return;
     }
 
-    ConnectPacketData* connectPacket = AllocatePacket();
+    PacketType* connectPacket = mAllocator.Allocate();
     if (!connectPacket)
     {
         return;
@@ -209,32 +231,14 @@ void ServerConnectionHandler::OnReceivePacket(const ByteT* bytes, SizeT byteLeng
     mTaskScheduler->RunTask([connectPacket, this](void*)
     {
         DecodePacket(connectPacket);
+        mAllocator.Free(connectPacket);
     });
     
 }
 void ServerConnectionHandler::OnUpdateFrame()
 {
-    mPacketPool.GCCollect(); // todo: Timed GC perhaps?
+    mAllocator.GCCollect(); // todo: Timed GC perhaps?
     
-}
-
-ServerConnectionHandler::ConnectPacketData* ServerConnectionHandler::AllocatePacket()
-{
-    void* object = mPacketPool.Allocate();
-    if (object)
-    {
-        return new(object)ConnectPacketData();
-    }
-    return nullptr;
-}
-void ServerConnectionHandler::FreePacket(ConnectPacketData* packet)
-{
-    if (packet)
-    {
-        packet->~ConnectPacketData();
-        PacketData::SetZero(*packet);
-        mPacketPool.Free(packet);
-    }
 }
 
 } // namespace lf 

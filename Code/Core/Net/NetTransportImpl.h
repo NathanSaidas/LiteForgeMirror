@@ -88,7 +88,13 @@ public:
     void Stop();
 
     bool IsRunning() const;
+    // todo: 
+    // IsClient
+    // IsServer
+    // IsConnected
 
+    IPEndPointAny GetBoundEndPoint() const;
+    bool Send(const ByteT* bytes, SizeT numBytes, const IPEndPointAny& endPoint);
 
     // fn: HandlePacket( PacketType, Handler )
     // fn: SendPacket( ... )
@@ -134,6 +140,8 @@ private:
     UInt16        mAppId;
     UInt16        mAppVersion;
     NetTransportHandler* mHandlers[NetPacketType::MAX_VALUE];
+    UDPSocket     mOutbound; // Clients only
+    bool          mIsClient;
 
     // UDPSocket     mClientOutbound; // for client they use this socket to send data out, servers use 'connections'
 

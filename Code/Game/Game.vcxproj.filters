@@ -13,6 +13,9 @@
     <Filter Include="AnalyzeProjectApp">
       <UniqueIdentifier>{9da5daf5-9faa-4169-a6c8-490d4e17af7e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Test\Runtime">
+      <UniqueIdentifier>{35d7a297-6582-4c00-835b-df79c1d32c74}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Config.cpp">
@@ -61,6 +64,10 @@
     </ClCompile>
     <ClCompile Include="Test\Core\NetConnectionTest.cpp">
       <Filter>Test\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="BasicNetApp.cpp" />
+    <ClCompile Include="Test\Runtime\AsyncTests.cpp">
+      <Filter>Test\Runtime</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -19,15 +19,16 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
 #include "TaskWorker.h"
-#include "Core/Platform/ThreadSignal.h"
+#include "Core/Platform/ThreadFence.h"
 
 namespace lf {
 
-TaskWorker::TaskWorker() :
-mThread(),
-mRunning(0),
-mDispatcherQueue(nullptr),
-mAsync(false)
+TaskWorker::TaskWorker()
+: mThread()
+, mRunning(0)
+, mDispatcherQueue(nullptr)
+, mDispatcherFence(nullptr)
+, mAsync(false)
 {}
 TaskWorker::TaskWorker(const TaskWorker&)
 {
@@ -49,7 +50,14 @@ TaskWorker& TaskWorker::operator=(const TaskWorker&)
     return *this;
 }
 
-void TaskWorker::Initialize(RingBufferType* dispatcherQueue, ThreadSignal* dispatcherSignal, bool async)
+// void TaskWorker::Initialize(RingBufferType* dispatcherQueue, ThreadFence* dispatcherFence, bool async)
+void TaskWorker::Initialize(RingBufferType* dispatcherQueue
+    , ThreadFence* dispatcherFence
+    , bool async
+#if defined(LF_DEBUG) || defined(LF_TEST)
+    , const char* workerName
+#endif
+)
 {
     // If either of these trip, you're likely calling Initialize twice!
     AssertEx(!IsRunning(), LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
@@ -60,14 +68,18 @@ void TaskWorker::Initialize(RingBufferType* dispatcherQueue, ThreadSignal* dispa
         return;
     }
     mDispatcherQueue = dispatcherQueue;
-    mDispatcherSignal = dispatcherSignal;
+    mDispatcherFence = dispatcherFence;
     mAsync = async;
     SetRunning(true);
     if (async)
     {
         Fork();
-#ifdef LF_DEBUG
-        mThread.SetDebugName("TaskWorker");
+#if defined(LF_DEBUG) || defined(LF_TEST)
+        if (!workerName)
+        {
+            workerName = "WorkerThread";
+        }
+        mThread.SetDebugName(workerName);
 #endif
     }
 }
@@ -83,10 +95,10 @@ void TaskWorker::Join()
 {
     while (mThread.IsRunning())
     {
-        mDispatcherSignal->WakeAll();
+        SleepCallingThread(0); // todo: YieldThread()
     }
     mDispatcherQueue = nullptr;
-    mDispatcherSignal = nullptr;
+    mDispatcherFence = nullptr;
     mAsync = false;
 }
 
@@ -102,10 +114,10 @@ void TaskWorker::UpdateSync()
 
 void TaskWorker::Update()
 {
-    auto result = mDispatcherQueue->TryPop();
+    TaskTypes::TaskRingBufferResult result = mDispatcherQueue->TryPop();
     if (result)
     {
-        auto task = result.mData;
+        TaskTypes::TaskRingBufferResultWrapper task = result.mData;
         // It's possible for a TaskHandle to 'Wait' and complete this task, in that case just skip
         if (task.mCallback)
         {
@@ -121,7 +133,7 @@ void TaskWorker::BackgroundUpdate()
         Update();
         if (mDispatcherQueue->Size() == 0)
         {
-            mDispatcherSignal->Wait();
+            mDispatcherFence->Wait();
         }
     }
 }

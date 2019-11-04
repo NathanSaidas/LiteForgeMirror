@@ -22,20 +22,25 @@
 #include "Core/Test/Test.h"
 
 #include "Core/Concurrent/TaskScheduler.h"
-#include "Core/Net/NetClientController.h"
+
+#include "Core/Net/Controllers/NetClientController.h"
+#include "Core/Net/Controllers/NetConnectionController.h"
+#include "Core/Net/Controllers/NetServerController.h"
+#include "Core/Net/Controllers/NetEventController.h"
+#include "Core/Net/NetClientDriver.h"
 #include "Core/Net/NetConnection.h"
-#include "Core/Net/NetConnectionController.h"
+#include "Core/Net/NetEvent.h"
 #include "Core/Net/NetFramework.h"
-#include "Core/Net/NetServerController.h"
+#include "Core/Net/NetServerDriver.h"
 #include "Core/Net/NetTransportConfig.h"
 #include "Core/Net/NetTransport.h"
 #include "Core/Net/NetTransportHandler.h"
 #include "Core/Net/PacketUtility.h"
-#include "Core/Net/TransportHandlers/ClientConnectionHandler.h"
 #include "Core/Net/TransportHandlers/ServerConnectionHandler.h"
-
-
+#include "Core/Net/TransportHandlers/ClientConnectionHandler.h"
 #include "Core/Net/ConnectPacket.h"
+#include "Core/Net/HeartbeatPacket.h"
+
 #include "Core/Memory/PoolHeap.h"
 #include "Core/Memory/SmartPointer.h"
 #include "Core/Memory/AtomicSmartPointer.h"
@@ -93,7 +98,9 @@ struct TestServerState
     ByteT mHMACKey[Crypto::HMAC_KEY_SIZE];
     Crypto::RSAKey mServerKey; // Public/Private
 
-    ByteT mChallenge[32];
+    ByteT mChallenge[NET_CLIENT_CHALLENGE_SIZE];
+    ByteT mServerNonce[NET_HEARTBEAT_NONCE_SIZE];
+    ByteT mClientNonce[NET_HEARTBEAT_NONCE_SIZE];
 };
 
 using TestPacketType = TPacketData<4096>;
@@ -137,136 +144,6 @@ void InitStates(TestClientState& client, TestServerState& server)
     TEST(server.mUniqueKey.GetKeySize() == Crypto::RSA_KEY_Unknown);
     TEST(!server.mUniqueKey.HasPublicKey());
     TEST(!server.mUniqueKey.HasPrivateKey());
-}
-
-
-void CreateConnectMessage(TestPacketType& packet, TestClientState& client)
-{
-    TEST(client.mSharedKey.GetKeySize() == Crypto::AES_KEY_256);
-    TEST(client.mServerKey.HasPublicKey());
-    TEST(client.mServerKey.GetKeySize() == Crypto::RSA_KEY_2048);
-    TEST(client.mClientKey.HasPublicKey());
-    TEST(client.mClientKey.GetKeySize() == Crypto::RSA_KEY_2048);
-
-    struct RSAMessage
-    {
-        ByteT mHMACKey[Crypto::HMAC_KEY_SIZE];
-        ByteT mIV[16];
-        ByteT mSharedKey[32];
-        ByteT mHMAC[Crypto::HMAC_HASH_SIZE];
-        ByteT mChallenge[32];
-    };
-
-    struct AESMessage
-    {
-        String mPublicKey;
-    };
-
-    const SizeT SERVER_KEY_SIZE_BYTES = client.mServerKey.GetKeySizeBytes();
-
-    RSAMessage rsa;
-    Crypto::SecureRandomBytes(rsa.mHMACKey, LF_ARRAY_SIZE(rsa.mHMACKey));
-    Crypto::SecureRandomBytes(rsa.mIV, LF_ARRAY_SIZE(rsa.mIV));
-    memcpy(rsa.mSharedKey, client.mSharedKey.GetKey(), client.mSharedKey.GetKeySizeBytes());
-    Crypto::SecureRandomBytes(rsa.mChallenge, LF_ARRAY_SIZE(rsa.mChallenge));
-    memcpy(client.mChallenge, rsa.mChallenge, sizeof(rsa.mChallenge));
-    memcpy(client.mHMACKey, rsa.mHMACKey, sizeof(rsa.mHMACKey));
-
-    gTestLog.Info(LogMessage("Challenge=0x") << BytesToHex(rsa.mChallenge, LF_ARRAY_SIZE(rsa.mChallenge)));
-    gTestLog.Sync();
-
-    AESMessage aes;
-    aes.mPublicKey = client.mClientKey.GetPublicKey();
-
-    // [header]
-    // [rsa]
-    // [aes]
-
-    // Write Header
-    TestHeaderType* header = reinterpret_cast<TestHeaderType*>(packet.mBytes);
-    header->mAppID = NetConfig::NET_APP_ID;
-    header->mAppVersion = NetConfig::NET_APP_VERSION;
-    header->mType = NetPacketType::NET_PACKET_TYPE_CONNECT;
-    header->mFlags = 0; // Connect doesn't use flags, the decoding/response is implicit.
-
-    // Write AES Block
-    const ByteT* inBytes = reinterpret_cast<const ByteT*>(aes.mPublicKey.CStr());
-    ByteT* outBytes = &header->mPadding[SERVER_KEY_SIZE_BYTES];
-    SizeT outBytesCapacity = LF_ARRAY_SIZE(TestPacketType::mBytes) - (TestHeaderType::ACTUAL_SIZE + SERVER_KEY_SIZE_BYTES);
-    TEST(Crypto::AESEncrypt(&client.mSharedKey, rsa.mIV, inBytes, aes.mPublicKey.Size(), outBytes, outBytesCapacity));
-
-    // Compute HMAC of AES block
-    TEST(Crypto::HMACCompute(rsa.mHMACKey, outBytes, outBytesCapacity, rsa.mHMAC));
-
-    // Write RSA Block
-    SizeT outEncryptedCapacity = LF_ARRAY_SIZE(TestPacketType::mBytes) - (TestHeaderType::ACTUAL_SIZE + outBytesCapacity);
-    TEST(outEncryptedCapacity >= SERVER_KEY_SIZE_BYTES);
-    TEST(Crypto::RSAEncryptPublic(&client.mServerKey, reinterpret_cast<const ByteT*>(&rsa), sizeof(RSAMessage), &header->mPadding[0], outEncryptedCapacity));
-
-    const SizeT totalSize = TestHeaderType::ACTUAL_SIZE + outEncryptedCapacity + outBytesCapacity;
-    header->mCrc32 = PacketUtility::CalcCrc32(packet.mBytes, totalSize);
-
-    packet.mType = header->mType;
-    packet.mSize = static_cast<UInt16>(totalSize);
-    packet.mRetransmits = 0;
-}
-
-void ParseConnectMessage(TestPacketType& packet, TestServerState& server)
-{
-    TEST(server.mServerKey.HasPrivateKey());
-    TEST(server.mServerKey.GetKeySize() == Crypto::RSA_KEY_2048);
-
-    struct RSAMessage
-    {
-        ByteT mHMACKey[Crypto::HMAC_KEY_SIZE];
-        ByteT mIV[16];
-        ByteT mSharedKey[32];
-        ByteT mHMAC[Crypto::HMAC_HASH_SIZE];
-        ByteT mChallenge[32];
-    };
-
-    struct AESMessage
-    {
-        String mPublicKey;
-    };
-
-    const SizeT SERVER_KEY_SIZE_BYTES = server.mServerKey.GetKeySizeBytes();
-
-    TestHeaderType* header = reinterpret_cast<TestHeaderType*>(packet.mBytes);
-    TEST(header->mAppID == NetConfig::NET_APP_ID);
-    TEST(header->mAppVersion == NetConfig::NET_APP_VERSION);
-    TEST(header->mType == NetPacketType::NET_PACKET_TYPE_CONNECT);
-
-    const SizeT rsaBlockSize = SERVER_KEY_SIZE_BYTES;
-    const SizeT aesBlockSize = packet.mSize - (TestHeaderType::ACTUAL_SIZE + rsaBlockSize);
-
-    // Read RSA Block
-    RSAMessage rsa;
-    SizeT rsaMessageSize = SERVER_KEY_SIZE_BYTES;
-    TEST(Crypto::RSADecryptPrivate(&server.mServerKey, &header->mPadding[0], rsaBlockSize, reinterpret_cast<ByteT*>(&rsa), rsaMessageSize));
-
-    gTestLog.Info(LogMessage("Challenge=0x") << BytesToHex(rsa.mChallenge, LF_ARRAY_SIZE(rsa.mChallenge)));
-    gTestLog.Sync();
-
-    ByteT* aesBytes = &header->mPadding[SERVER_KEY_SIZE_BYTES];
-
-    // Verify HMAC
-    ByteT hmac[Crypto::HMAC_HASH_SIZE];
-    TEST(Crypto::HMACCompute(rsa.mHMACKey, aesBytes, aesBlockSize, hmac));
-    TEST(memcmp(rsa.mHMAC, hmac, Crypto::HMAC_HASH_SIZE) == 0);
-
-    TEST(server.mSharedKey.Load(Crypto::AES_KEY_256, rsa.mSharedKey));
-
-    // Read AES Block
-    ByteT decryptedAESBlock[LF_ARRAY_SIZE(TestPacketType::mBytes)];
-    SizeT decryptedAESBlockSize = sizeof(decryptedAESBlock);
-    TEST(Crypto::AESDecrypt(&server.mSharedKey, rsa.mIV, aesBytes, aesBlockSize, decryptedAESBlock, decryptedAESBlockSize));
-
-    String clientKey(decryptedAESBlockSize, reinterpret_cast<const char*>(decryptedAESBlock), COPY_ON_WRITE);
-    TEST(server.mClientKey.LoadPublicKey(clientKey));
-
-    memcpy(server.mChallenge, rsa.mChallenge, sizeof(rsa.mChallenge));
-    memcpy(server.mHMACKey, rsa.mHMACKey, Crypto::HMAC_KEY_SIZE);
 }
 
 void TestClientServerCommunication(TestClientState& client, TestServerState& server)
@@ -356,111 +233,6 @@ void TestClientServerCommunication(TestClientState& client, TestServerState& ser
     TEST(plainTextLength == RSA_SIZE);
 }
 
-void CreateConnectResponseMessage(TestPacketType& packet, TestServerState& server)
-{
-    // todo: 
-    // use NET_PACKET_FLAG_ACK
-    // use AckPacketHeaderType
-    // echo back their RSA Message
-    // 
-    // ? How do we communicate status? Global value?
-
-    server.mUniqueKey.GeneratePair(Crypto::RSA_KEY_2048);
-
-
-    struct RSAMessage
-    {
-        ByteT mIV[16];
-        ByteT mHMAC[Crypto::HMAC_HASH_SIZE];
-        ByteT mChallenge[32];
-    };
-
-    struct AESMessage
-    {
-        String mPublicKey;
-    };
-
-    const SizeT SERVER_KEY_SIZE_BYTES = server.mServerKey.GetKeySizeBytes();
-
-    TestAckHeaderType* header = reinterpret_cast<TestAckHeaderType*>(packet.mBytes);
-    header->mAppID = NetConfig::NET_APP_ID;
-    header->mAppVersion = NetConfig::NET_APP_VERSION;
-    header->mFlags = NetPacketFlag::BitfieldType({ NetPacketFlag::NET_PACKET_FLAG_ACK }).value;
-    header->mType = NetPacketType::NET_PACKET_TYPE_CONNECT;
-    header->mStatus = NetAckStatus::NET_ACK_STATUS_OK;
-    
-    RSAMessage rsa;
-    Crypto::SecureRandomBytes(rsa.mIV, LF_ARRAY_SIZE(rsa.mIV));
-    memcpy(rsa.mChallenge, server.mChallenge, sizeof(rsa.mChallenge));
-
-    AESMessage aes;
-    aes.mPublicKey = server.mUniqueKey.GetPublicKey();
-
-    const ByteT* inBytes = reinterpret_cast<const ByteT*>(aes.mPublicKey.CStr());
-    const SizeT inBytesLength = aes.mPublicKey.Size();
-    ByteT* aesOutputBytes = &(&header->mPadding)[SERVER_KEY_SIZE_BYTES];
-    SizeT aesOutputBytesLength = sizeof(packet.mBytes) - (TestAckHeaderType::ACTUAL_SIZE + SERVER_KEY_SIZE_BYTES);
-
-    // AES Block
-    TEST(Crypto::AESEncrypt(&server.mSharedKey, rsa.mIV, inBytes, inBytesLength, aesOutputBytes, aesOutputBytesLength));
-
-    // HMAC
-    TEST(Crypto::HMACCompute(server.mHMACKey, aesOutputBytes, aesOutputBytesLength, rsa.mHMAC));
-
-    // RSA Block:
-    SizeT rsaOutputBytesLength = SERVER_KEY_SIZE_BYTES;
-    TEST(Crypto::RSAEncryptPublic(&server.mClientKey, reinterpret_cast<const ByteT*>(&rsa), sizeof(rsa), &header->mPadding, rsaOutputBytesLength));
-    TEST(rsaOutputBytesLength == SERVER_KEY_SIZE_BYTES);
-
-    SizeT totalSize = static_cast<UInt16>(TestAckHeaderType::ACTUAL_SIZE + rsaOutputBytesLength + aesOutputBytesLength);
-    header->mCrc32 = PacketUtility::CalcCrc32(packet.mBytes, totalSize);
-
-    packet.mType = header->mType;
-    packet.mSize = static_cast<UInt16>(totalSize);
-    packet.mRetransmits = 0;
-}
-
-void ParseConnectResponseMessage(TestPacketType& packet, TestClientState& client)
-{
-    TestAckHeaderType* header = reinterpret_cast<TestAckHeaderType*>(packet.mBytes);
-    TEST(NetPacketFlag::BitfieldType(header->mFlags).Has(NetPacketFlag::NET_PACKET_FLAG_ACK));
-    TEST(header->mType == NetPacketType::NET_PACKET_TYPE_CONNECT);
-    TEST(header->mStatus == NetAckStatus::NET_ACK_STATUS_OK);
-    TEST(header->mCrc32 == PacketUtility::CalcCrc32(packet.mBytes, packet.mSize));
-
-    const SizeT rsaSize = client.mClientKey.GetKeySizeBytes();
-    const SizeT aesSize = packet.mSize - (TestAckHeaderType::ACTUAL_SIZE + rsaSize);
-
-    const ByteT* rsaBytes = &header->mPadding;
-    const ByteT* aesBytes = &rsaBytes[rsaSize];
-
-    ByteT hmac[Crypto::HMAC_HASH_SIZE];
-    TEST(Crypto::HMACCompute(client.mHMACKey, aesBytes, aesSize, hmac));
-
-    ByteT rsaDecrypted[4096];
-    SizeT rsaDecryptedSize = sizeof(rsaDecrypted);
-    TEST(Crypto::RSADecryptPrivate(&client.mClientKey, rsaBytes, rsaSize, rsaDecrypted, rsaDecryptedSize));
-
-    struct RSAMessage
-    {
-        ByteT mIV[16];
-        ByteT mHMAC[Crypto::HMAC_HASH_SIZE];
-        ByteT mChallenge[32];
-    };
-
-    RSAMessage* rsa = reinterpret_cast<RSAMessage*>(rsaDecrypted);
-    TEST(memcmp(rsa->mChallenge, client.mChallenge, sizeof(rsa->mChallenge)) == 0);
-    TEST(memcmp(rsa->mHMAC, hmac, sizeof(hmac)) == 0);
-    
-    ByteT aesDecrypted[4096];
-    SizeT aesDecryptedSize = sizeof(aesDecrypted);
-    TEST(Crypto::AESDecrypt(&client.mSharedKey, rsa->mIV, aesBytes, aesSize, aesDecrypted, aesDecryptedSize));
-
-    String publickey(aesDecryptedSize, reinterpret_cast<const char*>(aesDecrypted), COPY_ON_WRITE);
-    TEST(client.mUniqueKey.LoadPublicKey(publickey));
-
-}
-
 REGISTER_TEST(ClientServerConnectionTest)
 {
     TestClientState client;
@@ -468,42 +240,15 @@ REGISTER_TEST(ClientServerConnectionTest)
     TestPacketType connectPacket;
     TestPacketType ackPacket;
 
-    // The server has their own public/private RSA key for initial communications
-    // The client must generate their own key pair, the client is assumed to know the server public key
-    InitStates(client, server);
-
-    // The client creates a connection message to send to the server
-    // [ Client Public Key ]
-    // [ Shared Key ]
-    // *[ Challenge ]
-    CreateConnectMessage(connectPacket, client);
-    // The server can verify authenticity of protected via hmac
-    // - Load Client Public Key
-    // - Load Shared Key
-    ParseConnectMessage(connectPacket, server);
-    // The server can then acknowledge the client with some sort of status
-    // [ Unique Server Public Key ]
-    // *[ Challenge ]
-    CreateConnectResponseMessage(ackPacket, server);
-    // The client can verify authenticity of server by verifying their challenge and hmac
-    ParseConnectResponseMessage(ackPacket, client);
-
-    // The client is now able to communicate with the server until they timeout or are evicted.
-    TEST(client.mClientKey.GetPublicKey() == server.mClientKey.GetPublicKey());
-    TEST(client.mServerKey.GetPublicKey() == server.mServerKey.GetPublicKey());
-    TestClientServerCommunication(client, server);
-
     PacketData::SetZero(connectPacket);
     PacketData::SetZero(ackPacket);
-
-    client = TestClientState();
-    server = TestServerState();
     InitStates(client, server);
     Crypto::SecureRandomBytes(client.mChallenge, sizeof(client.mChallenge));
     Crypto::SecureRandomBytes(client.mHMACKey, sizeof(client.mHMACKey));
 
     connectPacket.mSize = sizeof(connectPacket.mBytes);
     SizeT size = connectPacket.mSize;
+    // The client creates a connection message to send to the server
     bool r = ConnectPacket::EncodePacket
         (
             connectPacket.mBytes, 
@@ -516,6 +261,7 @@ REGISTER_TEST(ClientServerConnectionTest)
         );
     TEST(r);
 
+    // The server can verify authenticity of protected via hmac
     ConnectPacket::HeaderType header;
     r = ConnectPacket::DecodePacket
         (
@@ -534,6 +280,7 @@ REGISTER_TEST(ClientServerConnectionTest)
     ackPacket.mSize = sizeof(ackPacket.mBytes);
     size = ackPacket.mSize;
     TEST(server.mUniqueKey.GeneratePair(Crypto::RSA_KEY_2048));
+    // The server can then acknowledge the client with some sort of status
     r = ConnectPacket::EncodeAckPacket
         (
             ackPacket.mBytes,
@@ -543,6 +290,7 @@ REGISTER_TEST(ClientServerConnectionTest)
             server.mSharedKey,
             server.mHMACKey,
             server.mChallenge,
+            server.mServerNonce,
             47
         );
     TEST(r);
@@ -550,6 +298,8 @@ REGISTER_TEST(ClientServerConnectionTest)
     ConnectionID connectionID = 0;
     ConnectPacket::AckHeaderType ackHeader;
     ByteT challenge[ConnectPacket::CHALLENGE_SIZE];
+    ByteT serverNonce[ConnectPacket::NONCE_SIZE];
+    // The client can verify authenticity of server by verifying their challenge and hmac
     r = ConnectPacket::DecodeAckPacket
         (
             ackPacket.mBytes,
@@ -559,93 +309,18 @@ REGISTER_TEST(ClientServerConnectionTest)
             client.mSharedKey,
             client.mHMACKey,
             challenge,
+            serverNonce,
             connectionID,
             ackHeader
         );
     TEST(r);
     TEST(connectionID == 47);
-}
+    TEST(memcmp(serverNonce, server.mServerNonce, sizeof(serverNonce)) == 0);
 
-struct TestClientTransport
-{
-    NetTransport mTransport;
-    TaskScheduler mTaskScheduler;
-    NetClientController mClientController;
-};
-
-struct TestServerTransport
-{
-    NetTransport mTransport;
-    TaskScheduler mTaskScheduler;
-    NetServerController mServerController;
-    NetConnectionController mConnectionController;
-
-};
-
-void InitClientTransport(TestClientTransport& client, Crypto::RSAKey serverKey, const IPEndPointAny& serverEndPoint)
-{
-    TaskTypes::TaskSchedulerOptions options;
-    options.mDispatcherSize = 20;
-    options.mNumDeliveryThreads = 2;
-    options.mNumWorkerThreads = 2;
-    client.mTaskScheduler.Initialize(options, true);
-    TEST(client.mTaskScheduler.IsRunning());
-    
-    TEST(client.mClientController.Initialize(std::move(serverKey)));
-
-    NetTransportConfig config;
-    config.SetAppId(NetConfig::NET_APP_ID);
-    config.SetAppVersion(NetConfig::NET_APP_VERSION);
-    config.SetPort(TEST_PORT);
-    config.SetEndPoint(serverEndPoint);
-    config.SetTransportHandler(NetPacketType::NET_PACKET_TYPE_CONNECT, 
-        LFNew<ClientConnectionHandler>(
-            MMT_GENERAL, 
-            &client.mTaskScheduler, 
-            &client.mClientController)
-    );
-
-    
-    ServerConnectionHandler::ConnectPacketData packet;
-    SizeT size = sizeof(packet.mBytes);
-    const bool encoded = ConnectPacket::EncodePacket
-    (
-        packet.mBytes,
-        size,
-        client.mClientController.GetKey(),
-        client.mClientController.GetServerKey(),
-        client.mClientController.GetSharedKey(),
-        client.mClientController.GetHMACKey(),
-        client.mClientController.GetChallenge()
-    );
-    TEST(encoded);
-    client.mTransport.Start(std::move(config), packet.mBytes, size);
-}
-
-void InitServerTransport(TestServerTransport& server, Crypto::RSAKey serverKey)
-{
-    TaskTypes::TaskSchedulerOptions options;
-    options.mDispatcherSize = 20;
-    options.mNumDeliveryThreads = 2;
-    options.mNumWorkerThreads = 2;
-    server.mTaskScheduler.Initialize(options, true);
-    TEST(server.mTaskScheduler.IsRunning());
-
-    TEST(server.mServerController.Initialize(std::move(serverKey)));
-
-    NetTransportConfig config;
-    config.SetAppId(NetConfig::NET_APP_ID);
-    config.SetAppVersion(NetConfig::NET_APP_VERSION);
-    config.SetPort(TEST_PORT);
-    config.SetTransportHandler(NetPacketType::NET_PACKET_TYPE_CONNECT, 
-        LFNew<ServerConnectionHandler>(
-            MMT_GENERAL, 
-            &server.mTaskScheduler, 
-            &server.mConnectionController, 
-            &server.mServerController)
-    );
-
-    server.mTransport.Start(std::move(config));
+    // The client is now able to communicate with the server until they timeout or are evicted.
+    TEST(client.mClientKey.GetPublicKey() == server.mClientKey.GetPublicKey());
+    TEST(client.mServerKey.GetPublicKey() == server.mServerKey.GetPublicKey());
+    TestClientServerCommunication(client, server);
 }
 
 static void ClearCache(ByteT* data, SizeT dataSize, ByteT val)
@@ -658,6 +333,12 @@ static void ClearCache(ByteT* data, SizeT dataSize, ByteT val)
 
 REGISTER_TEST(TestLookUpTime)
 {
+    if (!TestFramework::GetConfig().mStress)
+    {
+        gTestLog.Info(LogMessage("Ignoring test, stress tests not enabled..."));
+        return;
+    }
+
     SetCTitle("My Console Title");
 
     const SizeT cacheSize = 16 * 1024 * 1024;
@@ -735,102 +416,288 @@ REGISTER_TEST(TestLookUpTime)
     // CalcCrc32
 }
 
-REGISTER_TEST(NetConnectionTest)
+struct HeartbeatNonce
 {
-    NetTestInitializer init;
+    ByteT client[HeartbeatPacket::MESSAGE_SIZE];
+    ByteT server[HeartbeatPacket::MESSAGE_SIZE];
+};
+using HeartbeatData = PacketData1024;
 
-    Crypto::RSAKey serverKey;
-    serverKey.GeneratePair(Crypto::RSA_KEY_2048);
+struct HeartbeatState
+{
+    void ClientToServer(HeartbeatNonce& c, HeartbeatNonce& s, HeartbeatData& packet, HeartbeatPacket::HeaderType& serverHeader);
+    void ServerToClient(HeartbeatNonce& c, HeartbeatNonce& s, HeartbeatData& packet, const HeartbeatPacket::HeaderType& serverHeader);
 
-    TestServerTransport server;
-    InitServerTransport(server, serverKey);
-    SleepCallingThread(16);
 
-    // todo: In the transport.. if the message comes in as 'IPV4' or 'IPV6' we can translate back to the specified type
+    Crypto::RSAKey mUniqueKey;
+    Crypto::RSAKey mClientKey;
+};
+
+void HeartbeatState::ClientToServer(HeartbeatNonce& c, HeartbeatNonce& s, HeartbeatData& packet, HeartbeatPacket::HeaderType& serverHeader)
+{
+    // As the client we should generate our own nonce
+    Crypto::SecureRandomBytes(c.client, sizeof(c.client));
+
+    // As the client we should be able to encode a packet.
+    SizeT packetSize = sizeof(packet.mBytes);
+    TEST_CRITICAL(HeartbeatPacket::EncodePacket
+    (
+        packet.mBytes,
+        packetSize,
+        mUniqueKey,
+        c.client,
+        c.server,
+        0,
+        0
+    ));
+    packet.mSize = static_cast<UInt16>(packetSize);
+
+    // As the server we should be able to decode the data.
+    TEST_CRITICAL(HeartbeatPacket::DecodePacket
+    (
+        packet.mBytes,
+        packetSize,
+        mUniqueKey,
+        s.client,
+        s.server,
+        serverHeader
+    ));
+
+    // As the server we must confirm the snonce
+    TEST(memcmp(s.server, c.server, sizeof(c.server)) == 0);
+
+    // As the server we must generate a new snonce
+    Crypto::SecureRandomBytes(s.server, sizeof(s.server));
+}
+
+void HeartbeatState::ServerToClient(HeartbeatNonce& c, HeartbeatNonce& s, HeartbeatData& packet, const HeartbeatPacket::HeaderType& serverHeader)
+{
+
+    // As a server we must acknowledge the client
+    SizeT packetSize = sizeof(packet.mBytes);
+    TEST_CRITICAL(HeartbeatPacket::EncodeAckPacket
+    (
+        packet.mBytes,
+        packetSize,
+        mClientKey,
+        s.client,
+        s.server,
+        GetPacketUID(serverHeader)
+    ));
+    packet.mSize = static_cast<UInt16>(packetSize);
+
+    // As the client we must decode the ack
+    HeartbeatPacket::AckHeaderType clientHeader;
+    UInt32 packetUID = 0;
+    TEST_CRITICAL(HeartbeatPacket::DecodeAckPacket
+    (
+        packet.mBytes,
+        packetSize,
+        mClientKey,
+        c.client,
+        c.server,
+        packetUID,
+        clientHeader
+    ));
+
+    // As the client we must confirm the cnonce
+    TEST(memcmp(c.client, s.client, sizeof(c.client)) == 0);
+}
+
+REGISTER_TEST(HeartbeatPacketTest)
+{
+    if (!TestFramework::GetConfig().mStress)
+    {
+        gTestLog.Info(LogMessage("Ignoring test, stress tests not enabled..."));
+        return;
+    }
+
+    HeartbeatState state;
+    HeartbeatNonce c, s;
+    
+
+    TEST_CRITICAL(state.mUniqueKey.GeneratePair(Crypto::RSA_KEY_2048));
+    TEST_CRITICAL(state.mClientKey.GeneratePair(Crypto::RSA_KEY_2048));
+
+    // As the client we should've received a nonce from the server while establishing an secure connection.
+    Crypto::SecureRandomBytes(c.server, sizeof(c.server));
+    memcpy(s.server, c.server, sizeof(c.server));
+
+    for (SizeT i = 0; i < 100007; ++i)
+    {
+        HeartbeatData packet;
+        HeartbeatPacket::HeaderType serverHeader;
+        state.ClientToServer(c, s, packet, serverHeader);
+        state.ServerToClient(c, s, packet, serverHeader);
+    }
+
+
+}
+
+REGISTER_TEST(NetEventTest)
+{
+    NetEventController eventController;
+    TEST_CRITICAL(eventController.Initialize());
+
+    // Test all events can be allocated/written/read/freed without issue.
+    {
+        NetConnectSuccessEvent* event = eventController.Allocate<NetConnectSuccessEvent>();
+        TEST_CRITICAL(event != nullptr);
+        TEST(event->GetType() == NetEventType::NET_EVENT_CONNECT_SUCCESS);
+        Crypto::SecureRandomBytes(event->mServerNonce, sizeof(event->mServerNonce));
+        eventController.Free(event);
+    }
+    
+    {
+        NetConnectFailedEvent* event = eventController.Allocate<NetConnectFailedEvent>();
+        TEST_CRITICAL(event != nullptr);
+        TEST(event->GetType() == NetEventType::NET_EVENT_CONNECT_FAILED);
+        event->mReason = 1;
+        eventController.Free(event);
+    }
+
+    {
+        NetConnectionCreatedEvent* event = eventController.Allocate<NetConnectionCreatedEvent>();
+        TEST_CRITICAL(event != nullptr);
+        TEST(event->GetType() == NetEventType::NET_EVENT_CONNECTION_CREATED);
+        event->mConnectionID = 1;
+        eventController.Free(event);
+    }
+
+    {
+        NetConnectionTerminatedEvent* event = eventController.Allocate<NetConnectionTerminatedEvent>();
+        TEST_CRITICAL(event != nullptr);
+        TEST(event->GetType() == NetEventType::NET_EVENT_CONNECTION_TERMINATED);
+        event->mReason = 1;
+        eventController.Free(event);
+    }
+
+    {
+        NetHeartbeatReceivedEvent* event = eventController.Allocate<NetHeartbeatReceivedEvent>();
+        TEST_CRITICAL(event != nullptr);
+        TEST(event->GetType() == NetEventType::NET_EVENT_HEARTBEAT_RECEIVED);
+        Crypto::SecureRandomBytes(event->mNonce, sizeof(event->mNonce));
+        eventController.Free(event);
+    }
+
+    {
+        NetDataReceivedRequestEvent* event = eventController.Allocate<NetDataReceivedRequestEvent>();
+        TEST_CRITICAL(event != nullptr);
+        TEST(event->GetType() == NetEventType::NET_EVENT_DATA_RECEIVED_REQUEST);
+        eventController.Free(event);
+    }
+
+    {
+        NetDataReceivedResponseEvent* event = eventController.Allocate<NetDataReceivedResponseEvent>();
+        TEST_CRITICAL(event != nullptr);
+        TEST(event->GetType() == NetEventType::NET_EVENT_DATA_RECEIVED_RESPONSE);
+        eventController.Free(event);
+    }
+
+    {
+        NetDataReceivedActionEvent* event = eventController.Allocate<NetDataReceivedActionEvent>();
+        TEST_CRITICAL(event != nullptr);
+        TEST(event->GetType() == NetEventType::NET_EVENT_DATA_RECEIVED_ACTION);
+        eventController.Free(event);
+    }
+
+    {
+        NetDataReceivedReplicationEvent* event = eventController.Allocate<NetDataReceivedReplicationEvent>();
+        TEST_CRITICAL(event != nullptr);
+        TEST(event->GetType() == NetEventType::NET_EVENT_DATA_RECEIVED_REPLICATION);
+        eventController.Free(event);
+    }
+
+    eventController.Reset();
+}
+
+
+REGISTER_TEST(NetClientDriverTest)
+{
+    NetTestInitializer initializer;
+    NetClientDriver client;
+
+    {
+        Crypto::RSAKey key;
+        TEST_CRITICAL(key.GeneratePair(Crypto::RSA_KEY_2048));
+
+        IPEndPointAny localIP;
+        TEST_CRITICAL(IPCast(IPV6(TEST_IPV6_TARGET, TEST_PORT), localIP));
+
+        TEST_CRITICAL(client.Initialize(std::move(key), localIP, NetConfig::NET_APP_ID, NetConfig::NET_APP_VERSION));
+        client.Shutdown();
+    }
+}
+
+REGISTER_TEST(NetServerDriverTest)
+{
+    NetTestInitializer initializer;
+    NetServerDriver server;
+
+    {
+        Crypto::RSAKey key;
+        TEST_CRITICAL(key.GeneratePair(Crypto::RSA_KEY_2048));
+
+        TEST_CRITICAL(server.Initialize(std::move(key), TEST_PORT, NetConfig::NET_APP_ID, NetConfig::NET_APP_VERSION));
+        server.Shutdown();
+    }
+}
+
+REGISTER_TEST(NetClientServerConnectionTest)
+{
+    NetTestInitializer initializer;
+    NetClientDriver client;
+    NetServerDriver server;
+    Crypto::RSAKey key;
+    TEST_CRITICAL(key.GeneratePair(Crypto::RSA_KEY_2048));
+
+    TEST_CRITICAL(server.Initialize(key, TEST_PORT, NetConfig::NET_APP_ID, NetConfig::NET_APP_VERSION));
+
     IPEndPointAny localIP;
-    TEST(IPCast(IPV6("::1", TEST_PORT), localIP));
-    TEST(!IPEmpty(localIP));
-    TestClientTransport client;
-    InitClientTransport(client, serverKey, localIP);
-
-    // client.SendAnonymous(localIP, bytes, size);
-    // client.IsConnected()
-    // client.IsClient()
-    // client.IsServer()
-
-    const auto x = alignof(IPEndPointAny);
-
-    SleepCallingThread(5000);
-
-    client.mTransport.Stop();
-    server.mTransport.Stop();
-    client.mTaskScheduler.Shutdown();
-    server.mTaskScheduler.Shutdown();
-
-    client.mClientController.Reset();
-    server.mServerController.Reset();
-
+    TEST_CRITICAL(IPCast(IPV6(TEST_IPV6_TARGET, TEST_PORT), localIP));
+    TEST_CRITICAL(client.Initialize(key, localIP, NetConfig::NET_APP_ID, NetConfig::NET_APP_VERSION));
     
-    // 
-    // Crypto::RSAKey serverKey;
-    // Crypto::RSAKey clientKey;
-    // Crypto::AESKey dataKey;
-    // NetConnectionController connectionController;
-    // 
-    // serverKey.GeneratePair(Crypto::RSA_KEY_2048);
-    // clientKey.GeneratePair(Crypto::RSA_KEY_2048);
-    // dataKey.Generate(Crypto::AES_KEY_256);
-    // 
-    // NetTransportConfig config;
-    // config.SetAppId(NetConfig::NET_APP_ID);
-    // config.SetAppVersion(NetConfig::NET_APP_VERSION);
-    // config.SetPort(TEST_PORT);
-    // config.SetTransportHandler(NetPacketType::NET_PACKET_TYPE_CONNECT, LFNew<NetConnectionHandler>(MMT_GENERAL, &connectionController, &serverKey));
-    // config.SetTransportHandler(NetPacketType::NET_PACKET_TYPE_DISCONNECT, LFNew<NetDisconnectionHandler>());
-    // config.SetTransportHandler(NetPacketType::NET_PACKET_TYPE_HEARTBEAT, LFNew<NetHeartbeatHandler>());
-    // 
-    // NetServer server;
-    // server.Start(std::move(config), serverKey);
-    // 
-    // NetClient client;
-    // client.Start(std::move(config), serverKey, clientKey, dataKey);
-    // config.SetAppId(NetConfig::NET_APP_ID);
-    // config.SetAppVersion(NetConfig::NET_APP_VERSION);
-    // config.SetPort(TEST_PORT);
-    // config.SetTransportHandler(NetPacketType::NET_PACKET_TYPE_CONNECT, LFNew<NetConnectionHandler>(MMT_GENERAL, &connectionController, &serverKey));
-    // config.SetTransportHandler(NetPacketType::NET_PACKET_TYPE_DISCONNECT, LFNew<NetDisconnectionHandler>());
-    // config.SetTransportHandler(NetPacketType::NET_PACKET_TYPE_HEARTBEAT, LFNew<NetHeartbeatHandler>());
-    // 
-    // // NetClient client;
-    // client.Stop();
-    // // 
-    // server.Stop();
+    while (!client.IsConnected())
+    {
+        SleepCallingThread(0);
+    }
 
-#if 0
-    Crypto::AESKey key;
-    key.Generate(Crypto::AES_KEY_256);
+    SizeT heartbeatsEmitted = 0;
+    Int64 frequency = GetClockFrequency();
+    Int64 time = GetClockTime();
+    Float64 elapsed = 0.0;
+    Int64 heartbeatTime = GetClockTime();
+    Float64 heartbeatElapsed = 0.0;
+    bool serverKicked = false;
+    while (elapsed < 10.0)
+    {
+        elapsed = (GetClockTime() - time) / static_cast<Float64>(frequency);
+        heartbeatElapsed = (GetClockTime() - heartbeatTime) / static_cast<Float64>(frequency);
 
-    String messageA = "Hello Message220Hello Message220";
-    String messageB = "Hello Message220Hello Message220"; // "RandomSalt493900Hello Message220";
-    String a;
-    String b;
-    String x;
-    String y;
+        if (elapsed > 1.0 && !serverKicked)
+        {
+            server.DropConnection(0);
+            serverKicked = true;
+        }
 
-    ByteT iv[16];
-    Crypto::SecureRandomBytes(iv, LF_ARRAY_SIZE(iv));
+        if (heartbeatElapsed > 0.1)
+        {
+            if (client.EmitHeartbeat(true))
+            {
+                heartbeatElapsed = 0.0;
+                heartbeatTime = GetClockTime();
+                ++heartbeatsEmitted;
+                gTestLog.Info(LogMessage("Emitting heartbeat..."));
+            }
+        }
+        server.Update();
+        client.Update();
+    }
 
-    TEST(Crypto::AESEncrypt(&key, iv, messageA, a));
-    String aHex = BytesToHex(reinterpret_cast<const ByteT*>(a.CStr()), a.Size());
-    TEST(Crypto::AESEncrypt(&key, iv, messageB, b));
-    String bHex = BytesToHex(reinterpret_cast<const ByteT*>(b.CStr()), b.Size());
-    TEST(Crypto::AESDecrypt(&key, iv, a, x));
-    TEST(Crypto::AESDecrypt(&key, iv, b, y));
-    TEST(x == messageA);
-    TEST(y == messageB);
-#endif
-    
-
+    gTestLog.Info(LogMessage("Emitted ") << heartbeatsEmitted << " heartbeats.");
+    client.Shutdown();
+    server.Shutdown();
+    LF_DEBUG_BREAK;
 }
 
 } // namespace lf

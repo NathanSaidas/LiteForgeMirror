@@ -49,6 +49,9 @@
     <Filter Include="Net\TransportHandlers">
       <UniqueIdentifier>{b1cd1959-ffa4-4596-8b4e-02943d84b8bf}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Net\Controllers">
+      <UniqueIdentifier>{2574ac4a-e963-4995-9fa1-219034b5d28f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Config.cpp">
@@ -276,20 +279,44 @@
     <ClCompile Include="Utility\Debug.cpp">
       <Filter>Utility</Filter>
     </ClCompile>
-    <ClCompile Include="Net\NetConnectionController.cpp">
-      <Filter>Net</Filter>
-    </ClCompile>
     <ClCompile Include="Net\TransportHandlers\ServerConnectionHandler.cpp">
       <Filter>Net\TransportHandlers</Filter>
     </ClCompile>
     <ClCompile Include="Net\TransportHandlers\ClientConnectionHandler.cpp">
       <Filter>Net\TransportHandlers</Filter>
     </ClCompile>
-    <ClCompile Include="Net\NetClientController.cpp">
+    <ClCompile Include="Net\HeartbeatPacket.cpp">
       <Filter>Net</Filter>
     </ClCompile>
-    <ClCompile Include="Net\NetServerController.cpp">
+    <ClCompile Include="Net\TransportHandlers\ServerHeartbeatHandler.cpp">
+      <Filter>Net\TransportHandlers</Filter>
+    </ClCompile>
+    <ClCompile Include="Net\TransportHandlers\ClientHeartbeatHandler.cpp">
+      <Filter>Net\TransportHandlers</Filter>
+    </ClCompile>
+    <ClCompile Include="Net\Controllers\NetEventController.cpp">
+      <Filter>Net\Controllers</Filter>
+    </ClCompile>
+    <ClCompile Include="Net\NetEvent.cpp">
       <Filter>Net</Filter>
+    </ClCompile>
+    <ClCompile Include="Net\Controllers\NetClientController.cpp">
+      <Filter>Net\Controllers</Filter>
+    </ClCompile>
+    <ClCompile Include="Net\Controllers\NetConnectionController.cpp">
+      <Filter>Net\Controllers</Filter>
+    </ClCompile>
+    <ClCompile Include="Net\Controllers\NetServerController.cpp">
+      <Filter>Net\Controllers</Filter>
+    </ClCompile>
+    <ClCompile Include="Net\NetClientDriver.cpp">
+      <Filter>Net</Filter>
+    </ClCompile>
+    <ClCompile Include="Net\NetServerDriver.cpp">
+      <Filter>Net</Filter>
+    </ClCompile>
+    <ClCompile Include="Platform\ThreadFence.cpp">
+      <Filter>Platform</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -638,9 +665,6 @@
     <ClInclude Include="Net\NetConnection.h">
       <Filter>Net</Filter>
     </ClInclude>
-    <ClInclude Include="Net\NetConnectionController.h">
-      <Filter>Net</Filter>
-    </ClInclude>
     <ClInclude Include="Memory\DynamicPoolHeap.h">
       <Filter>Memory</Filter>
     </ClInclude>
@@ -662,11 +686,44 @@
     <ClInclude Include="Net\TransportHandlers\ClientConnectionHandler.h">
       <Filter>Net\TransportHandlers</Filter>
     </ClInclude>
-    <ClInclude Include="Net\NetClientController.h">
+    <ClInclude Include="Net\HeartbeatPacket.h">
       <Filter>Net</Filter>
     </ClInclude>
-    <ClInclude Include="Net\NetServerController.h">
+    <ClInclude Include="Net\TransportHandlers\ServerHeartbeatHandler.h">
+      <Filter>Net\TransportHandlers</Filter>
+    </ClInclude>
+    <ClInclude Include="Net\TransportHandlers\ClientHeartbeatHandler.h">
+      <Filter>Net\TransportHandlers</Filter>
+    </ClInclude>
+    <ClInclude Include="Net\NetDriver.h">
       <Filter>Net</Filter>
+    </ClInclude>
+    <ClInclude Include="Net\Controllers\NetEventController.h">
+      <Filter>Net\Controllers</Filter>
+    </ClInclude>
+    <ClInclude Include="Net\NetEvent.h">
+      <Filter>Net</Filter>
+    </ClInclude>
+    <ClInclude Include="Net\Controllers\NetClientController.h">
+      <Filter>Net\Controllers</Filter>
+    </ClInclude>
+    <ClInclude Include="Net\Controllers\NetConnectionController.h">
+      <Filter>Net\Controllers</Filter>
+    </ClInclude>
+    <ClInclude Include="Net\Controllers\NetServerController.h">
+      <Filter>Net\Controllers</Filter>
+    </ClInclude>
+    <ClInclude Include="Net\NetClientDriver.h">
+      <Filter>Net</Filter>
+    </ClInclude>
+    <ClInclude Include="Net\NetServerDriver.h">
+      <Filter>Net</Filter>
+    </ClInclude>
+    <ClInclude Include="Net\PacketAllocator.h">
+      <Filter>Net</Filter>
+    </ClInclude>
+    <ClInclude Include="Platform\ThreadFence.h">
+      <Filter>Platform</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

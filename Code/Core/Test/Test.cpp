@@ -60,9 +60,10 @@ const char* FormatTimeStr(Float64 time)
     return "s";
 }
 
-TestConfig::TestConfig() :
-mTriggerBreakpoint(true),
-mEngineConfig(nullptr)
+TestConfig::TestConfig() 
+: mStress(false)
+, mTriggerBreakpoint(true)
+, mEngineConfig(nullptr)
 {}
 
 TestRegristration* FindTest(TestRegristration* root, const Char8* string)
@@ -76,6 +77,12 @@ TestRegristration* FindTest(TestRegristration* root, const Char8* string)
         }
         root = root->mNext;
     }
+
+    if (root && StrEqual(root->mName, string, root->mName + StrLen(root->mName), endString))
+    {
+        return root;
+    }
+
     return nullptr;
 }
 
@@ -110,6 +117,8 @@ void TestFramework::ExecuteTest(const Char8* name, const TestConfig& config)
         context.mPrev = sTestContextStack;
         context.mEngineConfig = config.mEngineConfig;
         sTestContextStack = &context;
+
+        gTestLog.Info(LogMessage("Running test ") << name << "...");
 
         sFailed = 0;
         sExecuted = 0;
@@ -154,6 +163,8 @@ void TestFramework::ExecuteAllTests(const TestConfig& config)
         context.mPrev = sTestContextStack;
         context.mEngineConfig = config.mEngineConfig;
         sTestContextStack = &context;
+
+        gTestLog.Info(LogMessage("Running test ") << test->mName << "...");
 
         sFailed = 0;
         sExecuted = 0;

@@ -130,6 +130,7 @@ void LF_IMPL_OPAQUE(NetTransport)::Start(NetTransportConfig&& config, const Byte
         return;
     }
     const bool isClient = !emptyEndPoint;
+    mIsClient = isClient;
 
     // Verify Config:
     if (config.GetPort() == 0 && !isClient) // todo: This is actually valid, only IF the config is for 'client'
@@ -156,12 +157,24 @@ void LF_IMPL_OPAQUE(NetTransport)::Start(NetTransportConfig&& config, const Byte
         return;
     }
 
+    if (isClient)
+    {
+        if (!mOutbound.Create(protocol))
+        {
+            config.CloseHandlers(false);
+            mInbound.Close();
+            return;
+        }
+    }
+
     if (!isClient)
     {
         gSysLog.Info(LogMessage("Binding socket..."));
         if (!mInbound.Bind(config.GetPort()))
         {
             config.CloseHandlers(false);
+            mInbound.Close();
+            mOutbound.Close();
             return;
         }
         CriticalAssertEx(IPV4(mBoundEndPoint, "127.0.0.1", config.GetPort()), LF_ERROR_INTERNAL, ERROR_API_CORE);
@@ -235,11 +248,27 @@ void LF_IMPL_OPAQUE(NetTransport)::Stop()
     }
 
     mInbound.Close();
+    mOutbound.Close();
 }
 
 bool LF_IMPL_OPAQUE(NetTransport)::IsRunning() const
 {
     return AtomicLoad(&mRunning) != 0;
+}
+
+IPEndPointAny LF_IMPL_OPAQUE(NetTransport)::GetBoundEndPoint() const
+{
+    return mBoundEndPoint;
+}
+
+bool LF_IMPL_OPAQUE(NetTransport)::Send(const ByteT* bytes, SizeT numBytes, const IPEndPointAny& endPoint)
+{
+    if (!mIsClient)
+    {
+        return false;
+    }
+    SizeT outBytes = numBytes;
+    return mOutbound.SendTo(bytes, outBytes, endPoint) && outBytes == numBytes;
 }
 
 void LF_IMPL_OPAQUE(NetTransport)::ProcessReceiveThread(void* self)

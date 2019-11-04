@@ -49,7 +49,6 @@ void TaskScheduler::Initialize(bool async)
 
 void TaskScheduler::Initialize(const OptionsType& options, bool async)
 {
-    AssertEx(options.mNumDeliveryThreads > 0, LF_ERROR_INVALID_ARGUMENT, ERROR_API_CORE);
     AssertEx(options.mNumWorkerThreads > 0, LF_ERROR_INVALID_ARGUMENT, ERROR_API_CORE);
 
     // If these trip you haven't called Shutdown, thus the scheduler is still running!
@@ -60,11 +59,19 @@ void TaskScheduler::Initialize(const OptionsType& options, bool async)
     mAsync = async;
     mWorkerThreads.Resize(options.mNumWorkerThreads);
     mDispatcherQueue.Resize(options.mDispatcherSize);
+    CriticalAssert(mDispatcherFence.Initialize());
+    mDispatcherFence.Set(true);
 
     // Spin up workers first to process work ASAP
     for (TaskWorker& worker : mWorkerThreads)
     {
-        worker.Initialize(&mDispatcherQueue, &mDispatcherSignal, async);
+        worker.Initialize(&mDispatcherQueue
+            , &mDispatcherFence
+            , async
+#if defined(LF_DEBUG) || defined(LF_TEST)
+            , options.mWorkerName
+#endif
+            );
     }
 
     SetRunning(true);
@@ -82,7 +89,7 @@ void TaskScheduler::Shutdown()
     {
         worker.Shutdown();
     }
-    mDispatcherSignal.WakeAll();
+    mDispatcherFence.Set(false);
     for (TaskWorker& worker : mWorkerThreads)
     {
         worker.Join();
@@ -110,6 +117,7 @@ void TaskScheduler::Shutdown()
         task.mCallback.Invoke(task.mParam);
     }
 
+    mDispatcherFence.Destroy();
     // If this trips, perhaps someone pushed onto the queue while we were executing pending tasks.
     AssertEx(mDispatcherQueue.Size() == 0, LF_ERROR_BAD_STATE, ERROR_API_CORE);
 }
@@ -127,7 +135,7 @@ TaskHandle TaskScheduler::RunTask(TaskCallback func, void* param)
     do {
         taskHandle = mDispatcherQueue.TryPush(taskItem);
     } while (!taskHandle);
-    mDispatcherSignal.WakeOne();
+    mDispatcherFence.Signal();
     return taskHandle;
 }
 

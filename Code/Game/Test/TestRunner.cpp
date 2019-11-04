@@ -33,12 +33,17 @@ DECLARE_CLASS(TestRunner, Application);
 public:
     void OnStart() override
     {
+        String a = "test";
+        String b = "test";
+        Assert(a == b);
+
         // Requirements:
         // -test /single=<test_name>
         // -test /all
         // -test /batch=<test_name>,<test_name>,<test_name>
         TestConfig config;
         config.mEngineConfig = GetConfig();
+        config.mStress = CmdLine::HasArgOption("test", "opt_stress");
         if (CmdLine::HasArgOption("test", "opt_no_break"))
         {
             config.mTriggerBreakpoint = false;

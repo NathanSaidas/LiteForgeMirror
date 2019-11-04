@@ -53,7 +53,8 @@ public:
     using HeaderType = PacketHeader;
     using AckHeaderType = AckPacketHeader;
 
-    static const SizeT CHALLENGE_SIZE = 32;
+    static const SizeT CHALLENGE_SIZE = NET_CLIENT_CHALLENGE_SIZE;
+    static const SizeT NONCE_SIZE = NET_HEARTBEAT_NONCE_SIZE;
 
     // Static class cannot be instantiated.
     ConnectPacket() = delete;
@@ -88,6 +89,7 @@ public:
         const Crypto::AESKey& sharedKey,
         const ByteT hmacKey[Crypto::HMAC_KEY_SIZE],
         const ByteT challenge[CHALLENGE_SIZE],
+        const ByteT serverNonce[NONCE_SIZE],
         ConnectionID connectionID);
 
     static bool DecodeAckPacket(
@@ -98,6 +100,7 @@ public:
         const Crypto::AESKey& sharedKey,
         const ByteT hmacKey[Crypto::HMAC_KEY_SIZE],
         ByteT challenge[CHALLENGE_SIZE],
+        ByteT serverNonce[NONCE_SIZE],
         ConnectionID& connectionID,
         AckHeaderType& header);
 

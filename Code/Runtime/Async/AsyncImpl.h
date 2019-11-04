@@ -23,6 +23,9 @@
 
 #include "Runtime/Async/Async.h"
 #include "Core/Concurrent/TaskScheduler.h"
+#include "Core/Platform/SpinLock.h"
+#include "Core/Platform/Thread.h"
+#include "Core/Platform/ThreadFence.h"
 
 namespace lf {
 
@@ -35,11 +38,24 @@ public:
     void Initialize();
     void Shutdown();
 
-    void RunPromise(PromiseWrapper promise) override final;
-    TaskHandle RunTask(const TaskCallback& callback, void* param = nullptr) override final;
+    void RunPromise(PromiseWrapper promise) final;
+    void QueuePromise(PromiseWrapper promise) final;
+    TaskHandle RunTask(const TaskCallback& callback, void* param = nullptr) final;
+    void WaitForSync() final;
+    void Signal() final;
 
+    bool IsRunning() const;
+    void DrainQueue();
 private:
+
     TaskScheduler mScheduler;
+
+    Thread                 mDrainQueueThread;
+    ThreadFence            mFence;
+    TArray<PromiseWrapper> mBuffer;
+    TArray<PromiseWrapper> mWork;
+    SpinLock               mLock;
+    volatile Atomic32      mIsRunning;
 };
 
 }

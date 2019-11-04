@@ -24,6 +24,13 @@
 namespace lf {
 
 AsyncImpl::AsyncImpl()
+: mScheduler()
+, mDrainQueueThread()
+, mFence()
+, mBuffer()
+, mWork()
+, mLock()
+, mIsRunning()
 {
 }
 AsyncImpl::~AsyncImpl()
@@ -33,10 +40,38 @@ AsyncImpl::~AsyncImpl()
 
 void AsyncImpl::Initialize()
 {
+    AtomicStore(&mIsRunning, 1);
+    mWork.Reserve(64);
+    mBuffer.Reserve(64);
+
+    Assert(mFence.Initialize());
+    mFence.Set(true);
+
     mScheduler.Initialize(true);
+    mDrainQueueThread.Fork([](void* context)
+    {
+        reinterpret_cast<AsyncImpl*>(context)->DrainQueue();
+    }, this);
 }
 void AsyncImpl::Shutdown()
 {
+    AtomicStore(&mIsRunning, 0);
+    mDrainQueueThread.Join();
+    mFence.Destroy();
+
+    // Guarantee we execute our promises.
+    for (PromiseWrapper& wrapper : mBuffer)
+    {
+        RunPromise(wrapper);
+    }
+
+    for (PromiseWrapper& wrapper : mWork)
+    {
+        RunPromise(wrapper);
+    }
+    mBuffer.Clear();
+    mWork.Clear();
+
     mScheduler.Shutdown();
 }
 
@@ -46,7 +81,7 @@ void AsyncImpl::RunPromise(PromiseWrapper promise)
     {
         return;
     }
-    if (!mScheduler.IsRunning() || !mScheduler.IsAsync())
+    if (!IsRunning() || !mScheduler.IsRunning() || !mScheduler.IsAsync())
     {
         promise->Run();
         return;
@@ -59,9 +94,63 @@ void AsyncImpl::RunPromise(PromiseWrapper promise)
     }
     promise->SetTask(task);
 }
+
+void AsyncImpl::QueuePromise(PromiseWrapper promise)
+{
+    if (!promise->SetState(Promise::PROMISE_QUEUED))
+    {
+        return;
+    }
+
+    ScopeLock lock(mLock);
+    mBuffer.Add(promise);
+}
+
 TaskHandle AsyncImpl::RunTask(const TaskCallback& callback, void* param)
 {
     return mScheduler.RunTask(callback, param);
+}
+
+void AsyncImpl::WaitForSync()
+{
+    mFence.Wait();
+}
+
+void AsyncImpl::Signal()
+{
+    mFence.Signal();
+}
+
+bool AsyncImpl::IsRunning() const
+{
+    return AtomicLoad(&mIsRunning) != 0;
+}
+
+void AsyncImpl::DrainQueue()
+{
+    static const SizeT MAX_FRAME_MS = 100;
+    while (IsRunning())
+    {
+        // Wait
+        mFence.Wait(100);
+        mFence.Signal();
+
+        // Swap
+        {
+            ScopeLock lock(mLock);
+            mBuffer.swap(mWork);
+        }
+
+        // Execute
+        for (PromiseWrapper& wrapper : mWork)
+        {
+            if (wrapper->IsQueued())
+            {
+                RunPromise(wrapper);
+            }
+        }
+        mWork.Resize(0);
+    }
 }
 
 }

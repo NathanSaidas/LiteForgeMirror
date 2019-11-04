@@ -128,23 +128,32 @@ struct TaskDeliveryThreadOptions
 
 struct TaskSchedulerOptions
 {
-    TaskSchedulerOptions() :
-    mNumDeliveryThreads(4),
-    mNumWorkerThreads(4),
-    mDispatcherSize(512)
+    TaskSchedulerOptions() 
+    : mNumWorkerThreads(4)
+    , mDispatcherSize(512)
+#if defined(LF_DEBUG) || defined(LF_TEST)
+    , mWorkerName("WorkerThread")
+#endif
 #if defined(LF_MPMC_BOUNDLESS_EXP)
-    ,mDeliveryOptions()
+    , mNumDeliveryThreads(4)
+    , mDeliveryOptions()
 #endif
     {}
 
-    // The number of delivery threads the scheduler runs
-    SizeT mNumDeliveryThreads;
+    
     // The number of worker threads the scheduler runs (note: it's typically better to have more workers than delivery)
     SizeT mNumWorkerThreads;
     // The dispatcher buffer size
     SizeT mDispatcherSize;
 
+#if defined(LF_DEBUG) || defined(LF_TEST)
+    const char* mWorkerName;
+#endif
+
 #if defined(LF_MPMC_BOUNDLESS_EXP)
+    // The number of delivery threads the scheduler runs
+    SizeT mNumDeliveryThreads;
+
     // todo: Dynamic vs Static Behavior
     //       A dynamic scheduler should be able to detect congestion with delivery threads (filling ring buffers)
     //       and spawn new delivery threads temporarily to handle work to reduce wait-time under a lock for the caller
