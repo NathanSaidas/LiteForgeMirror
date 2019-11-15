@@ -31,7 +31,9 @@ Promise::Promise()
 , mAsync(&GetAsync())
 , mStateSignaller()
 , mState(PROMISE_NULL)
-{}
+{
+    mStateSignaller.Initialize();
+}
 Promise::Promise(const PromiseCallback& executor, Async* async) 
 : mResolverCallbacks()
 , mErrorCallbacks()
@@ -40,7 +42,14 @@ Promise::Promise(const PromiseCallback& executor, Async* async)
 , mAsync(async ? async : &GetAsync())
 , mStateSignaller()
 , mState(PROMISE_NULL)
-{}
+{
+    mStateSignaller.Initialize();
+}
+Promise::~Promise()
+{
+    mStateSignaller.Destroy();
+}
+
 
 
 void Promise::Run()
@@ -96,7 +105,7 @@ bool Promise::SetState(PromiseState state)
                 ReportBugMsgEx("Invalid promise state transition NOT PROMISE_PENDING -> PROMISE_RESOLVED", LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
                 return false;
             }
-            mStateSignaller.WakeAll();
+            mStateSignaller.Signal();
         } break;
 
         case PROMISE_REJECTED:
@@ -106,7 +115,7 @@ bool Promise::SetState(PromiseState state)
                 ReportBugMsgEx("Invalid promise state transition NOT PROMISE_PENDING -> PROMISE_REJECTED", LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
                 return false;
             }
-            mStateSignaller.WakeAll();
+            mStateSignaller.Signal();
         } break;
         default:
             CriticalAssertMsgEx("Invalid promise state!", LF_ERROR_INVALID_ARGUMENT, ERROR_API_CORE);

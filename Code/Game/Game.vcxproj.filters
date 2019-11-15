@@ -22,7 +22,6 @@
       <Filter>Config</Filter>
     </ClCompile>
     <ClCompile Include="MyApp.cpp" />
-    <ClCompile Include="ThreadQueueApp.cpp" />
     <ClCompile Include="PromiseApp.cpp" />
     <ClCompile Include="Test\Core\ArrayTest.cpp">
       <Filter>Test\Core</Filter>

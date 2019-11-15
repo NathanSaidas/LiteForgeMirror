@@ -39,7 +39,7 @@ const SizeT LF_MAX_PATH = 2048;
 
 static bool EndsWithDirChar(const String& str)
 {
-    return str.Empty() ? false : str.Last() == DIR_CHAR || str.First() == TYPE_CHAR;
+    return str.Empty() ? false : str.Last() == DIR_CHAR || str.Last() == TYPE_CHAR;
 }
 static bool BeginsWithDirChar(const String& str)
 {

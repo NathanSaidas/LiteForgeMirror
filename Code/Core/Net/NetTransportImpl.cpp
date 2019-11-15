@@ -297,24 +297,28 @@ void LF_IMPL_OPAQUE(NetTransport)::ProcessReceive()
 
         if (receivedBytes < sizeof(PacketHeader))
         {
+            gSysLog.Debug(LogMessage("Dropping packet, not enough bytes for header. Bytes=") << receivedBytes);
             continue;
         }
 
         const PacketHeader* header = reinterpret_cast<PacketHeader*>(bytes);
         if (header->mAppID != mAppId)
         {
+            gSysLog.Debug(LogMessage("Dropping packet, invalid app ID. appID=") << header->mAppID);
             continue;
         }
 
         // todo: In the future we could possibly handle 'older' versions of packets but definately not newer.
         if (header->mAppVersion != mAppVersion)
         {
+            gSysLog.Debug(LogMessage("Dropping packet, invalid app version. appVersion=") << header->mAppVersion);
             continue;
         }
 
         UInt32 crc32 = PacketUtility::CalcCrc32(bytes, receivedBytes);
         if (header->mCrc32 != crc32)
         {
+            gSysLog.Debug(LogMessage("Dropping packet, invalid crc32."));
             // Connectionless so we need to ACK with the InBound socket.. but we can also kick it off to the 'acker'
             if (PacketUtility::GetHeaderType(bytes, receivedBytes) == NetPacketHeaderType::NET_PACKET_HEADER_TYPE_BASE)
             {
@@ -337,6 +341,7 @@ void LF_IMPL_OPAQUE(NetTransport)::ProcessReceive()
         // todo: Verify LogicalPacketData (ie, do the flags/type make sense)
         if (header->mType >= NetPacketType::MAX_VALUE)
         {
+            gSysLog.Debug(LogMessage("Dropping packet, invalid header type. HeaderType=") << header->mType);
             continue;
         }
 

@@ -63,6 +63,7 @@ NetConnection* NetConnectionController::InsertConnection()
     
     ScopeRWLockWrite writeLock(mConnectionLock);
     connection->mID = mIDGenerator.Allocate();
+    connection->mLastTick = GetClockTime();
 
     auto iter = mConnections.insert(std::make_pair(connection->mID, connection));
     // Verify it was inserted!

@@ -22,7 +22,7 @@
 #define LF_RUNTIME_PROMISE_H
 
 #include "Core/Concurrent/TaskHandle.h"
-#include "Core/Platform/ThreadSignal.h"
+#include "Core/Platform/ThreadFence.h"
 #include "Core/Memory/AtomicSmartPointer.h"
 #include "Core/Utility/SmartCallback.h"
 
@@ -63,6 +63,7 @@ public:
 
     Promise();
     Promise(const PromiseCallback& executor, Async* async = nullptr);
+    virtual ~Promise();
     // **********************************
     // Invokes the executor callback that created the promise
     // **********************************
@@ -143,7 +144,7 @@ protected:
     PromiseCallback        mExecutor;
     TaskHandle             mTask;
     Async*                 mAsync;
-    ThreadSignal           mStateSignaller;
+    ThreadFence            mStateSignaller;
     volatile Atomic32      mState;
 };
 

@@ -154,6 +154,10 @@ void Log::Output(const SStream& buffer)
         if (mFile.IsOpen())
         {
             mFile.Write(buffer.CStr(), buffer.Size());
+            if (mFile.GetSize() > 1024 * 1024 * 64)
+            {
+                mFile.SetCursor(0, FILE_CURSOR_BEGIN);
+            }
         }
     }
 }

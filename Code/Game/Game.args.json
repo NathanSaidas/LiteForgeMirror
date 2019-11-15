@@ -3,6 +3,18 @@
   "Id": "fcd33a39-9982-4e52-aaf2-06dbb5185320",
   "Items": [
     {
+      "Id": "302d62b2-a3e9-4291-bb39-51598c2e8c83",
+      "Command": ""
+    },
+    {
+      "Id": "d8e41830-6961-4b28-8ee1-388721c03f86",
+      "Command": ""
+    },
+    {
+      "Id": "8dcf04f9-0eb8-4b5d-838c-06b1cd49a1f7",
+      "Command": ""
+    },
+    {
       "Id": "5aaa2b76-8447-4ff6-a1ae-e304f8a5de12",
       "Command": "-log /name=Server"
     },
@@ -48,23 +60,23 @@
         },
         {
           "Id": "3cc69173-0ad2-4f3b-aceb-5e3101aee24f",
-          "Command": "-app /type=BasicNetApp -log /name=Server"
+          "Command": "-app /type=BasicNetApp -log /name=Server -net /execution=Server /server_WaitTime=1000.0"
         },
         {
           "Id": "aecc28db-183e-4150-b1ad-5eaa08789a95",
-          "Command": "-app /type=BasicNetApp -log /name=Client -net /client"
+          "Command": "-app /type=BasicNetApp -log /name=Client -net /execution=Client /client_IPV6=\"::1\""
         },
         {
           "Id": "20d77c1a-4126-4480-8f71-a990ff81cea2",
-          "Command": "-app /type=BasicNetApp -log /name=Client2 -net /client"
+          "Command": "-app /type=BasicNetApp -log /name=Client3 -net /execution=BasicClient /client_IPV6=\"fe80::a848:150:1e81:746d\""
         },
         {
           "Id": "6bdb5fe1-b266-4316-af72-ce4fb9a4f276",
-          "Command": "-app /type=BasicNetApp -log /name=Client3 -net /client"
+          "Command": "-app /type=BasicNetApp -log /name=Client3 -net /execution=BasicClient /client_IPV4=\"127.0.0.1\""
         },
         {
           "Id": "8ef70aaa-c9f2-44e4-9aee-b6910e84bc96",
-          "Command": "-app /type=BasicNetApp -log /name=Client4 -net /client"
+          "Command": "-app /type=BasicNetApp -log /name=Server -net /execution=BasicServer /server_WaitTime=60"
         }
       ]
     },

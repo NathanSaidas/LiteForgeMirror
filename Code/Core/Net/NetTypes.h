@@ -136,6 +136,18 @@ namespace NetAckStatus
     };
 }
 
+namespace NetConnectionState
+{
+    enum Value
+    {
+        // The connection was just 'created' must be resolved.
+        NET_CONNECT_CREATED,
+        // 
+        NET_CONNECT_CONNECTED,
+        NET_CONNECT_DISCONNECTED
+    };
+}
+
 // **********************************
 // The absolute base data structure for
 // packets. All packets will use this

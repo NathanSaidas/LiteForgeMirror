@@ -193,7 +193,6 @@
     <ClCompile Include="Test\Core\TextStreamTest.cpp" />
     <ClCompile Include="Test\Runtime\AsyncTests.cpp" />
     <ClCompile Include="Test\TestRunner.cpp" />
-    <ClCompile Include="ThreadQueueApp.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AnalyzeProjectApp\AnalyzeProjectApp.h" />

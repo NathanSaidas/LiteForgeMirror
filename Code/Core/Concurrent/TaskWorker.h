@@ -26,7 +26,6 @@
 
 namespace lf {
 
-class ThreadSignal;
 class ThreadFence;
 
 class TaskWorker

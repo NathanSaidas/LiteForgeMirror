@@ -23,6 +23,7 @@
 #include "Core/String/String.h"
 #include "Core/Memory/Memory.h"
 #include "Core/Utility/ErrorCore.h"
+#include "Core/Utility/Time.h"
 #include "Core/Platform/AsyncIODevice.h"
 #include "Core/Platform/AsyncIOBuffer.h"
 
@@ -371,7 +372,7 @@ SizeT File::Read(void* buffer, SizeT bufferLength)
         {
             DWORD bytesRead = 0;
             SetLastError(ERROR_SUCCESS);
-            BOOL result = GetOverlappedResultEx(mHandle->mFileHandle, &mHandle->mUserData, &bytesRead, INFINITE, TRUE);
+            BOOL result = GetOverlappedResult(mHandle->mFileHandle, &mHandle->mUserData, &bytesRead, TRUE);
             error = GetLastError();
             if (error == ERROR_HANDLE_EOF)
             {
@@ -479,7 +480,7 @@ SizeT File::Write(const void* buffer, SizeT bufferLength)
         {
             DWORD bytesWritten = 0;
             SetLastError(ERROR_SUCCESS);
-            BOOL result = GetOverlappedResultEx(mHandle->mFileHandle, &mHandle->mUserData, &bytesWritten, INFINITE, TRUE);
+            BOOL result = GetOverlappedResult(mHandle->mFileHandle, &mHandle->mUserData, &bytesWritten, TRUE);
             error = GetLastError();
             if (error == ERROR_NOT_ENOUGH_MEMORY)
             {
@@ -553,7 +554,7 @@ void File::Wait()
     {
 #if defined(LF_OS_WINDOWS)
         DWORD dummy = 0;
-        AssertEx(GetOverlappedResultEx(mHandle->mFileHandle, &mHandle->mUserData, &dummy, INFINITE, TRUE) == TRUE, LF_ERROR_INTERNAL, ERROR_API_CORE);
+        AssertEx(GetOverlappedResult(mHandle->mFileHandle, &mHandle->mUserData, &dummy, TRUE) == TRUE, LF_ERROR_INTERNAL, ERROR_API_CORE);
         while (HasPending()) {}
 #endif
     }
@@ -569,8 +570,20 @@ bool File::Wait(SizeT waitMilliseconds)
     if (HasPending())
     {
 #if defined(LF_OS_WINDOWS)
-        DWORD dummy = 0;
-        AssertEx(GetOverlappedResultEx(mHandle->mFileHandle, &mHandle->mUserData, &dummy, static_cast<DWORD>(waitMilliseconds), TRUE) == TRUE, LF_ERROR_INTERNAL, ERROR_API_CORE);
+        Float64 time = 0.0;
+        Int64 frequency = GetClockFrequency();
+        Int64 begin = GetClockTime();
+        do
+        {
+            time = (GetClockTime() - begin) / static_cast<Float64>(frequency);
+
+            DWORD dummy = 0;
+            if (GetOverlappedResult(mHandle->mFileHandle, &mHandle->mUserData, &dummy, FALSE) == TRUE)
+            {
+                break;
+            }
+
+        } while (time < static_cast<Float64>(waitMilliseconds));
 #endif
     }
     return HasPending();

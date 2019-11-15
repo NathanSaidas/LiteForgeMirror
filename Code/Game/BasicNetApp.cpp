@@ -24,15 +24,14 @@
 #include "Core/Platform/FileSystem.h"
 #include "Core/Utility/CmdLine.h"
 #include "Core/Utility/Log.h"
+#include "Core/Utility/Time.h"
+#include "Core/Utility/ByteOrder.h"
 
-#include "Core/Net/Controllers/NetClientController.h"
-#include "Core/Net/Controllers/NetConnectionController.h"
-#include "Core/Net/Controllers/NetServerController.h"
 #include "Core/Net/NetFramework.h"
-#include "Core/Net/NetTransport.h"
-#include "Core/Net/NetTransportConfig.h"
-#include "Core/Net/TransportHandlers/ClientConnectionHandler.h"
-#include "Core/Net/TransportHandlers/ServerConnectionHandler.h"
+
+#include "Core/Net/NetServerDriver.h"
+#include "Core/Net/NetClientDriver.h"
+#include "Core/Net/UDPSocket.h"
 
 namespace lf {
 
@@ -40,43 +39,74 @@ static const UInt16 BASIC_PORT = 27015;
 static const char* LOCAL_IPV4 = "127.0.0.1";
 static const char* LOCAL_IPV6 = "::1";
 
-
-// Declare our 'Client'
-struct BasicClient
-{
-    NetTransport        mTransport;
-    TaskScheduler       mTaskScheduler;
-    NetClientController mClientController;
-};
-
-// Declare out 'Server'
-struct BasicServer
-{
-    NetTransport        mTransport;
-    TaskScheduler       mTaskScheduler;
-    NetServerController mServerController;
-    NetConnectionController mConnectionController;
-};
-
 // Heartbeat message: 
 // Connected Header
 
+struct ServerArgs
+{
+    // Number of clients to wait for
+    Int32   mWaitClients;
+    // The time for the server to keep its connection open.
+    Float32 mWaitTime;
+    // The amount of time a client gets before they are kicked.
+    Float32 mClientLifetime;
+};
+
+struct ClientArgs
+{
+    Float32 mWaitTime;
+
+    String mIPV4;
+
+    String mIPV6;
+};
+
+// The goal of this application is to help exercise networking between client/server.
+// 
+// 1. Server
+//     a) Run a server, await a client connection, await client disconnection, shutdown
+//     b) Run a server, await client connection, shutdown
+//     c) Run a server, await N client connections, await all client disconnects, shutdown
+//     d) Run a server, await N client connections, shutdown
+//     e) Run a server, await client connection, drop connection shutdown
+//     f) Run a server, await client connection 3 connections, drop the 2nd one. shutdown
+// 2. 
+//     a) Run a client, connect to server, wait T seconds, disconnect.
+//     b) Run a client, connect to server, wait T seconds (be disconnected)
+//     c) Run a client, connect 
 class BasicNetApp : public Application
 {
     DECLARE_CLASS(BasicNetApp, Application);
 public:
 
+    enum Execution
+    {
+        BasicClient,
+        BasicServer,
+        Client,
+        Server
+    };
+
     void OnStart() final
     {
-        mIsClient = CmdLine::HasArgOption("net", "client");
-        if (mIsClient)
+        gSysLog.SetLogLevel(LogLevel::LOG_DEBUG);
+        gSysLog.Debug(LogMessage("Hello World"));
+
+        String executionStr;
+        Execution exec = BasicServer;
+        if (!CmdLine::GetArgOption("net", "execution", executionStr))
         {
-            gSysLog.Info(LogMessage("Running app as 'Client'"));
+            gSysLog.Info(LogMessage("Missing net 'execute' argument, defaulting to BasicServer"));
         }
-        else
-        {
-            gSysLog.Info(LogMessage("Running app as 'Server'"));
-        }
+
+        executionStr = StrToLower(executionStr);
+        if (executionStr == "basicclient") { exec = BasicClient; }
+        else if (executionStr == "basicserver") { exec = BasicServer; }
+        else if (executionStr == "client") { exec = Client; }
+        else if (executionStr == "server") { exec = Server; }
+
+
+
         gSysLog.Info(LogMessage("Temp Directory=") << GetTempDirectory());
         if (!LoadGenerateKey())
         {
@@ -94,13 +124,14 @@ public:
         }
         
 
-        if (mIsClient)
+        switch (exec)
         {
-            RunClient();
-        }
-        else
-        {
-            RunServer();
+        case BasicClient: RunBasicClient(); break;
+        case BasicServer: RunBasicServer(); break;
+        case Client: RunClient(); break;
+        case Server: RunServer(); break;
+        default:
+            gSysLog.Error(LogMessage("Unknown execution mode!"));
         }
 
         if (mIsNetOwner)
@@ -113,19 +144,13 @@ public:
     bool LoadGenerateKey();
     void RunClient();
     void RunServer();
+    void RunBasicClient();
+    void RunBasicServer();
 
 private:
-    void LoadClient();
-    void ShutdownClient();
-    void LoadServer();
-    void ShutdownServer();
 
     bool mIsNetOwner;
-    bool mIsClient;
     Crypto::RSAKey mServerKey;
-
-    BasicClient mClient;
-    BasicServer mServer;
 };
 DEFINE_CLASS(BasicNetApp) { NO_REFLECTION; }
 
@@ -190,136 +215,370 @@ bool BasicNetApp::LoadGenerateKey()
 
 void BasicNetApp::RunClient()
 {
-    LoadClient();
-    gSysLog.Info(LogMessage("Waiting for server to respond..."));
+    Int32 port = BASIC_PORT;
+    UInt16 appID = NetConfig::NET_APP_ID;
+    UInt16 appVersion = NetConfig::NET_APP_VERSION;
+    CmdLine::GetArgOption("net", "port", port);
 
-    while (true)
+    ClientArgs args;
+    args.mWaitTime = 10.0f;
+
+    CmdLine::GetArgOption("net", "client_WaitTime", args.mWaitTime);
+
+    gSysLog.Info(LogMessage("Running client with config."));
+    gSysLog.Info(LogMessage("port=") << port);
+    gSysLog.Info(LogMessage("WaitTime=") << args.mWaitTime);
+
+    IPEndPointAny endPoint;
+    String ip;
+    if (CmdLine::GetArgOption("net", "client_IPV4", ip))
     {
-        if (!mClient.mTransport.IsRunning())
+        if (!IPV4(endPoint, ip.CStr(), static_cast<UInt16>(port)))
         {
+            gSysLog.Error(LogMessage("Failed to parse IPV4 address"));
+            return;
+        }
+    }
+    else if (CmdLine::GetArgOption("net", "client_IPV6", ip))
+    {
+        if (!IPV6(endPoint, ip.CStr(), static_cast<UInt16>(port)))
+        {
+            gSysLog.Error(LogMessage("Failed to parse IPV6 address"));
+            return;
+        }
+    }
+    else
+    {
+        CriticalAssert(IPV6(endPoint, LOCAL_IPV6, static_cast<UInt16>(port)));
+    }
+
+    NetClientDriver driver;
+    if (!driver.Initialize(mServerKey, endPoint, appID, appVersion))
+    {
+        gSysLog.Error(LogMessage("Failed to initialize the NetClientDriver"));
+        return;
+    }
+
+    // Wait for connection
+    Int64 frequency = GetClockFrequency();
+    Int64 connectionBegin = GetClockTime();
+    while (!driver.IsConnected())
+    {
+        if ((GetClockTime() - connectionBegin) / static_cast<Float64>(frequency) > 2.0)
+        {
+            driver.Shutdown();
+            return;
+        }
+    }
+
+    Int64 begin = GetClockTime();
+    Float64 time = 0.0;
+    Float64 targetFrameRate = 1000.0 * (1.0 / 60.0);
+    Int64 lastHeartBeat = GetClockTime();
+    do
+    {
+        if (!driver.IsConnected())
+        {
+            gSysLog.Info(LogMessage("Client has been disconnected"));
             break;
         }
 
-        if (mClient.mClientController.IsConnected())
+        bool force = ((GetClockTime() - lastHeartBeat) / static_cast<Float64>(frequency)) > 0.100;
+
+        if (driver.EmitHeartbeat(force))
         {
-            gSysLog.Info(LogMessage("Client Connection Detected!"));
-            break;
+            lastHeartBeat = GetClockTime();
         }
-        SleepCallingThread(0);
-    }
-    ShutdownClient();
-    gSysLog.Info(LogMessage("Client complete."));
-    SleepCallingThread(10000);
+
+        Int64 frameBegin = GetClockTime();
+        driver.Update();
+        Float64 frameTime = 1000.0 * (GetClockTime() - frameBegin) / static_cast<Float64>(frequency);
+        if (frameTime < targetFrameRate)
+        {
+            SizeT sleepTime = static_cast<SizeT>(targetFrameRate - frameTime);
+            SleepCallingThread(sleepTime);
+        }
+
+        time = (GetClockTime() - begin) / static_cast<Float64>(frequency);
+    } while (time < args.mWaitTime);
+
+    driver.Shutdown();
 }
 
 void BasicNetApp::RunServer()
 {
-    LoadServer();
-    gSysLog.Info(LogMessage("Waiting for client to connect..."));
+    // 1. Server
+    //     a) Run a server, await a client connection, await client disconnection, shutdown
+    //     b) Run a server, await client connection, shutdown
+    //     c) Run a server, await N client connections, await all client disconnects, shutdown
+    //     d) Run a server, await N client connections, shutdown
+    //     e) Run a server, await client connection, drop connection shutdown
+    //     f) Run a server, await client connection 3 connections, drop the 2nd one. shutdown
 
-    while (true)
+    Int32 port = BASIC_PORT;
+    UInt16 appID = NetConfig::NET_APP_ID;
+    UInt16 appVersion = NetConfig::NET_APP_VERSION;
+    CmdLine::GetArgOption("net", "port", port);
+
+    ServerArgs args;
+    args.mWaitClients = 1;
+    args.mWaitTime = 60.0f;
+    args.mClientLifetime = 5.0f;
+    CmdLine::GetArgOption("net", "server_WaitClients", args.mWaitClients);
+    CmdLine::GetArgOption("net", "server_WaitTime", args.mWaitTime);
+    CmdLine::GetArgOption("net", "server_ClientLifetime", args.mClientLifetime);
+
+
+    gSysLog.Info(LogMessage("Running server with config."));
+    gSysLog.Info(LogMessage("port=") << port);
+    gSysLog.Info(LogMessage("WaitClients=") << args.mWaitClients);
+    gSysLog.Info(LogMessage("WaitTime=") << args.mWaitTime);
+    gSysLog.Info(LogMessage("ClientLifetime=") << args.mClientLifetime);
+
+
+    NetServerDriver driver;
+    if (!driver.Initialize(mServerKey, static_cast<UInt16>(port), appID, appVersion))
     {
-        if (!mServer.mTransport.IsRunning())
-        {
-            break;
-        }
-
-        if (mServer.mConnectionController.FindConnection(4))
-        {
-            gSysLog.Info(LogMessage("Remote Connection Detected!"));
-            break;
-        }
-        SleepCallingThread(0);
+        gSysLog.Error(LogMessage("Failed to initialize the NetServerDriver."));
+        return;
     }
-    ShutdownServer();
-    gSysLog.Info(LogMessage("Server complete."));
-    SleepCallingThread(10000);
+
+    Int64 frequency = GetClockFrequency();
+    Int64 begin = GetClockTime();
+    Float64 time = 0.0;
+    Float64 targetFrameRate = 1000.0 * (1.0 / 60.0);
+    do
+    {
+        Int64 frameBegin = GetClockTime();
+        driver.Update();
+        Float64 frameTime = 1000.0 * (GetClockTime() - frameBegin) / static_cast<Float64>(frequency);
+        if (frameTime < targetFrameRate)
+        {
+            SizeT sleepTime = static_cast<SizeT>(targetFrameRate - frameTime);
+            SleepCallingThread(sleepTime);
+        }
+
+        time = (GetClockTime() - begin) / static_cast<Float64>(frequency);
+    } while (time < args.mWaitTime);
+
+    driver.Shutdown();
 }
 
-void BasicNetApp::LoadClient()
+void BasicNetApp::RunBasicClient()
 {
-    TaskTypes::TaskSchedulerOptions options;
-    options.mDispatcherSize = 20;
-    options.mNumWorkerThreads = 2;
+    Int32 port = BASIC_PORT;
+    CmdLine::GetArgOption("net", "port", port);
 
-    mClient.mTaskScheduler.Initialize(options, true);
-    Assert(mClient.mTaskScheduler.IsRunning());
+    ClientArgs args;
+    args.mWaitTime = 10.0f;
 
-    Crypto::RSAKey key = mServerKey;
-    Assert(mClient.mClientController.Initialize(std::move(key)));
+    CmdLine::GetArgOption("net", "client_WaitTime", args.mWaitTime);
 
-    IPEndPointAny localIP;
-    Assert(IPCast(IPV6(LOCAL_IPV6, BASIC_PORT), localIP));
+    gSysLog.Info(LogMessage("Running client with config."));
+    gSysLog.Info(LogMessage("port=") << port);
+    gSysLog.Info(LogMessage("WaitTime=") << args.mWaitTime);
 
-    NetTransportConfig config;
-    config.SetAppId(NetConfig::NET_APP_ID);
-    config.SetAppVersion(NetConfig::NET_APP_VERSION);
-    config.SetPort(BASIC_PORT);
-    config.SetEndPoint(localIP);
-    config.SetTransportHandler(NetPacketType::NET_PACKET_TYPE_CONNECT,
-        LFNew<ClientConnectionHandler>(
-            MMT_GENERAL,
-            &mClient.mTaskScheduler,
-            &mClient.mClientController,
-            nullptr,
-            nullptr) // todo:
-    );
+    IPEndPointAny endPoint;
+    String ip;
+    NetProtocol::Value protocol = NetProtocol::NET_PROTOCOL_IPV4_UDP;
+    if (CmdLine::GetArgOption("net", "client_IPV4", ip))
+    {
+        if (!IPV4(endPoint, ip.CStr(), static_cast<UInt16>(port)))
+        {
+            gSysLog.Error(LogMessage("Failed to parse IPV4 address"));
+            return;
+        }
+        protocol = NetProtocol::NET_PROTOCOL_IPV4_UDP;
+    }
+    else if (CmdLine::GetArgOption("net", "client_IPV6", ip))
+    {
+        if (!IPV6(endPoint, ip.CStr(), static_cast<UInt16>(port)))
+        {
+            gSysLog.Error(LogMessage("Failed to parse IPV6 address"));
+            return;
+        }
+        protocol = NetProtocol::NET_PROTOCOL_IPV6_UDP;
+    }
+    else
+    {
+        CriticalAssert(IPV6(endPoint, LOCAL_IPV6, static_cast<UInt16>(port)));
+        protocol = NetProtocol::NET_PROTOCOL_IPV6_UDP;
+    }
 
-    ServerConnectionHandler::PacketType packet;
-    SizeT size = sizeof(packet.mBytes);
-    const bool encoded = ConnectPacket::EncodePacket
-    (
-        packet.mBytes,
-        size,
-        mClient.mClientController.GetKey(),
-        mClient.mClientController.GetServerKey(),
-        mClient.mClientController.GetSharedKey(),
-        mClient.mClientController.GetHMACKey(),
-        mClient.mClientController.GetChallenge()
-    );
+    // if (source == IPV4 && dest == IPV6) { error("Source must be IPV6"); }
+    // if (source == IPV6 && dest == IPV4)
+    // ::ffff::00C0.00A8.0001.0009
 
-    Assert(encoded);
-    mClient.mTransport.Start(std::move(config), packet.mBytes, size);
+
+    UDPSocket socket;
+    if (!socket.Create(protocol))
+    {
+        gSysLog.Error(LogMessage("Failed to create UDP socket."));
+        return;
+    }
+
+    String message = "Hello Server";
+    SizeT numBytes = message.Size();
+    const ByteT* bytes = reinterpret_cast<const ByteT*>(message.CStr());
+    
+    gSysLog.Info(LogMessage("Sending payload..."));
+    if (!socket.SendTo(bytes, numBytes, endPoint))
+    {
+        gSysLog.Error(LogMessage("Failed to send some data!"));
+    }
+    SleepCallingThread(16);
+
+
+    struct Context
+    {
+        UDPSocket* mSocket;
+        ThreadFence mFence;
+        volatile Atomic32 mRunning;
+    };
+    Context context;
+    context.mSocket = &socket;
+    CriticalAssert(context.mFence.Initialize());
+    CriticalAssert(context.mFence.Set(true));
+    AtomicStore(&context.mRunning, 1);
+
+    // Await Reply:
+    Thread thread;
+    thread.Fork([](void* data) {
+        Context* context = reinterpret_cast<Context*>(data);
+        ByteT bytes[256] = { 0 };
+        SizeT numBytes = 256;
+        IPEndPointAny endPoint;
+
+        while (AtomicLoad(&context->mRunning) != 0)
+        {
+            if (context->mSocket->ReceiveFrom(bytes, numBytes, endPoint))
+            {
+                gSysLog.Info(LogMessage("Received some data...") << ((endPoint.mAddressFamily == NetAddressFamily::NET_ADDRESS_FAMILY_IPV4) ? " AddressFamily=IPV4" : "AddressFamily=IPV6"));
+                break;
+            }
+        }
+        context->mFence.Set(false);
+    }, &context);
+
+    gSysLog.Info(LogMessage("Waiting for reply..."));
+    context.mFence.Wait(static_cast<SizeT>(args.mWaitTime * 1000.0));
+    AtomicStore(&context.mRunning, 0);
+    if (socket.IsAwaitingReceive())
+    {
+        gSysLog.Info(LogMessage("Did not receive reply :("));
+        socket.Shutdown();
+    }
+    else
+    {
+        socket.Close();
+    }
+    thread.Join();
+    gSysLog.Info(LogMessage("All done..."));
+
+    
 }
-void BasicNetApp::ShutdownClient()
+void BasicNetApp::RunBasicServer()
 {
-    mClient.mTaskScheduler.Shutdown();
-    mClient.mTransport.Stop();
-    mClient.mClientController.Reset();
-}
-void BasicNetApp::LoadServer()
-{
-    TaskTypes::TaskSchedulerOptions options;
-    options.mDispatcherSize = 20;
-    options.mNumWorkerThreads = 2;
-    mServer.mTaskScheduler.Initialize(options, true);
-    Assert(mServer.mTaskScheduler.IsRunning());
+    Int32 port = BASIC_PORT;
+    CmdLine::GetArgOption("net", "port", port);
 
-    Crypto::RSAKey key = mServerKey;
-    Assert(mServer.mServerController.Initialize(std::move(key)));
+    ServerArgs args;
+    args.mWaitTime = 60.0f;
+    CmdLine::GetArgOption("net", "server_WaitTime", args.mWaitTime);
+    NetProtocol::Value protocol = NetProtocol::NET_PROTOCOL_UDP;
+    if (CmdLine::HasArgOption("net", "server_IPV4")) { protocol = NetProtocol::NET_PROTOCOL_IPV4_UDP; }
+    else if (CmdLine::HasArgOption("net", "server_IPV6")) { protocol = NetProtocol::NET_PROTOCOL_IPV6_UDP; }
 
-    NetTransportConfig config;
-    config.SetAppId(NetConfig::NET_APP_ID);
-    config.SetAppVersion(NetConfig::NET_APP_VERSION);
-    config.SetPort(BASIC_PORT);
-    config.SetTransportHandler(NetPacketType::NET_PACKET_TYPE_CONNECT,
-        LFNew<ServerConnectionHandler>(
-            MMT_GENERAL,
-            &mServer.mTaskScheduler,
-            &mServer.mConnectionController,
-            &mServer.mServerController,
-            nullptr,
-            nullptr) // todo:
-    );
+    UDPSocket socket;
+    if (!socket.Create(protocol))
+    {
+        gSysLog.Error(LogMessage("Failed to create UDP socket"));
+        return;
+    }
 
-    mServer.mTransport.Start(std::move(config));
-}
-void BasicNetApp::ShutdownServer()
-{
-    mServer.mTaskScheduler.Shutdown();
-    mServer.mTransport.Stop();
-    mServer.mConnectionController.Reset();
-    mServer.mServerController.Reset();
+    switch (protocol)
+    {
+    case NetProtocol::NET_PROTOCOL_UDP:
+        gSysLog.Info(LogMessage("Running server as UDP IP agnostic"));
+        break;
+    case NetProtocol::NET_PROTOCOL_IPV4_UDP:
+        gSysLog.Info(LogMessage("Running server as UDP IPV4"));
+        break;
+    case NetProtocol::NET_PROTOCOL_IPV6_UDP:
+        gSysLog.Info(LogMessage("Running server as UDP IPV6"));
+        break;
+    }
+
+    struct Context
+    {
+        UDPSocket* mSocket;
+        ThreadFence mFence;
+        volatile Atomic32 mRunning;
+    };
+    Context context;
+    context.mSocket = &socket;
+    CriticalAssert(context.mFence.Initialize());
+    CriticalAssert(context.mFence.Set(true));
+    AtomicStore(&context.mRunning, 1);
+
+    socket.Bind(static_cast<UInt16>(port));
+
+    Thread thread;
+    thread.Fork([](void* data) {
+        Context* context = reinterpret_cast<Context*>(data);
+        ByteT bytes[256] = { 0 };
+        SizeT numBytes = 256;
+        IPEndPointAny endPoint;
+        while (context->mRunning)
+        {
+            if (context->mSocket->ReceiveFrom(bytes, numBytes, endPoint))
+            {
+                String originalIPAddress = IPToString(endPoint);
+                String ipAddress = IPToString(endPoint);
+                String portStr = ipAddress.SubString(ipAddress.FindLast(':') + 1);
+                ipAddress = ipAddress.SubString(0, ipAddress.FindLast(':'));
+                if (Invalid(ipAddress.Find(':')))
+                {
+                    gSysLog.Info(LogMessage("Converting IPV6 to IPV4"));
+                    CriticalAssert(IPV4(endPoint, ipAddress.CStr(), SwapBytes(static_cast<UInt16>(ToInt32(portStr)))));
+                }
+                else if (ipAddress.Find("::ffff:") == 0)
+                {
+                    // ipv4 convert
+
+                    ipAddress = ipAddress.SubString(7);
+                    gSysLog.Info(LogMessage("Converting IPV6 to IPV4"));
+                    CriticalAssert(IPV4(endPoint, ipAddress.CStr(), static_cast<UInt16>(ToInt32(portStr))));
+                }
+
+                gSysLog.Info(LogMessage("Sending echo to ") << originalIPAddress << " | " << IPToString(endPoint));
+                UDPSocket socket;
+                socket.Create(endPoint.mAddressFamily == NetAddressFamily::NET_ADDRESS_FAMILY_IPV4 ? NetProtocol::NET_PROTOCOL_IPV4_UDP : NetProtocol::NET_PROTOCOL_IPV6_UDP);
+                String message = IPToString(endPoint);
+                const ByteT* messageBytes = reinterpret_cast<const ByteT*>(message.CStr());
+                SizeT messageLength = message.Size();
+                socket.SendTo(messageBytes, messageLength, endPoint);
+                socket.Close();
+            }
+        }
+
+        context->mFence.Set(false);
+    }, &context);
+
+    context.mFence.Wait(static_cast<SizeT>(args.mWaitTime * 1000.0));
+    AtomicStore(&context.mRunning, 0);
+
+    if (socket.IsAwaitingReceive())
+    {
+        socket.Shutdown();
+    }
+    else
+    {
+        socket.Close();
+    }
+    thread.Join();
+    gSysLog.Info(LogMessage("All done!"));
+
 }
 
 }

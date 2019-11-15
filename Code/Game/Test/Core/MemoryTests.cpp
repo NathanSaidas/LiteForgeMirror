@@ -27,7 +27,7 @@
 #include "Core/Memory/SmartPointer.h"
 #include "Core/Platform/Atomic.h"
 #include "Core/Platform/Thread.h"
-#include "Core/Platform/ThreadSignal.h"
+#include "Core/Platform/ThreadFence.h"
 #include "Core/Platform/RWSpinLock.h"
 #include "Core/String/StringCommon.h"
 #include "Core/String/SStream.h"
@@ -215,7 +215,7 @@ struct PoolHeapTestContext
 {
     SizeT mPoolObjects;
     SizeT mObjectAllocations;
-    ThreadSignal mSignal;
+    ThreadFence mSignal;
     PoolHeap mHeap;
     TArray<PoolHeapThreadData> mThreads;
 };
@@ -277,7 +277,7 @@ REGISTER_TEST(PoolHeapMultithreaded)
         }
 
         SleepCallingThread(1000);
-        context.mSignal.WakeAll();
+        context.mSignal.Signal();
 
         for (SizeT i = 0; i < context.mThreads.Size(); ++i)
         {

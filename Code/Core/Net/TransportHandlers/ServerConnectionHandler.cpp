@@ -31,6 +31,7 @@
 #include "Core/Net/NetDriver.h"
 #include "Core/Net/PacketUtility.h"
 #include "Core/Utility/Time.h"
+#include "Core/Utility/Log.h"
 
 #include "Core/Net/NetFramework.h"
 
@@ -125,6 +126,7 @@ void ServerConnectionHandler::DecodePacket(PacketType* packetData)
         )
     )
     {
+        gSysLog.Debug(LogMessage("Dropping packet, failed to decode packet."));
         // mTelemetryController->DecodePacketFailure(CONNECT)
         return;
     }
