@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -23,6 +23,8 @@
 
 #include "Core/Memory/AtomicSmartPointer.h"
 #include "Core/Concurrent/TaskTypes.h"
+#include "Core/Concurrent/Task.h"
+
 
 namespace lf {
 
@@ -30,9 +32,73 @@ class Promise;
 using PromiseWrapper = TAtomicStrongPointer<Promise>;
 class TaskHandle;
 
+using AppThreadId = SizeT;
+using AppWorkerThreadId = SizeT;
+
+enum : AppThreadId
+{
+    INVALID_APP_THREAD_ID = INVALID
+};
+enum : AppWorkerThreadId
+{
+    INVALID_APP_WORKER_THREAD_ID = INVALID
+};
+
+enum EngineAppThreadId : AppThreadId
+{
+    // Reserved Thread IDs for the engine
+    APP_THREAD_ID_MAIN,
+    APP_THREAD_ID_ASYNC,
+    APP_THREAD_ID_ASSET_OP,
+    APP_THREAD_ID_RENDER,
+    APP_THREAD_ID_RENDER_WORKER,
+    APP_THREAD_ID_RESERVED_2,
+    APP_THREAD_ID_RESERVED_3,
+    APP_THREAD_ID_RESERVED_4,
+    APP_THREAD_ID_RESERVED_5,
+    APP_THREAD_ID_RESERVED_6,
+    APP_THREAD_ID_RESERVED_7,
+    APP_THREAD_ID_RESERVED_8,
+    APP_THREAD_ID_RESERVED_9,
+    APP_THREAD_ID_RESERVED_10,
+    APP_THREAD_ID_RESERVED_11,
+    APP_THREAD_ID_RESERVED_12,
+
+    // Available user thread ids.
+    APP_THREAD_ID_USER_BEGIN = 16,
+    APP_THREAD_ID_USER_MAX = 32,
+    APP_THREAD_ID_MAX = 32
+};
+
+class AppThread;
+DECLARE_HASHED_CALLBACK(AppThreadDispatchCallback, void);
+DECLARE_HASHED_CALLBACK(AppThreadCallback, void, AppThread*);
+DECLARE_WPTR(ThreadDispatcher);
+struct AppThreadAttributes
+{
+    LF_INLINE AppThreadAttributes()
+    : mWorkerID(INVALID_APP_WORKER_THREAD_ID)
+    , mDispatcher()
+    {}
+    // ** Whether or not the thread is executed as a 'worker', Invalid(mWorkerID) == NotWorker
+    AppWorkerThreadId    mWorkerID;
+    // ** Dispatcher used to execute work items on other thread.
+    ThreadDispatcherWPtr mDispatcher;
+};
+
 class LF_RUNTIME_API Async
 {
 public:
+    // ********************************************************************
+    // Disable 'StartThread/StopThread' calls and enable 'ExecuteOn'
+    // Main thread only!
+    // ********************************************************************
+    virtual void EnableAppThread() = 0;
+    // ********************************************************************
+    // Disable 'ExecuteOn' and enable 'StartThread/StopThread'
+    // Main thread only!
+    // ********************************************************************
+    virtual void DisableAppThread() = 0;
     // **********************************
     // Pushes a promise into the task scheduler immediately for execution.
     // 
@@ -62,7 +128,13 @@ public:
     template<typename LambdaT>
     TaskHandle RunTask(const LambdaT& lambda, void* param = nullptr)
     {
-        return RunTask(TaskCallback::CreateLambda(lambda), param);
+        return RunTask(TaskCallback::Make(lambda), param);
+    }
+
+    template<typename ResultTypeT, typename LambdaT>
+    Task<ResultTypeT> Run(const LambdaT& callback)
+    {
+        return Task<ResultTypeT>(typename Task<ResultTypeT>::TaskCallback::Make(callback), GetScheduler());
     }
 
     // **********************************
@@ -86,6 +158,31 @@ public:
             }
         }
     }
+
+    // ********************************************************************
+    // Checks to see if the app threading is running.
+    // If true then StartThread/StopThread cannot be called, ExecuteOn can be called
+    // If false then vice versa (StartThread/StopThread can be called, ExecuteOn cannot be called)
+    // ********************************************************************
+    virtual bool AppThreadRunning() const = 0;
+    // ********************************************************************
+    // Starts up a App Thread
+    // ********************************************************************
+    virtual bool StartThread(AppThreadId threadID, const AppThreadCallback& callback, const AppThreadAttributes& threadAttributes) = 0;
+    // ********************************************************************
+    // Stops the App Thread
+    // ********************************************************************
+    virtual bool StopThread(AppThreadId threadID) = 0;
+    // ********************************************************************
+    // Executes code on another thread
+    // ********************************************************************
+    virtual bool ExecuteOn(AppThreadId threadID, const AppThreadDispatchCallback& callback) = 0;
+
+    static AppThreadId GetAppThreadId();
+    static AppWorkerThreadId GetAppWorkerThreadId();
+protected:
+    virtual TaskScheduler& GetScheduler() = 0;
+    static void SetThreadLocalData(AppThreadId appThreadID, AppWorkerThreadId appWorkerThreadID);
 };
 
 LF_RUNTIME_API Async& GetAsync();

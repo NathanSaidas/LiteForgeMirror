@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -18,6 +18,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
+#include "Core/PCH.h"
 #include "UDPSocket.h"
 #if !defined(LF_IMPL_OPAQUE_OPTIMIZE)
 #include "UDPSocketWindows.h"
@@ -81,6 +82,31 @@ const SizeT LF_MAX_MTU = 2048;
 // [BAD] IPV4 => IPV6
 // [BAD] IPV6 => IPV4
 // [BAD] IPV6-MappedIPV4 => IPV6
+
+static void Translate(IPEndPointAny& endPoint)
+{
+    if (endPoint.mAddressFamily == NetAddressFamily::NET_ADDRESS_FAMILY_IPV4)
+    {
+        return;
+    }
+
+    for (SizeT i = 0; i < 10; ++i)
+    {
+        if (endPoint.mPadding.mBytes[i] != 0)
+        {
+            return;
+        }
+    }
+
+    if (endPoint.mPadding.mBytes[10] != 0xFF || endPoint.mPadding.mBytes[11] != 0xFF)
+    {
+        return;
+    }
+
+    endPoint.mPadding.mWord[0] = endPoint.mPadding.mWord[3];
+    endPoint.mPadding.mWord[2] = endPoint.mPadding.mWord[3] = 0;
+    endPoint.mAddressFamily = NetAddressFamily::NET_ADDRESS_FAMILY_IPV4;
+}
 
 LF_IMPL_OPAQUE(UDPSocketWindows)::LF_IMPL_OPAQUE(UDPSocketWindows)()
 : mSocket(INVALID_SOCKET)
@@ -254,7 +280,13 @@ bool LF_IMPL_OPAQUE(UDPSocketWindows)::ReceiveFrom(ByteT* outBytes, SizeT& inOut
     inOutBytes = 0;
     if (result == SOCKET_ERROR)
     {
-        if (WSAGetLastError() != WSAEINTR)
+        if 
+        (
+            WSAGetLastError() != WSAEINTR
+#if defined(LF_TEST) || defined(LF_DEBUG)
+            && WSAGetLastError() != WSAECONNRESET // While running on 'localhost' windows will send an ICMP ping to let us know there is no longer any socket listening on the bound port.
+#endif
+        )
         {
             LogSocketOperationFailure("recvfrom");
         }
@@ -282,6 +314,11 @@ bool LF_IMPL_OPAQUE(UDPSocketWindows)::ReceiveFrom(ByteT* outBytes, SizeT& inOut
         v6Out->mPort = v6In->sin6_port;
         memcpy(&v6Out->mAddress.mBytes[0], &v6In->sin6_addr.u.Byte[0], 16);
         inOutBytes = static_cast<SizeT>(result);
+
+        if (mProtocol == NetProtocol::NET_PROTOCOL_UDP)
+        {
+            Translate(outEndPoint);
+        }
         return true;
     }
     return false; // failed: Unsupported address family

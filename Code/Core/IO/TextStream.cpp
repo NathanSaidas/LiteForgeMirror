@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -18,10 +18,12 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
+#include "Core/PCH.h"
 #include "TextStream.h"
 #include "Core/String/Token.h"
 #include "Core/String/StringCommon.h"
 #include "Core/String/StringUtil.h"
+#include "Core/Memory/MemoryBuffer.h"
 #include "Core/Platform/File.h"
 #include "Core/Utility/ErrorCore.h"
 #include "Core/Utility/Log.h"
@@ -71,11 +73,11 @@ namespace lf
         if (mBoundProperty)
         {
             property->parent = mBoundProperty;
-            mBoundProperty->children.Add(property);
+            mBoundProperty->children.push_back(property);
         }
         else
         {
-            mProperties.Add(property);
+            mProperties.push_back(property);
         }
 
     }
@@ -87,18 +89,18 @@ namespace lf
         }
         if (property->parent)
         {
-            TArray<StreamPropertyPtr>::iterator it = std::find(property->parent->children.begin(), property->parent->children.end(), property);
+            TVector<StreamPropertyPtr>::iterator it = std::find(property->parent->children.begin(), property->parent->children.end(), property);
             if (it != property->parent->children.end())
             {
-                property->parent->children.SwapRemove(it);
+                property->parent->children.swap_erase(it);
             }
         }
         else
         {
-            TArray<StreamPropertyPtr>::iterator it = std::find(mProperties.begin(), mProperties.end(), property);
+            TVector<StreamPropertyPtr>::iterator it = std::find(mProperties.begin(), mProperties.end(), property);
             if (it != mProperties.end())
             {
-                mProperties.SwapRemove(it);
+                mProperties.swap_erase(it);
             }
         }
         if (property.AsPtr() == mBoundProperty)
@@ -112,12 +114,14 @@ namespace lf
     }
     void StreamObject::Clear()
     {
-        mProperties.Clear();
+        mProperties.clear();
     }
 
     struct FindPropertyByName
     {
-        FindPropertyByName(const String& inName) : name(inName) {}
+        FindPropertyByName(const String& inName) : name(inName, COPY_ON_WRITE) 
+        {
+        }
 
         bool operator()(const StreamPropertyWPtr& prop) const
         {
@@ -142,13 +146,13 @@ namespace lf
 
     StreamPropertyWPtr StreamObject::FindProperty(const String& name)
     {
-        TArray<String> tokens;
+        TVector<String> tokens;
         StrSplit(name, '.', tokens);
-        if (tokens.Empty())
+        if (tokens.empty())
         {
             return NULL_PTR;
         }
-        if (tokens.Size() == 1)
+        if (tokens.size() == 1)
         {
             auto it = std::find_if(mProperties.begin(), mProperties.end(), FindPropertyByName(name));
             if (it != mProperties.end())
@@ -161,7 +165,7 @@ namespace lf
         {
             FindPropertyByName pred(tokens[0]);
             StreamPropertyWPtr prop = NULL_PTR;
-            for (size_t cursor = 0; cursor < tokens.Size(); ++cursor)
+            for (size_t cursor = 0; cursor < tokens.size(); ++cursor)
             {
                 if (cursor == 0)
                 {
@@ -191,7 +195,7 @@ namespace lf
 
     bool StreamObject::BindProperty(size_t index)
     {
-        if (index < mProperties.Size())
+        if (index < mProperties.size())
         {
             mBoundProperty = mProperties[index];
             return true;
@@ -308,7 +312,7 @@ namespace lf
             String text;
             String& outputText = mContext->mOutputText ? *mContext->mOutputText : text;
             WriteAllText(outputText);
-            file.Open(mContext->mFilename, FF_WRITE, FILE_OPEN_ALWAYS);
+            file.Open(mContext->mFilename, FF_WRITE, FILE_OPEN_CREATE_NEW);
             if (file.IsOpen())
             {
                 file.Write(outputText.CStr(), outputText.Size());
@@ -949,6 +953,29 @@ namespace lf
         mContext->mPropertyInfos.push(info);
     }
 
+    void TextStream::Serialize(const ArrayPropertyInfo& info)
+    {
+        Serialize(StreamPropertyInfo(ToString(info.index)));
+    }
+    
+    void TextStream::Serialize(MemoryBuffer& value)
+    {
+        if (IsReading())
+        {
+            String hexValue;
+            Serialize(hexValue);
+
+            value.Allocate(hexValue.Size() * 2, 1);
+            value.SetSize(hexValue.Size() * 2);
+            ToGuid(hexValue, reinterpret_cast<ByteT*>(value.GetData()), value.GetSize());
+        }
+        else
+        {
+            String hexValue = ToString(reinterpret_cast<ByteT*>(value.GetData()), value.GetSize());
+            Serialize(hexValue);
+        }
+    }
+
     bool TextStream::BeginObject(const String& name, const String& super)
     {
         // Must call open first!
@@ -1124,7 +1151,7 @@ namespace lf
 
         // These should never trigger!
         Assert(IsReading() && TopIsArray());
-        return mContext->mBoundObject->GetBoundProperty()->children.Size();
+        return mContext->mBoundObject->GetBoundProperty()->children.size();
     }
 
     void TextStream::SetArraySize(size_t)
@@ -1190,7 +1217,7 @@ namespace lf
         Assert(mContext);
         static const size_t MAX_PROPERTY = INT_MAX;
         mContext->mModeStack.push(PM_NONE);
-        for (size_t i = 0; i < mContext->mObjects.Size(); ++i)
+        for (size_t i = 0; i < mContext->mObjects.size(); ++i)
         {
             const StreamObjectWPtr& object = mContext->mObjects[i];
             output += String(TOK_BEGIN_OBJECT) + object->GetType() + String(TOK_PROPERTY_SEPARATOR) + object->GetSuper() + "\n";
@@ -1243,14 +1270,14 @@ namespace lf
             auto it = std::find_if(mContext->mObjects.begin(), mContext->mObjects.end(), FindObjectByNamePred(name));
             if (it != mContext->mObjects.end())
             {
-                mContext->mObjects.Remove(it);
+                mContext->mObjects.erase(it);
             }
         }
     }
 
     size_t TextStream::GetObjectCount() const
     {
-        return mContext ? mContext->mObjects.Size() : 0;
+        return mContext ? mContext->mObjects.size() : 0;
     }
     const String& TextStream::GetObjectName(const size_t index) const
     {
@@ -1336,29 +1363,29 @@ namespace lf
         size_t lineSize = line.Size();
         size_t lineEnd = lineSize - 1;
         size_t cursor = 0;
-
+        ParseMode currentMode = mContext->mModeStack.top();
 
         for (size_t i = 0; i < lineSize; ++i)
         {
             String::value_type c = lineCStr[i];
             String::value_type pc = i > 0 ? lineCStr[i - 1] : INVALID8;
             // $ or @
-            if (c == TOK_BEGIN_OBJECT || c == TOK_STREAM_VAR)
+            if (currentMode == PM_NONE && (c == TOK_BEGIN_OBJECT || c == TOK_STREAM_VAR))
             {
-                tokens.Add(String(c));
+                tokens.push_back(String(c));
                 cursor = i + 1;
             }
             // },
             else if (pc == TOK_END_STRUCT)
             {
-                tokens.Add(String(TOK_END_STRUCT));
+                tokens.push_back(String(TOK_END_STRUCT));
             }
             // take substr of before =
             else if (c == TOK_PROPERTY_SEPARATOR)
             {
                 String sub;
                 line.SubString(cursor, i - cursor, sub);
-                tokens.Add(std::move(sub));
+                tokens.push_back(std::move(sub));
                 cursor = i + 1;
             }
             // take substr after =
@@ -1366,12 +1393,12 @@ namespace lf
             {
                 String sub;
                 line.SubString(cursor, sub);
-                tokens.Add(std::move(sub));
+                tokens.push_back(std::move(sub));
             }
         }
 
         // Verify Token List
-        for (size_t i = 0; i < tokens.Size(); ++i)
+        for (size_t i = 0; i < tokens.size(); ++i)
         {
             // Remove surrounding quotes: Should only be affecting the property types
             String& token = tokens[i];
@@ -1392,7 +1419,7 @@ namespace lf
 
         // eg. $Type=Base
         //     @Var=Value
-        if (tokens.Size() == 3)
+        if (tokens.size() == 3)
         {
             String::value_type tokenChar = tokens[0][0];
             if (currentMode == PM_NONE)
@@ -1430,7 +1457,7 @@ namespace lf
         //     Name={
         //     Name=[
         //     },
-        else if (tokens.Size() == 2)
+        else if (tokens.size() == 2)
         {
             if (currentMode == PM_NONE)
             {
@@ -1457,7 +1484,7 @@ namespace lf
         }
         // eg. {
         //     } 
-        else if (tokens.Size() == 1)
+        else if (tokens.size() == 1)
         {
             String::value_type tokenChar = tokens[0][0];
             if (tokenChar == TOK_BEGIN_STRUCT)
@@ -1516,7 +1543,7 @@ namespace lf
         }
         else
         {
-            ErrorUnexpectedTokenCount(line, tokens.Size());
+            ErrorUnexpectedTokenCount(line, tokens.size());
         }
     }
 
@@ -1547,7 +1574,7 @@ namespace lf
                 }
                 space += 4;
                 mContext->mModeStack.push(PM_STRUCT);
-                for (size_t i = 0; i < property->children.Size(); ++i)
+                for (size_t i = 0; i < property->children.size(); ++i)
                 {
                     InternalWriteProperty(space, text, property->children[i]);
                 }
@@ -1561,7 +1588,7 @@ namespace lf
                 text += property->name + String(TOK_PROPERTY_SEPARATOR) + String(TOK_BEGIN_ARRAY) + "\n";
                 space += 4;
                 mContext->mModeStack.push(PM_ARRAY);
-                for (size_t i = 0; i < property->children.Size(); ++i)
+                for (size_t i = 0; i < property->children.size(); ++i)
                 {
                     InternalWriteProperty(space, text, property->children[i]);
                 }
@@ -1634,7 +1661,7 @@ namespace lf
         object->SetType(type);
         object->SetSuper(super);
         object->SetSelf(object);
-        mContext->mObjects.Add(object);
+        mContext->mObjects.push_back(object);
         if (bind)
         {
             mContext->mBoundObject = object;
@@ -1660,7 +1687,7 @@ namespace lf
             StreamVariable var;
             var.name = name;
             var.valueString = value;
-            mContext->mVariables.Add(var);
+            mContext->mVariables.push_back(var);
         }
         else
         {
@@ -1689,7 +1716,7 @@ namespace lf
         // If empty, were apart of an array.. Although names shouldn't matter we'll add for debugging for now.
         if (name == EMPTY_STRING)
         {
-            property->name = ToString(mContext->mBoundObject->GetBoundProperty()->children.Size());
+            property->name = ToString(mContext->mBoundObject->GetBoundProperty()->children.size());
         }
         else
         {
@@ -1744,11 +1771,11 @@ namespace lf
         // If empty, were apart of an array.. Although names shouldn't matter we'll add for debugging for now.
         if (name == EMPTY_STRING)
         {
-            property->name = ToString(mContext->mBoundObject->GetBoundProperty()->children.Size());
+            property->name = ToString(mContext->mBoundObject->GetBoundProperty()->children.size());
         }
         else
         {
-            property->name = name;
+            property->name.Assign(name, COPY_ON_WRITE);
         }
         property->type = StreamPropertyType::SPT_NORMAL;
         property->valueString = value;
@@ -1792,8 +1819,8 @@ namespace lf
         }
         mContext->mFilename.Clear();
         mContext->mBoundObject = NULL_PTR;
-        mContext->mObjects.Clear();
-        mContext->mVariables.Clear();
+        mContext->mObjects.clear();
+        mContext->mVariables.clear();
         mContext->mOutputText = nullptr;
     }
 

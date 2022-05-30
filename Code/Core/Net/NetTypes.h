@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -18,20 +18,26 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
-#ifndef LF_CORE_NET_TYPES_H
-#define LF_CORE_NET_TYPES_H
+#pragma once
 
 #include "Core/Common/Types.h"
 #include "Core/Common/API.h"
+#include "Core/Math/SSECommon.h"
 #include "Core/Utility/Bitfield.h"
 
-#include <utility>
+#include <cstring>
 
 namespace lf {
 
 namespace NetConfig {
 const UInt16 NET_APP_ID = 0x0001;
 const UInt16 NET_APP_VERSION = 0x0001;
+}
+
+namespace Crypto {
+class AESKey;
+class RSAKey;
+class HMACKey;
 }
 
 namespace NetProtocol
@@ -82,11 +88,20 @@ namespace NetPacketType
         // ???
         NET_PACKET_TYPE_MESSAGE,
 
+        NET_PACKET_TYPE_REQUEST,
+
+        NET_PACKET_TYPE_RESPONSE,
+
+
+        NET_PACKET_TYPE_CLIENT_HELLO,
+        NET_PACKET_TYPE_SERVER_HELLO,
+
         MAX_VALUE,
         INVALID_ENUM = NetPacketType::MAX_VALUE
     };
 }
 
+// todo: NET_PACKET_FLAG_IPV4 and NET_PACKET_FLAG_SECURE are looking obsolete now
 namespace NetPacketFlag
 {
     enum Value
@@ -100,10 +115,14 @@ namespace NetPacketFlag
         NET_PACKET_FLAG_SECURE,      // If this flag is turned on the packet contains a security header that must be used to decrypt/verify the rest of the packet (connected peers only)
         NET_PACKET_FLAG_IPV4,        // If this flag is turned on the packet was sent by someone using IPV4 and must be translated back.
 
+        NET_PACKET_FLAG_HMAC,        // If this flag is turned on the packet contains a HMAC on the end. (Before Signature)
+        NET_PACKET_FLAG_SIGNED,      // If this flag is turned on the packet contains a signature on the end. (After HMAC)
+
         MAX_VALUE,
         INVALID_ENUM = NetPacketFlag::MAX_VALUE
     };
     using BitfieldType = Bitfield<Value, UInt8>;
+    using Bitfield16Type = Bitfield<Value, UInt16>;
 }
 
 namespace NetPacketHeaderType
@@ -112,6 +131,7 @@ namespace NetPacketHeaderType
     {
         NET_PACKET_HEADER_TYPE_BASE,
         NET_PACKET_HEADER_TYPE_CONNECTED,
+        NET_PACKET_HEADER_TYPE_ORDERED,
         NET_PACKET_HEADER_TYPE_SECURE_CONNECTED,
 
         MAX_VALUE,
@@ -130,6 +150,7 @@ namespace NetAckStatus
         NET_ACK_STATUS_NOT_FOUND,
         NET_ACK_STATUS_UNAUTHORIZED,
         NET_ACK_STATUS_INVALID_REQUEST,
+        NET_ACK_STATUS_PROCESSED,
 
         MAX_VALUE,
         INVALID_ENUM = NetPacketFlag::MAX_VALUE
@@ -177,7 +198,7 @@ LF_STATIC_ASSERT(sizeof(PacketHeader) == PacketHeader::RUNTIME_SIZE);
 struct ConnectedPacketHeader
 {
     using Base = PacketHeader;
-    static const SizeT CRC_OFFSET = PacketHeader::CRC_OFFSET;
+    static const SizeT CRC_OFFSET = Base::CRC_OFFSET;
     static const SizeT RUNTIME_SIZE = 16;
     static const SizeT ACTUAL_SIZE = RUNTIME_SIZE - 0;
 
@@ -190,6 +211,31 @@ struct ConnectedPacketHeader
     UInt32 mPacketUID;    // 12, 4 => 16
 };
 LF_STATIC_ASSERT(sizeof(ConnectedPacketHeader) == ConnectedPacketHeader::RUNTIME_SIZE);
+
+// **********************************
+// If you're sending/receiving a packet type 
+// that requires the packet be ordered
+// then this packet is used.
+// **********************************
+struct OrderedPacketHeader
+{
+    using Base = ConnectedPacketHeader;
+    static const SizeT CRC_OFFSET = Base::CRC_OFFSET;
+    static const SizeT RUNTIME_SIZE = 20;
+    static const SizeT ACTUAL_SIZE = RUNTIME_SIZE - 3;
+
+    UInt16 mAppID;        //  0, 2 => 2
+    UInt16 mAppVersion;   //  2, 2 => 4
+    UInt32 mCrc32;        //  4, 4 => 8
+    UInt8  mFlags;        //  8, 1 => 9
+    UInt8  mType;         //  9, 1 => 10
+    UInt16 mConnectionID; // 10, 2 => 12
+    UInt32 mPacketUID;    // 12, 4 => 16
+    UInt8  mTransmitChannel; // 16, 1 => 17
+
+    UInt8  mPadding[3];
+};
+LF_STATIC_ASSERT(sizeof(OrderedPacketHeader) == OrderedPacketHeader::RUNTIME_SIZE);
 
 // **********************************
 // If you're sending/receiving a packet type
@@ -251,7 +297,7 @@ LF_STATIC_ASSERT(sizeof(AckPacketHeader) == AckPacketHeader::RUNTIME_SIZE);
 struct AckConnectedPacketHeader
 {
     using Base = AckPacketHeader;
-    static const SizeT CRC_OFFSET = PacketHeader::CRC_OFFSET;
+    static const SizeT CRC_OFFSET = Base::CRC_OFFSET;
     static const SizeT RUNTIME_SIZE = 16;
     static const SizeT ACTUAL_SIZE = RUNTIME_SIZE - 1;
 
@@ -265,6 +311,46 @@ struct AckConnectedPacketHeader
     UInt8  mPadding[1];
 };
 LF_STATIC_ASSERT(sizeof(AckConnectedPacketHeader) == AckConnectedPacketHeader::RUNTIME_SIZE);
+
+// A special definition of an ack packet header specifically for clients acking the server.
+// Server -> Hello {Connection ID}
+// Client -> Ack {Connection ID}
+struct AckConnectedClientPacketHeader
+{
+    using Base = AckConnectedPacketHeader;
+    static const SizeT CRC_OFFSET = Base::CRC_OFFSET;
+    static const SizeT RUNTIME_SIZE = 20;
+    static const SizeT ACTUAL_SIZE = RUNTIME_SIZE - 1;
+
+    UInt16 mAppID;          //  0,  2 => 2
+    UInt16 mAppVersion;     //  2,  2 => 4
+    UInt32 mCrc32;          //  4,  4 => 8
+    UInt8  mFlags;          //  8,  1 => 9
+    UInt8  mType;           //  9,  1 => 10
+    UInt8  mStatus;         // 10,  1 => 11
+    UInt8  mPacketUID[4];   // 11,  4 => 15
+    UInt8  mConnectionID[4];// 15,  4 => 19
+    UInt8  mPadding[1];
+};
+LF_STATIC_ASSERT(sizeof(AckConnectedClientPacketHeader) == AckConnectedClientPacketHeader::RUNTIME_SIZE);
+
+struct AckOrderedPacketHeader
+{
+    using Base = AckConnectedPacketHeader;
+    static const SizeT CRC_OFFSET = Base::CRC_OFFSET;
+    static const SizeT RUNTIME_SIZE = 16;
+    static const SizeT ACTUAL_SIZE = RUNTIME_SIZE - 0;
+
+    UInt16 mAppID;          //  0,  2 => 2
+    UInt16 mAppVersion;     //  2,  2 => 4
+    UInt32 mCrc32;          //  4,  4 => 8
+    UInt8  mFlags;          //  8,  1 => 9
+    UInt8  mType;           //  9,  1 => 10
+    UInt8  mStatus;         // 10,  1 => 11
+    UInt8  mPacketUID[4];   // 11,  4 => 15
+    UInt8  mTransmitChannel;// 15,  1 => 16
+};
+LF_STATIC_ASSERT(sizeof(AckOrderedPacketHeader) == AckOrderedPacketHeader::RUNTIME_SIZE);
 
 struct AckSecureConnectedPacketHeader
 {
@@ -546,6 +632,94 @@ namespace PacketDataType
     };
 }
 
+struct LF_ALIGN(16) SessionID
+{
+public:
+    SessionID()
+    : mBytes(ivector_zero)
+    {}
+    SessionID(const SessionID& other)
+    : mBytes(other.mBytes)
+    {}
+    SessionID(SessionID&& other)
+    : mBytes(other.mBytes)
+    {
+        other.mBytes = ivector_zero;
+    }
+    ~SessionID()
+    {
+        mBytes = ivector_zero;
+    }
+    SessionID& operator=(const SessionID& other)
+    {
+        mBytes = other.mBytes;
+        return *this;
+    }
+    SessionID& operator=(SessionID&& other)
+    {
+        mBytes = other.mBytes;
+        other.mBytes = ivector_zero;
+        return *this;
+    }
+    bool operator==(const SessionID& other) const { return ivector_cmp(mBytes, other.mBytes); }
+    bool operator!=(const SessionID& other) const { return ivector_ncmp(mBytes, other.mBytes); }
+    bool operator<(const SessionID& other) const { return memcmp(Bytes(), other.Bytes(), Size()) < 0; }
+    bool Empty() const { return ivector_cmp(mBytes, ivector_zero); }
+    ByteT* Bytes() { return reinterpret_cast<ByteT*>(&mBytes); }
+    const ByteT* Bytes() const { return reinterpret_cast<const ByteT*>(&mBytes); }
+    SizeT Size() const { return sizeof(mBytes); }
+private:
+    internal_ivector mBytes;
+};
+
+struct NetServerDriverConfig
+{
+    LF_INLINE NetServerDriverConfig()
+    : mAppID(0)
+    , mAppVersion(0)
+    , mCertificate(nullptr)
+    , mPort(0)
+    , mMaxRetransmit(3)
+    , mProtocol(NetProtocol::NET_PROTOCOL_IPV4_UDP)
+    {}
+
+    UInt16 mAppID;
+    UInt16 mAppVersion;
+    const Crypto::RSAKey* mCertificate;
+    UInt16 mPort;
+    SizeT  mMaxRetransmit;
+    NetProtocol::Value mProtocol;
+
+    // TStrongPointer<NetMessageController> mControllers[NetDriver::MessageType::MAX_VALUE];
+};
+
+struct NetClientDriverConfig
+{
+    LF_INLINE NetClientDriverConfig()
+        : mAppID(0)
+        , mAppVersion(0)
+        , mCertificate(nullptr)
+        , mEndPoint()
+        , mMaxRetransmit(3)
+        , mProtocol(NetProtocol::NET_PROTOCOL_IPV4_UDP)
+    {}
+
+    UInt16 mAppID;
+    UInt16 mAppVersion;
+    const Crypto::RSAKey* mCertificate;
+    IPEndPointAny mEndPoint;
+    SizeT  mMaxRetransmit;
+    NetProtocol::Value mProtocol;
+};
+
+struct NetKeySet
+{
+    const Crypto::AESKey* mDerivedSecretKey;
+    const Crypto::HMACKey* mHmacKey;
+    const Crypto::RSAKey* mSigningKey;
+    const Crypto::RSAKey* mVerifyKey;
+};
+
 struct PacketData
 {
     UInt32 mType;
@@ -570,7 +744,11 @@ using PacketData2048 = TPacketData<2048>;
 using PacketData1024 = TPacketData<1024>;
 using PacketData768 = TPacketData<768>;
 using PacketData512 = TPacketData<512>;
+using ClientHelloPacketData = TPacketData<1300>;
+using ServerHelloPacketData = TPacketData<1300>;
 using ConnectionID = Int32;
+using PacketUID = UInt32;
+using RouteIndex = UInt16;
 
 namespace PacketDataType
 {
@@ -579,6 +757,8 @@ namespace PacketDataType
 }
 
 const ConnectionID INVALID_CONNECTION = INVALID32;
+const PacketUID INVALID_PACKET_UID = INVALID32;
+const RouteIndex INVALID_ROUTE = INVALID16;
 const SizeT NET_CLIENT_CHALLENGE_SIZE = 32;
 const SizeT NET_HEARTBEAT_NONCE_SIZE = 32;
 
@@ -601,12 +781,24 @@ LF_INLINE void SetPacketUID(AckConnectedPacketHeader& header, UInt32 uid)
     LF_STATIC_ASSERT(sizeof(header.mPacketUID) == sizeof(uid));
     memcpy(header.mPacketUID, &uid, sizeof(uid));
 }
+LF_INLINE void SetPacketUID(AckConnectedClientPacketHeader& header, UInt32 uid)
+{
+    LF_STATIC_ASSERT(sizeof(header.mPacketUID) == sizeof(uid));
+    memcpy(header.mPacketUID, &uid, sizeof(uid));
+}
 LF_INLINE void SetPacketUID(SecureConnectedPacketHeader& header, UInt32 uid)
 {
     LF_STATIC_ASSERT(sizeof(header.mPacketUID) == sizeof(uid));
     header.mPacketUID = uid;
     // memcpy(header.mPacketUID, &uid, sizeof(uid));
 }
+
+LF_INLINE void SetPacketConnectionID(AckConnectedClientPacketHeader& header, ConnectionID connectionID)
+{
+    LF_STATIC_ASSERT(sizeof(header.mConnectionID) == sizeof(ConnectionID));
+    memcpy(header.mConnectionID, &connectionID, sizeof(ConnectionID));
+}
+
 // void SetPacketUID(AckSecureConnectedPacketHeader& header, UInt32 uid)
 // {
 //     // todo:
@@ -630,10 +822,26 @@ LF_INLINE UInt32 GetPacketUID(const AckConnectedPacketHeader& header)
     return value;
 }
 
+LF_INLINE UInt32 GetPacketUID(const AckConnectedClientPacketHeader& header)
+{
+    LF_STATIC_ASSERT(sizeof(header.mPacketUID) == sizeof(UInt32));
+    UInt32 value;
+    memcpy(&value, header.mPacketUID, sizeof(UInt32));
+    return value;
+}
+
 LF_INLINE UInt32 GetPacketUID(const SecureConnectedPacketHeader& header)
 {
     LF_STATIC_ASSERT(sizeof(header.mPacketUID) == sizeof(UInt32));
     return header.mPacketUID;
+}
+
+LF_INLINE ConnectionID GetPacketConnectionID(const AckConnectedClientPacketHeader& header)
+{
+    LF_STATIC_ASSERT(sizeof(header.mConnectionID) == sizeof(ConnectionID));
+    ConnectionID value;
+    memcpy(&value, header.mConnectionID, sizeof(ConnectionID));
+    return value;
 }
 
 // todo: 
@@ -642,5 +850,3 @@ LF_INLINE UInt32 GetPacketUID(const SecureConnectedPacketHeader& header)
 
 
 }
-
-#endif // LF_CORE_NET_TYPES_H

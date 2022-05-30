@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -18,12 +18,11 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
-#ifndef LF_CORE_UNIQUE_NUMBER_H
-#define LF_CORE_UNIQUE_NUMBER_H
+#pragma once
 
 #include "Core/Common/Types.h"
 #include "Core/Common/API.h"
-#include "Core/Utility/Array.h"
+#include "Core/Utility/StdVector.h"
 
 namespace lf {
 
@@ -32,6 +31,7 @@ namespace lf {
 // Numbers are generated starting from 0 and incrementing upwards.
 // Can only generate maximum numbers based on the data type of T
 // 
+// Size=Stack Size of free list
 template<typename T, SizeT SIZE>
 class UniqueNumber
 {
@@ -80,10 +80,10 @@ public:
     T Allocate()
     {
         T result;
-        if (!mFreeList.Empty())
+        if (!mFreeList.empty())
         {
-            result = mFreeList.GetLast();
-            mFreeList.Remove(mFreeList.rbegin().GetBase());
+            result = mFreeList.back();
+            mFreeList.pop_back();
             return result;
         }
         return mTop++;
@@ -98,16 +98,14 @@ public:
         else
         {
 #if defined(LF_DEBUG) || defined(LF_TEST)
-            Assert(Invalid(mFreeList.IndexOf(number)));
+            Assert(mFreeList.end() == std::find(mFreeList.begin(), mFreeList.end(), number));
 #endif
-            mFreeList.Add(number);
+            mFreeList.push_back(number);
         }
     }
 private:
-    TStaticArray<T, SIZE> mFreeList;
+    TStackVector<T, SIZE> mFreeList;
     T mTop;
 };
 
 } // namespace lf
-
-#endif // LF_CORE_UNIQUE_NUMBER_H

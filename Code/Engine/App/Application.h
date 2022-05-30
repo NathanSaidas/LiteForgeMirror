@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -28,6 +28,10 @@ namespace lf {
 
 class EngineConfig;
 
+// NOTE: AssetMgr which is apart of the runtime might have external 
+// optional dependencies so we'll have to late initialize.
+// 
+// Consider: virtual bool OnRuntimeInit(RuntimeConfig& config) = 0;
 class LF_ENGINE_API Application : public ApplicationBase
 {
     DECLARE_CLASS(Application, ApplicationBase);

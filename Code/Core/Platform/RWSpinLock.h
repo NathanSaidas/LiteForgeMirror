@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -19,8 +19,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
 
-#ifndef LF_CORE_RW_SPIN_LOCK_H
-#define LF_CORE_RW_SPIN_LOCK_H
+#pragma once
 
 #include "Core/Platform/SpinLock.h"
 
@@ -32,6 +31,8 @@ namespace lf {
 // This allows multiple readers but only one writer.
 // 
 // note: Do not use in high contention!
+// note: There is no priority of writers or readers, so under high contention there is the chance
+//       that a writer will never be given a chance to write.
 class LF_CORE_API RWSpinLock
 {
 public:
@@ -40,8 +41,8 @@ public:
     RWSpinLock(RWSpinLock&&) = delete;
     ~RWSpinLock();
 
-    RWSpinLock& operator=(const SpinLock&) = delete;
-    RWSpinLock& operator=(SpinLock&&) = delete;
+    RWSpinLock& operator=(const RWSpinLock&) = delete;
+    RWSpinLock& operator=(RWSpinLock&&) = delete;
 
     void AcquireRead();
     void AcquireWrite();
@@ -57,22 +58,20 @@ private:
 
 };
 
-struct LF_CORE_API ScopeRWLockRead
+struct ScopeRWSpinLockRead
 {
-    ScopeRWLockRead(RWSpinLock& lock) : mLock(lock) { mLock.AcquireRead(); }
-    ~ScopeRWLockRead() { mLock.ReleaseRead(); }
+    LF_INLINE ScopeRWSpinLockRead(RWSpinLock& lock) : mLock(lock) { mLock.AcquireRead(); }
+    LF_INLINE ~ScopeRWSpinLockRead() { mLock.ReleaseRead(); }
 private:
     RWSpinLock& mLock;
 };
 
-struct LF_CORE_API ScopeRWLockWrite
+struct ScopeRWSpinLockWrite
 {
-    ScopeRWLockWrite(RWSpinLock& lock) : mLock(lock) { mLock.AcquireWrite(); }
-    ~ScopeRWLockWrite() { mLock.ReleaseWrite(); }
+    LF_INLINE ScopeRWSpinLockWrite(RWSpinLock& lock) : mLock(lock) { mLock.AcquireWrite(); }
+    LF_INLINE ~ScopeRWSpinLockWrite() { mLock.ReleaseWrite(); }
 private:
     RWSpinLock& mLock;
 };
 
 } // namespace lf
-
-#endif // LF_CORE_RW_SPIN_LOCK_H

@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -18,8 +18,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
-#ifndef LF_CORE_STREAM_H
-#define LF_CORE_STREAM_H
+#pragma once
 
 #include "Core/Common/Types.h"
 #include "Core/Common/API.h"
@@ -58,31 +57,53 @@ class Token;
 // @param s - The stream object doing the serializing.
 // @param prop - The property getting serialized
 // @param flags - Extra data using the following format. "Name=u8 Desc=\"Test Value\""
-#define SERIALIZE(StreamArg, PropArg, FlagsArg)                                     \
+#define SERIALIZE(StreamArg, PropArg, FlagsArg)                                         \
     {                                                                                   \
-        static const ::lf::StreamPropertyInfo PROP_INFO(#PropArg,FlagsArg);   \
+        static const ::lf::StreamPropertyInfo PROP_INFO(#PropArg,FlagsArg);             \
         StreamArg << PROP_INFO << PropArg;                                              \
     }                                                                                                                                  
 
-
-#define SERIALIZE_ARRAY(StreamArg, PropArg, FlagsArg)                               \
+#define SERIALIZE_NAMED(StreamArg, Name, PropArg, FlagsArg)                             \
     {                                                                                   \
-        static const ::lf::StreamPropertyInfo PROP_INFO(#PropArg, FlagsArg);  \
+        const ::lf::StreamPropertyInfo PROP_INFO(Name,FlagsArg, true);                  \
+        StreamArg << PROP_INFO << PropArg;                                              \
+    }
+
+#define SERIALIZE_ARRAY(StreamArg, PropArg, FlagsArg)                                   \
+    {                                                                                   \
+        static const ::lf::StreamPropertyInfo PROP_INFO(#PropArg, FlagsArg);            \
         TSerializeArray(StreamArg, PropArg, PROP_INFO);                                 \
+    }                                                                                   
+
+#define SERIALIZE_ARRAY_NAMED(StreamArg, Name, PropArg, FlagsArg)                       \
+    {                                                                                   \
+        const ::lf::StreamPropertyInfo PROP_INFO(Name, FlagsArg, true);                 \
+        TSerializeArray(StreamArg, PropArg, PROP_INFO);                                 \
+    }                                                                                   
+
+#define SERIALIZE_STRUCT(StreamArg, PropArg, FlagsArg)                                  \
+    {                                                                                   \
+        static const ::lf::StreamPropertyInfo PROP_INFO(#PropArg, FlagsArg);            \
+        if((StreamArg << PROP_INFO).BeginStruct())                                      \
+        {(StreamArg << PropArg).EndStruct();}                                           \
     }                                                                                   \
 
-
-#define SERIALIZE_STRUCT(StreamArg, PropArg, FlagsArg)                              \
+#define SERIALIZE_STRUCT_NAMED(StreamArg, Name, PropArg, FlagsArg)                      \
     {                                                                                   \
-        static const ::lf::StreamPropertyInfo PROP_INFO(#PropArg, FlagsArg);  \
-        (StreamArg << PROP_INFO).BeginStruct();                                         \
-        (StreamArg << PropArg).EndStruct();                                             \
+        const ::lf::StreamPropertyInfo PROP_INFO(Name, FlagsArg, true);                 \
+        if((StreamArg << PROP_INFO).BeginStruct())                                      \
+        {(StreamArg << PropArg).EndStruct();}                                           \
     }                                                                                   \
 
-
-#define SERIALIZE_STRUCT_ARRAY(StreamArg, PropArg, FlagsArg)                        \
+#define SERIALIZE_STRUCT_ARRAY(StreamArg, PropArg, FlagsArg)                            \
     {                                                                                   \
-        static const ::lf::StreamPropertyInfo PROP_INFO(#PropArg, FlagsArg);  \
+        static const ::lf::StreamPropertyInfo PROP_INFO(#PropArg, FlagsArg);            \
+        TSerializeStructArray(StreamArg, PropArg, PROP_INFO);                           \
+    }                                                                                   \
+
+#define SERIALIZE_STRUCT_ARRAY_NAMED(StreamArg, Name, PropArg, FlagsArg)                \
+    {                                                                                   \
+        const ::lf::StreamPropertyInfo PROP_INFO(Name, FlagsArg, true);                 \
         TSerializeStructArray(StreamArg, PropArg, PROP_INFO);                           \
     }                                                                                   \
 
@@ -95,9 +116,17 @@ struct LF_CORE_API StreamPropertyInfo
 public:
     StreamPropertyInfo() : name() {}
     StreamPropertyInfo(const String& inName);
-    StreamPropertyInfo(const char* inName, const String& inFlags);
+    StreamPropertyInfo(const char* inName, const String& inFlags, bool dynamic=false);
+    StreamPropertyInfo(const StreamPropertyInfo& other);
 
     String name; // Note: Stored as COPY_ON_WRITE for static properties.
+};
+
+struct LF_CORE_API ArrayPropertyInfo
+{
+    explicit ArrayPropertyInfo() : index(INVALID) {}
+    explicit ArrayPropertyInfo(SizeT value) : index(value) {}
+    SizeT index;
 };
 
 // StreamBufferObjects are limited to representing a single object.
@@ -148,6 +177,7 @@ public:
     {
         SM_CLOSED,
         SM_WRITE,
+        SM_PRETTY_WRITE,
         SM_READ
     };
 
@@ -207,6 +237,8 @@ public:
     virtual void SerializeGuid(ByteT* value, SizeT size);
     virtual void SerializeAsset(Token& value, bool isWeak);
     virtual void Serialize(const StreamPropertyInfo& info);
+    virtual void Serialize(const ArrayPropertyInfo& info);
+    virtual void Serialize(MemoryBuffer& value);
 
     // **********************************
     // Called to start writing an object. 
@@ -247,7 +279,8 @@ public:
 
     bool IsReading() const;
     StreamMode GetMode() const;
-    AssetLoadFlags GetAssetLoadFlags() const;
+    void SetAssetLoadFlags(Stream::AssetLoadFlags flags);
+    Stream::AssetLoadFlags GetAssetLoadFlags() const;
 
     
 
@@ -303,16 +336,16 @@ void TSerializeArray(Stream& s, TProp& prop, const StreamPropertyInfo& propInfo)
     if (s.IsReading())
     {
         size = s.GetArraySize();
-        prop.Resize(size);
+        prop.resize(size);
     }
     else
     {
-        size = prop.Size();
+        size = prop.size();
         s.SetArraySize(size);
     }
     for (size_t i = 0; i < size; ++i)
     {
-        StreamPropertyInfo arrayInfo(ToString(i));
+        ArrayPropertyInfo arrayInfo(i);
         s << arrayInfo << prop[i];
     }
     s.EndArray();
@@ -329,18 +362,20 @@ void TSerializeStructArray(Stream& s, TProp& prop, const StreamPropertyInfo& pro
     if (s.IsReading())
     {
         size = s.GetArraySize();
-        prop.Resize(size);
+        prop.resize(size);
     }
     else
     {
-        size = prop.Size();
+        size = prop.size();
         s.SetArraySize(size);
     }
     for (size_t i = 0; i < size; ++i)
     {
-        StreamPropertyInfo arrayInfo(ToString(i));
-        (s << arrayInfo).BeginStruct();
-        (s << prop[i]).EndStruct();
+        ArrayPropertyInfo arrayInfo(i);
+        if ((s << arrayInfo).BeginStruct())
+        {
+            (s << prop[i]).EndStruct();
+        }
     }
     s.EndArray();
 }
@@ -421,6 +456,11 @@ LF_INLINE Stream& operator<<(Stream& s, const StreamPropertyInfo& v)
     s.Serialize(v);
     return s;
 }
+LF_INLINE Stream& operator<<(Stream& s, const ArrayPropertyInfo& v)
+{
+    s.Serialize(v);
+    return s;
+}
 
 LF_INLINE Stream& operator<<(Stream& s, Vector2& v)
 {
@@ -458,6 +498,12 @@ LF_INLINE Stream& operator<<(Stream& s, Quaternion& q)
     return s;
 }
 
+LF_INLINE Stream& operator<<(Stream& s, MemoryBuffer& o)
+{
+    s.Serialize(o);
+    return s;
+}
+
 template<typename T, typename V>
 LF_INLINE Stream& operator<<(Stream& s, Bitfield<T, V>& b)
 {
@@ -466,5 +512,3 @@ LF_INLINE Stream& operator<<(Stream& s, Bitfield<T, V>& b)
 }
 
 }
-
-#endif // LF_CORE_STREAM_H

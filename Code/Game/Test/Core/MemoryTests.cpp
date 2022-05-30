@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -47,7 +47,7 @@ struct SampleObject
     ByteT bytes[32];
 };
 
-REGISTER_TEST(PoolHeapTest)
+REGISTER_TEST(PoolHeapTest, "Core.Memory")
 {
     SStream ss;
 
@@ -59,15 +59,15 @@ REGISTER_TEST(PoolHeapTest)
     PoolHeap heap;
     heap.Initialize(sizeof(SampleObject), alignof(SampleObject), NUM_POOL_OBJECTS, PoolHeap::PHF_DOUBLE_FREE);
 
-    TStaticArray<SampleObject*, NUM_POOL_OBJECTS> objects;
-    TStaticArray<SampleObject*, NUM_POOL_OBJECTS> ordered;
-    objects.Resize(NUM_POOL_OBJECTS);
+    TStackVector<SampleObject*, NUM_POOL_OBJECTS> objects;
+    TStackVector<SampleObject*, NUM_POOL_OBJECTS> ordered;
+    objects.resize(NUM_POOL_OBJECTS);
     // Allocate objects in order.
     for (SizeT i = 0; i < NUM_POOL_OBJECTS; ++i)
     {
         objects[i] = static_cast<SampleObject*>(heap.Allocate());
         TEST(objects[i] != nullptr);
-        ordered.Add(objects[i]);
+        ordered.push_back(objects[i]);
         memset(objects[i], static_cast<int>(i), sizeof(SampleObject));
         ss << "Allocated 0x" << ToHexString(reinterpret_cast<UIntPtrT>(objects[i])) << "\n";
     }
@@ -95,17 +95,17 @@ REGISTER_TEST(PoolHeapTest)
     Int32 seed = 0xCADE1337;
     for (SizeT i = 0; i < NUM_POOL_OBJECTS; ++i)
     {
-        SizeT index = static_cast<SizeT>(Random::Mod(seed, static_cast<UInt32>(objects.Size())));
+        SizeT index = static_cast<SizeT>(Random::Mod(seed, static_cast<UInt32>(objects.size())));
 
         memset(objects[index], static_cast<int>(i), sizeof(SampleObject));
         ss << "Free 0x" << ToHexString(reinterpret_cast<UIntPtrT>(objects[index])) << "\n";
         heap.Free(objects[index]);
         objects[index] = nullptr;
-        objects.Remove(objects.begin() + index);
+        objects.erase(objects.begin() + index);
     }
 
     // Allocate objects in reverse order they were deallocated.
-    objects.Resize(NUM_POOL_OBJECTS);
+    objects.resize(NUM_POOL_OBJECTS);
     for (SizeT i = 0; i < NUM_POOL_OBJECTS; ++i)
     {
         objects[i] = static_cast<SampleObject*>(heap.Allocate());
@@ -127,7 +127,7 @@ REGISTER_TEST(PoolHeapTest)
     gTestLog.Info(LogMessage("\n") << ss.Str());
 }
 
-REGISTER_TEST(PoolHeapTestLarge)
+REGISTER_TEST(PoolHeapTestLarge, "Core.Memory")
 {
     const SizeT NUM_OBJECTS = 35000;
     const SizeT BUFFER_SIZE = sizeof(SampleObject) * (NUM_OBJECTS - 1);
@@ -137,17 +137,17 @@ REGISTER_TEST(PoolHeapTestLarge)
     PoolHeap heap;
     heap.Initialize(sizeof(SampleObject), alignof(SampleObject), NUM_POOL_OBJECTS);
 
-    TArray<SampleObject*> objects;
-    TArray<SampleObject*> ordered;
-    objects.Reserve(NUM_POOL_OBJECTS);
-    ordered.Reserve(NUM_POOL_OBJECTS);
-    objects.Resize(NUM_POOL_OBJECTS);
+    TVector<SampleObject*> objects;
+    TVector<SampleObject*> ordered;
+    objects.reserve(NUM_POOL_OBJECTS);
+    ordered.reserve(NUM_POOL_OBJECTS);
+    objects.resize(NUM_POOL_OBJECTS);
     // Allocate objects in order.
     for (SizeT i = 0; i < NUM_POOL_OBJECTS; ++i)
     {
         objects[i] = static_cast<SampleObject*>(heap.Allocate());
         TEST(objects[i] != nullptr);
-        ordered.Add(objects[i]);
+        ordered.push_back(objects[i]);
         memset(objects[i], static_cast<int>(i), sizeof(SampleObject));
     }
 
@@ -172,16 +172,16 @@ REGISTER_TEST(PoolHeapTestLarge)
     Int32 seed = 0xCADE1337;
     for (SizeT i = 0; i < NUM_POOL_OBJECTS; ++i)
     {
-        SizeT index = static_cast<SizeT>(Random::Mod(seed, static_cast<UInt32>(objects.Size())));
+        SizeT index = static_cast<SizeT>(Random::Mod(seed, static_cast<UInt32>(objects.size())));
 
         memset(objects[index], static_cast<int>(i), sizeof(SampleObject));
         heap.Free(objects[index]);
         objects[index] = nullptr;
-        objects.Remove(objects.begin() + index);
+        objects.erase(objects.begin() + index);
     }
 
     // Allocate objects in reverse order they were deallocated.
-    objects.Resize(NUM_POOL_OBJECTS);
+    objects.resize(NUM_POOL_OBJECTS);
     for (SizeT i = 0; i < NUM_POOL_OBJECTS; ++i)
     {
         objects[i] = static_cast<SampleObject*>(heap.Allocate());
@@ -206,8 +206,8 @@ struct PoolHeapThreadData
 {
     SizeT mIndex;
     PoolHeapTestContext* mContext;
-    TArray<SampleObject*> mIn;
-    TArray<SampleObject*> mOut;
+    TVector<SampleObject*> mIn;
+    TVector<SampleObject*> mOut;
     Thread mThread;
 };
 
@@ -217,7 +217,7 @@ struct PoolHeapTestContext
     SizeT mObjectAllocations;
     ThreadFence mSignal;
     PoolHeap mHeap;
-    TArray<PoolHeapThreadData> mThreads;
+    TVector<PoolHeapThreadData> mThreads;
 };
 
 static void ProcessPoolHeapThreadTest(void* data)
@@ -225,23 +225,18 @@ static void ProcessPoolHeapThreadTest(void* data)
     PoolHeapThreadData* threadData = reinterpret_cast<PoolHeapThreadData*>(data);
     threadData->mContext->mSignal.Wait();
 
-    const SizeT capacity = threadData->mOut.Capacity();
+    const SizeT capacity = threadData->mOut.capacity();
     for (SizeT i = 0; i < capacity; ++i) 
     {
         SampleObject* object = reinterpret_cast<SampleObject*>(threadData->mContext->mHeap.Allocate());
         memset(object, static_cast<int>(i), sizeof(SampleObject));
         object->a = static_cast<UInt32>(threadData->mIndex);
-        threadData->mOut.Add(object);
+        threadData->mOut.push_back(object);
     }
 }
 
-REGISTER_TEST(PoolHeapMultithreaded)
+REGISTER_TEST(PoolHeapMultithreaded, "Core.Memory", TestFlags::TF_STRESS)
 {
-    if (!TestFramework::GetConfig().mStress)
-    {
-        gTestLog.Info(LogMessage("Ignoring test, stress tests not enabled..."));
-        return;
-    }
     // If we have 4 threads... and 200 objects..
     // We can allocate 50 objects foreach thread.
     // From this we should be able to verify that each thread has their own object.
@@ -262,16 +257,16 @@ REGISTER_TEST(PoolHeapMultithreaded)
             alignof(SampleObject),
             context.mPoolObjects));
 
-        context.mThreads.Resize(NUM_THREADS);
-        for (SizeT i = 0; i < context.mThreads.Size(); ++i)
+        context.mThreads.resize(NUM_THREADS);
+        for (SizeT i = 0; i < context.mThreads.size(); ++i)
         {
             context.mThreads[i].mIndex = i;
             context.mThreads[i].mContext = &context;
-            context.mThreads[i].mIn.Reserve(context.mObjectAllocations);
-            context.mThreads[i].mOut.Reserve(context.mObjectAllocations);
+            context.mThreads[i].mIn.reserve(context.mObjectAllocations);
+            context.mThreads[i].mOut.reserve(context.mObjectAllocations);
         }
 
-        for (SizeT i = 0; i < context.mThreads.Size(); ++i)
+        for (SizeT i = 0; i < context.mThreads.size(); ++i)
         {
             context.mThreads[i].mThread.Fork(ProcessPoolHeapThreadTest, &context.mThreads[i]);
         }
@@ -279,7 +274,7 @@ REGISTER_TEST(PoolHeapMultithreaded)
         SleepCallingThread(1000);
         context.mSignal.Signal();
 
-        for (SizeT i = 0; i < context.mThreads.Size(); ++i)
+        for (SizeT i = 0; i < context.mThreads.size(); ++i)
         {
             context.mThreads[i].mThread.Join();
         }
@@ -289,11 +284,11 @@ REGISTER_TEST(PoolHeapMultithreaded)
 
         ByteT expectedMemory[sizeof(SampleObject)];
 
-        TArray<SampleObject*> objects;
-        objects.Reserve(context.mPoolObjects);
-        for (SizeT i = 0; i < context.mThreads.Size(); ++i)
+        TVector<SampleObject*> objects;
+        objects.reserve(context.mPoolObjects);
+        for (SizeT i = 0; i < context.mThreads.size(); ++i)
         {
-            for (SizeT k = 0; k < context.mThreads[i].mOut.Size(); ++k)
+            for (SizeT k = 0; k < context.mThreads[i].mOut.size(); ++k)
             {
                 SampleObject* object = context.mThreads[i].mOut[k];
                 TEST(object->a == static_cast<UInt32>(context.mThreads[i].mIndex));
@@ -304,7 +299,7 @@ REGISTER_TEST(PoolHeapMultithreaded)
                 memset(expectedMemory, static_cast<int>(k), sizeof(SampleObject));
                 TEST(memcmp(bytes, expectedMemory, sizeof(SampleObject) - 4) == 0);
 
-                objects.Add(object);
+                objects.push_back(object);
             }
         }
 
@@ -327,7 +322,7 @@ REGISTER_TEST(PoolHeapMultithreaded)
 }
 
 #if defined(LF_USE_EXCEPTIONS)
-REGISTER_TEST(PoolHeapDoubleFreeTest)
+REGISTER_TEST(PoolHeapDoubleFreeTest, "Core.Memory")
 {
     PoolHeap heap;
     heap.Initialize(40, 8, 10, PoolHeap::PHF_DOUBLE_FREE);
@@ -362,7 +357,7 @@ static void Readers(void* data)
 
     for (SizeT i = 0; i < LOOP_ITERATIONS; ++i)
     {
-        ScopeRWLockRead lock(state->mLock);
+        ScopeRWSpinLockRead lock(state->mLock);
         Atomic32 numReaders = AtomicIncrement32(&state->mReaders);
         TEST(AtomicLoad(&state->mWriters) == 0);
         TEST(numReaders >= 0);
@@ -385,7 +380,7 @@ static void Writers(void* data)
 
     for (SizeT i = 0; i < LOOP_ITERATIONS; ++i)
     {
-        ScopeRWLockWrite lock(state->mLock);
+        ScopeRWSpinLockWrite lock(state->mLock);
         Atomic32 numWriters = AtomicIncrement32(&state->mWriters);
         TEST(AtomicLoad(&state->mReaders) == 0);
         TEST(numWriters == 1);
@@ -393,14 +388,8 @@ static void Writers(void* data)
     }
 }
 
-REGISTER_TEST(ReaderWriteLockTest)
+REGISTER_TEST(ReaderWriteLockTest, "Core.Memory", TestFlags::TF_STRESS)
 {
-    if (!TestFramework::GetConfig().mStress)
-    {
-        gTestLog.Info(LogMessage("Ignoring test, stress tests not enabled..."));
-        return;
-    }
-
     ReaderWriterState state;
     AtomicStore(&state.mExecute, 0);
     AtomicStore(&state.mMultiReaders, 0);
@@ -436,9 +425,9 @@ REGISTER_TEST(ReaderWriteLockTest)
     }
 }
 
-REGISTER_TEST(DynamicPoolHeapTest)
+REGISTER_TEST(DynamicPoolHeapTest, "Core.Memory")
 {
-    TArray<void*> objects;
+    TVector<void*> objects;
 
     DynamicPoolHeap heap;
     TEST(heap.GetHeapCount() == 0);
@@ -450,7 +439,7 @@ REGISTER_TEST(DynamicPoolHeapTest)
     // 0 1 2 3 | 4 5 6 7 | 8 9 10 11
     for (SizeT i = 0; i < 3 * 4; ++i)
     {
-        objects.Add(heap.Allocate());
+        objects.push_back(heap.Allocate());
     }
 
     TEST(heap.GetHeapCount() == 3);
@@ -508,7 +497,7 @@ REGISTER_TEST(DynamicPoolHeapTest)
     TEST(heap.GetHeapCount() == 1);
     TEST(heap.GetGarbageHeapCount() == 0);
     heap.Release();
-    objects.Clear();
+    objects.clear();
 
     // Round 2:
     TEST(heap.GetHeapCount() == 0);
@@ -520,7 +509,7 @@ REGISTER_TEST(DynamicPoolHeapTest)
     // 0 1 2 3 | 4 5 6 7 | 8 9 10 11
     for (SizeT i = 0; i < 3 * 4; ++i)
     {
-        objects.Add(heap.Allocate());
+        objects.push_back(heap.Allocate());
     }
 
     TEST(heap.GetHeapCount() == 3);
@@ -551,7 +540,7 @@ struct ConcurrentDynamicPoolHeapTestState;
 struct ConcurrentDynamicPoolHeapTestSharedState
 {
     DynamicPoolHeap mHeap;
-    TArray<ConcurrentDynamicPoolHeapTestState> mStates;
+    TVector<ConcurrentDynamicPoolHeapTestState> mStates;
     volatile Atomic32 mExecute;
 
 };
@@ -559,7 +548,7 @@ struct ConcurrentDynamicPoolHeapTestSharedState
 struct ConcurrentDynamicPoolHeapTestState
 {
     Thread mThread;
-    TArray<void*> mObjects;
+    TVector<void*> mObjects;
     SizeT mID;
     ConcurrentDynamicPoolHeapTestSharedState* mState;
 };
@@ -578,7 +567,7 @@ static void ConcurrentDynamicPoolAllocate(void* param)
     }
 
     DynamicPoolHeap& heap = self->mState->mHeap;
-    SizeT numObjects = self->mObjects.Size();
+    SizeT numObjects = self->mObjects.size();
     for (SizeT i = 0; i < numObjects; ++i)
     {
         self->mObjects[i] = heap.Allocate();
@@ -594,7 +583,7 @@ static void ConcurrentDynamicPoolFree(void* param)
     }
 
     DynamicPoolHeap& heap = self->mState->mHeap;
-    SizeT numObjects = self->mObjects.Size();
+    SizeT numObjects = self->mObjects.size();
     for (SizeT i = 0; i < numObjects; ++i)
     {
         if (self->mObjects[i])
@@ -613,7 +602,7 @@ static void ConcurrentDynamicPoolStableAllocate(void* param)
 
     }
 
-    SizeT numAllocs = self->mObjects.Size();
+    SizeT numAllocs = self->mObjects.size();
     SizeT objectsAllocated = 0;
     while (objectsAllocated < numAllocs)
     {
@@ -646,14 +635,14 @@ static void ConcurrentExecuteTest()
     ConcurrentDynamicPoolHeapTestSharedState sharedState;
     AtomicStore(&sharedState.mExecute, 0);
     sharedState.mHeap.Initialize(sizeof(ConcurrentObject), alignof(ConcurrentObject), MAX_OBJECTS, MAX_HEAPS, PoolHeap::PHF_DOUBLE_FREE);
-    sharedState.mStates.Resize(NUM_HEAPS);
+    sharedState.mStates.resize(NUM_HEAPS);
 
     for (SizeT i = 0; i < NUM_HEAPS; ++i)
     {
         sharedState.mStates[i].mState = &sharedState;
         sharedState.mStates[i].mID = i;
-        sharedState.mStates[i].mObjects.Reserve(NUM_OBJECTS_PER_THREAD);
-        sharedState.mStates[i].mObjects.Resize(NUM_OBJECTS_PER_THREAD);
+        sharedState.mStates[i].mObjects.reserve(NUM_OBJECTS_PER_THREAD);
+        sharedState.mStates[i].mObjects.resize(NUM_OBJECTS_PER_THREAD);
         sharedState.mStates[i].mThread.Fork(ConcurrentDynamicPoolAllocate, &sharedState.mStates[i]);
     }
 
@@ -670,7 +659,7 @@ static void ConcurrentExecuteTest()
     TMap<UIntPtrT, SizeT> addresses;
     for (SizeT i = 0; i < NUM_HEAPS; ++i)
     {
-        for (SizeT k = 0; k < sharedState.mStates[i].mObjects.Size(); ++k)
+        for (SizeT k = 0; k < sharedState.mStates[i].mObjects.size(); ++k)
         {
             UIntPtrT object = reinterpret_cast<UIntPtrT>(sharedState.mStates[i].mObjects[k]);
             SizeT& value = addresses[object];
@@ -749,14 +738,14 @@ static void ConcurrentExecuteExhaustiveTest()
     ConcurrentDynamicPoolHeapTestSharedState sharedState;
     AtomicStore(&sharedState.mExecute, 0);
     sharedState.mHeap.Initialize(sizeof(ConcurrentObject), alignof(ConcurrentObject), MAX_OBJECTS_PER_HEAP, MAX_HEAPS, PoolHeap::PHF_DOUBLE_FREE);
-    sharedState.mStates.Resize(NUM_THREADS);
+    sharedState.mStates.resize(NUM_THREADS);
 
     for (SizeT i = 0; i < NUM_THREADS; ++i)
     {
         sharedState.mStates[i].mState = &sharedState;
         sharedState.mStates[i].mID = i;
-        sharedState.mStates[i].mObjects.Reserve(MAX_OBJECTS / NUM_THREADS);
-        sharedState.mStates[i].mObjects.Resize(MAX_OBJECTS / NUM_THREADS);
+        sharedState.mStates[i].mObjects.reserve(MAX_OBJECTS / NUM_THREADS);
+        sharedState.mStates[i].mObjects.resize(MAX_OBJECTS / NUM_THREADS);
         sharedState.mStates[i].mThread.Fork(ConcurrentDynamicPoolAllocate, &sharedState.mStates[i]);
     }
 
@@ -771,7 +760,7 @@ static void ConcurrentExecuteExhaustiveTest()
     TMap<UIntPtrT, SizeT> addresses;
     for (SizeT i = 0; i < NUM_THREADS; ++i)
     {
-        for (SizeT k = 0; k < sharedState.mStates[i].mObjects.Size(); ++k)
+        for (SizeT k = 0; k < sharedState.mStates[i].mObjects.size(); ++k)
         {
             UIntPtrT object = reinterpret_cast<UIntPtrT>(sharedState.mStates[i].mObjects[k]);
             SizeT& value = addresses[object];
@@ -805,35 +794,35 @@ static void ConcurrentAllocateFreeTest()
     sharedState.mHeap.Initialize(sizeof(ConcurrentObject), alignof(ConcurrentObject), MAX_OBJECTS_PER_HEAP, MAX_HEAPS, PoolHeap::PHF_DOUBLE_FREE);
     
     // Allocate ( 1/2 * N )
-    sharedState.mStates.Resize(5);
+    sharedState.mStates.resize(5);
     for (ConcurrentDynamicPoolHeapTestState& state : sharedState.mStates)
     {
         state.mState = &sharedState;
         state.mID = 0;
     }
     
-    TArray<ConcurrentDynamicPoolHeapTestState*> freeStates;
-    freeStates.Add(&sharedState.mStates[0]);
-    freeStates.Add(&sharedState.mStates[1]);
-    TArray<ConcurrentDynamicPoolHeapTestState*> allocateStates;
-    allocateStates.Add(&sharedState.mStates[2]);
-    allocateStates.Add(&sharedState.mStates[3]);
-    allocateStates.Add(&sharedState.mStates[4]);
+    TVector<ConcurrentDynamicPoolHeapTestState*> freeStates;
+    freeStates.push_back(&sharedState.mStates[0]);
+    freeStates.push_back(&sharedState.mStates[1]);
+    TVector<ConcurrentDynamicPoolHeapTestState*> allocateStates;
+    allocateStates.push_back(&sharedState.mStates[2]);
+    allocateStates.push_back(&sharedState.mStates[3]);
+    allocateStates.push_back(&sharedState.mStates[4]);
 
     DynamicPoolHeap& heap = sharedState.mHeap;
-    TArray<void*> reserved;
+    TVector<void*> reserved;
     for (SizeT i = 0; i < Q1; ++i)
     {
         void* pointer = heap.Allocate();
         TEST(pointer != nullptr);
-        reserved.Add(pointer);
+        reserved.push_back(pointer);
     }
 
     for (SizeT i = 0; i < Q1; ++i)
     {
         void* pointer = heap.Allocate();
         TEST(pointer != nullptr);
-        freeStates[i % freeStates.Size()]->mObjects.Add(pointer);
+        freeStates[i % freeStates.size()]->mObjects.push_back(pointer);
     }
 
     AtomicStore(&sharedState.mExecute, 0);
@@ -845,7 +834,7 @@ static void ConcurrentAllocateFreeTest()
     }
     for (ConcurrentDynamicPoolHeapTestState* state : allocateStates)
     {
-        state->mObjects.Resize(Q1);
+        state->mObjects.resize(Q1);
         state->mThread.Fork(ConcurrentDynamicPoolStableAllocate, state);
     }
     AtomicStore(&sharedState.mExecute, 1);
@@ -873,7 +862,7 @@ static void ConcurrentAllocateFreeTest()
         {
             TEST(obj == nullptr);
         }
-        state->mObjects.Clear();
+        state->mObjects.clear();
     }
 
     TEST(heap.GetAllocations() == heap.GetMaxAllocations());
@@ -883,7 +872,7 @@ static void ConcurrentAllocateFreeTest()
     {
         heap.Free(obj);
     }
-    reserved.Clear();
+    reserved.clear();
 
 
     AtomicStore(&sharedState.mExecute, 0);
@@ -895,7 +884,7 @@ static void ConcurrentAllocateFreeTest()
 
     for (ConcurrentDynamicPoolHeapTestState* state : freeStates)
     {
-        state->mObjects.Resize(Q1 / 2);
+        state->mObjects.resize(Q1 / 2);
         state->mThread.Fork(ConcurrentDynamicPoolAllocate, state);
     }
 
@@ -912,7 +901,7 @@ static void ConcurrentAllocateFreeTest()
 }
 
 
-REGISTER_TEST(DynamicPoolHeapTestMultithreaded)
+REGISTER_TEST(DynamicPoolHeapTestMultithreaded, "Core.Memory")
 {
     // We should be able to guarantee...
     // All allocated pointers are unique
@@ -934,27 +923,27 @@ REGISTER_TEST(DynamicPoolHeapTestMultithreaded)
 
 }
 
-struct ConvertableAtomicPtr : public TAtomicWeakPointerConvertable<ConvertableAtomicPtr>
+struct ConvertibleAtomicPtr : public TAtomicWeakPointerConvertible<ConvertibleAtomicPtr>
 {
 
 };
 
-struct ConvertablePtr : public TWeakPointerConvertable<ConvertablePtr>
+struct ConvertiblePtr : public TWeakPointerConvertible<ConvertiblePtr>
 {
 
 };
 
-REGISTER_TEST(ConvertableSmartPointersTest)
+REGISTER_TEST(ConvertibleSmartPointersTest, "Core.Memory")
 {
     {
-        TAtomicStrongPointer<ConvertableAtomicPtr> ptr = MakeConvertableAtomicPtr<ConvertableAtomicPtr>();
+        TAtomicStrongPointer<ConvertibleAtomicPtr> ptr = MakeConvertibleAtomicPtr<ConvertibleAtomicPtr>();
 
         TEST(ptr == GetAtomicPointer(ptr.AsPtr()));
         TEST(ptr.GetStrongRefs() == 1);
         TEST(ptr.GetWeakRefs() == 1);
         {
-            ConvertableAtomicPtr* rawPtr = ptr.AsPtr();
-            const ConvertableAtomicPtr* constRawPtr = ptr.AsPtr();
+            ConvertibleAtomicPtr* rawPtr = ptr.AsPtr();
+            const ConvertibleAtomicPtr* constRawPtr = ptr.AsPtr();
 
             auto wptr = GetAtomicPointer(rawPtr);
             const auto& wptrRef = GetAtomicPointer(constRawPtr);
@@ -976,20 +965,20 @@ REGISTER_TEST(ConvertableSmartPointersTest)
             TEST(ptr.GetWeakRefs() == 1);
         }
 
-        TAtomicWeakPointer<ConvertableAtomicPtr> wptrCheck = ptr;
+        TAtomicWeakPointer<ConvertibleAtomicPtr> wptrCheck = ptr;
         ptr = NULL_PTR;
         TEST(wptrCheck == NULL_PTR);
     }
 
     {
-        TStrongPointer<ConvertablePtr> ptr = MakeConvertablePtr<ConvertablePtr>();
+        TStrongPointer<ConvertiblePtr> ptr = MakeConvertiblePtr<ConvertiblePtr>();
 
         TEST(ptr == GetPointer(ptr.AsPtr()));
         TEST(ptr.GetStrongRefs() == 1);
         TEST(ptr.GetWeakRefs() == 1);
         {
-            ConvertablePtr* rawPtr = ptr.AsPtr();
-            const ConvertablePtr* constRawPtr = ptr.AsPtr();
+            ConvertiblePtr* rawPtr = ptr.AsPtr();
+            const ConvertiblePtr* constRawPtr = ptr.AsPtr();
 
             auto wptr = GetPointer(rawPtr);
             const auto& wptrRef = GetPointer(constRawPtr);
@@ -1011,11 +1000,66 @@ REGISTER_TEST(ConvertableSmartPointersTest)
             TEST(ptr.GetWeakRefs() == 1);
         }
 
-        TWeakPointer<ConvertablePtr> wptrCheck = ptr;
+        TWeakPointer<ConvertiblePtr> wptrCheck = ptr;
         ptr = NULL_PTR;
         TEST(wptrCheck == NULL_PTR);
     }
 }
 
+// // This is the proposal of how we'll handle Interface like data types in the engine
+// // and how they work with smart pointers.
+// //
+// // If an interface want's to be convertible into a smart pointer
+// // it must inherit from this interface, and thus the derived class must implement GetInterfacePointer
+// class IWeakConvertible
+// {
+// public:
+//     virtual TWeakPointer<IWeakConvertible> GetInterfacePointer() const = 0;
+// };
+// 
+// class IInterfaceA : public IWeakConvertible
+// {
+// public:
+//     virtual void Run() = 0;
+// };
+// class IInterfaceB : public IWeakConvertible
+// {
+// public:
+//     virtual void Gun() = 0;
+// };
+// 
+// class DerivedA
+//     : public IInterfaceA
+//     , public IInterfaceB
+//     // Although not enforced (highly encourged) for derived or 'base' class to become Weak Pointer Convertible.
+//     , public TWeakPointerConvertible<DerivedA>
+// {
+//     void Run() override { gSysLog.Info(LogMessage("DerivedA::Run")); }
+//     void Gun() override { gSysLog.Info(LogMessage("DerivedA::Gun")); }
+//     // Because we inherit from 2 different IWeakConvertible we must be semi-explicit in which one we want to 
+//     // convert to. So we return TWeakPointer<IInterfaceA> which implicitly becomes TWeakPointer<IWeakConvertible>
+//     TWeakPointer<IWeakConvertible> GetInterfacePointer() const override
+//     {
+//         return TWeakPointer<IInterfaceA>(GetWeakPointer());
+//     }
+// };
+// 
+// // Proposed template method to get the smart pointer from a raw pointer.
+// template<typename TInterface>
+// TWeakPointer<TInterface> GetInterfacePointer(TInterface* pointer)
+// {
+//     return StaticCast<TWeakPointer<TInterface>>(pointer ? pointer->GetInterfacePointer() : NULL_PTR);
+// }
+// 
+// REGISTER_TEST(SmartPointer_Interface, "Core.Memory")
+// {
+//     TStrongPointer<DerivedA> a = MakeConvertiblePtr<DerivedA>();
+// 
+//     IInterfaceA* interfaceA = a;
+//     IInterfaceB* interfaceB = a;
+// 
+//     TWeakPointer<IInterfaceA> resultA = GetInterfacePointer(interfaceA);
+//     TWeakPointer<IInterfaceB> resultB = GetInterfacePointer(interfaceB);
+// }
 
 } // namespace lf

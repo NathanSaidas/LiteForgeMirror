@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -18,12 +18,12 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
-#ifndef LF_CORE_ARRAY_LIST_H
-#define LF_CORE_ARRAY_LIST_H
+#pragma once
 
 #include "Core/Common/Assert.h"
 #include "Core/Memory/Memory.h"
 #include "Core/Utility/ErrorCore.h"
+#include "Core/Utility/Utility.h"
 
 namespace lf {
 
@@ -32,7 +32,7 @@ namespace lf {
         {
             return (elementCount < blockSize) ? 1 : ((elementCount + (elementCount % blockSize)) / blockSize);
         }
-        const SizeT ARRAY_LIST_MAX_BLOCK_SIZE = 64;
+        const SizeT ARRAY_LIST_MAX_BLOCK_SIZE = 1024;
         const SizeT ARRAY_LIST_REND_ID = 0xBBBB;
         const SizeT ARRAY_LIST_END_ID = 0xEEEE;
     }
@@ -519,6 +519,17 @@ namespace lf {
         {
             return &(GetArray()[mItemIndex]);
         }
+
+        const_reference operator*() const
+        {
+            return GetArray()[mItemIndex];
+        }
+
+        const_pointer operator->() const
+        {
+            return &(GetArray()[mItemIndex]);
+        }
+
         reference operator[](difference_type n)
         {
             // todo: Verify this is correct!
@@ -530,7 +541,7 @@ namespace lf {
             }
             else
             {
-                tmp -= math::Abs(n);
+                tmp -= Abs(n);
                 return *tmp;
             }
         }
@@ -1051,5 +1062,3 @@ namespace lf {
     }
 
 } // namespace lf
-
-#endif // LF_CORE_ARRAY_LIST_H

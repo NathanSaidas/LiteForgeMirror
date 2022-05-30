@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -18,8 +18,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
-#ifndef LF_CORE_VECTOR_COMBINED_H
-#define LF_CORE_VECTOR_COMBINED_H
+#pragma once
 
 #include "Core/Math/Vector.h"
 #include "Core/Math/Vector4.h"
@@ -213,5 +212,3 @@ LF_INLINE Vector4 ToVector4(const Vector& v)
     return Vector4(splat[0], splat[1], splat[2], splat[3]);
 }
 } // namespace lf
-
-#endif

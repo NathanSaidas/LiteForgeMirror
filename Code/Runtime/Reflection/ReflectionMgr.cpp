@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -18,6 +18,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
+#include "Runtime/PCH.h"
 #include "ReflectionMgr.h"
 
 #include "Core/Utility/Log.h"
@@ -134,7 +135,7 @@ void ReflectionMgr::BuildTypes()
     reg.AddClassEx
     (
         "lf::Object",
-        &Object::sClassType,
+        Object::GetClassType(),
         nullptr,
         internal_sys::ConstructInstance<Object>,
         internal_sys::DestroyInstance<Object>,
@@ -142,6 +143,20 @@ void ReflectionMgr::BuildTypes()
         sizeof(Object),
         alignof(Object)
     );
+
+    InternalHooks::RegisterCoreTypes([](const InternalHooks::TypeRegistrationInfo& info)
+    {
+        if (info.mAbstract)
+        {
+            GetTypeRegistry().AddAbstractClassEx(info.mName, info.mType, info.mSuper, info.mRegisterCallback);
+        }
+        else
+        {
+            GetTypeRegistry().AddClassEx(info.mName, info.mType, info.mSuper, info.mConstructor, info.mDestructor, info.mRegisterCallback, info.mSize, info.mAlignment);
+        }
+    });
+
+    // reg.
 
     REGISTER_NATIVE(reg, UInt8);
     REGISTER_NATIVE(reg, UInt16);
@@ -161,12 +176,12 @@ void ReflectionMgr::BuildTypes()
     REGISTER_NATIVE(reg, Vector3);
     REGISTER_NATIVE(reg, Vector2);
     reg.RegisterNativeEx("void", &mTypeVoid, 0, 0);
-    TArray<TypeInfo>& typeInfos = reg.mTypes;
-    mTypes.Reserve(typeInfos.Size());
-    mTypes.Resize(typeInfos.Size());
+    TVector<TypeInfo>& typeInfos = reg.mTypes;
+    mTypes.reserve(typeInfos.size());
+    mTypes.resize(typeInfos.size());
 
     // Setup sStaticType and data
-    for (SizeT i = 0, numTypes = typeInfos.Size(); i < numTypes; ++i)
+    for (SizeT i = 0, numTypes = typeInfos.size(); i < numTypes; ++i)
     {
         TypeInfo& info = typeInfos[i];
         if (!info.mType)
@@ -182,7 +197,6 @@ void ReflectionMgr::BuildTypes()
         type.mAlignment = info.mAlignment;
         type.mConstructor = info.mConstructor;
         type.mDestructor = info.mDestructor;
-        type.mTypeID = INVALID;
         type.mFlags = 0;
         if (info.mIsAbstract)
         {
@@ -217,7 +231,7 @@ void ReflectionMgr::BuildTypes()
     }
 
     // Link Child => Parent
-    for (SizeT i = 0, numTypes = typeInfos.Size(); i < numTypes; ++i)
+    for (SizeT i = 0, numTypes = typeInfos.size(); i < numTypes; ++i)
     {
         if (!typeInfos[i].mType || !typeInfos[i].mSuper)
         {
@@ -252,13 +266,13 @@ void ReflectionMgr::BuildTypes()
         info.mRegisterCallback(&data);
         // todo: Build the linked function/method data.
     }
-    typeInfos.Clear();
+    typeInfos.clear();
 
     InternalHooks::gFindType = FindTypeHook;
 }
 void ReflectionMgr::ReleaseTypes()
 {
-    mTypes.Clear();
+    mTypes.clear();
 }
 
 const Type* ReflectionMgr::FindType(const Token& name) const
@@ -288,9 +302,9 @@ const Type* ReflectionMgr::FindType(const Token& name) const
     return nullptr;
 }
 
-TArray<const Type*> ReflectionMgr::FindAll(const Type* base) const
+TVector<const Type*> ReflectionMgr::FindAll(const Type* base, bool includeAbstract) const
 {
-    TArray<const Type*> types;
+    TVector<const Type*> types;
     if (!base)
     {
         ReportBugMsgEx("Invalid argument 'base'", LF_ERROR_INVALID_ARGUMENT, ERROR_API_RUNTIME);
@@ -298,15 +312,16 @@ TArray<const Type*> ReflectionMgr::FindAll(const Type* base) const
     }
     for (const Type& type : mTypes)
     {
-        if (type.IsA(base))
+        bool passAbstract = includeAbstract || !type.IsAbstract();
+        if (passAbstract && type.IsA(base))
         {
-            types.Add(&type);
+            types.push_back(&type);
         }
     }
     return types;
 }
 
-ObjectPtr ReflectionMgr::CreateObject(const Type* type, MemoryMarkupTag markUp) const
+ObjectPtr ReflectionMgr::CreateObject(const Type* type) const
 {
     if (!type)
     {
@@ -340,18 +355,18 @@ ObjectPtr ReflectionMgr::CreateObject(const Type* type, MemoryMarkupTag markUp) 
     AssertEx(type->IsA(typeof(Object)), LF_ERROR_BAD_STATE, ERROR_API_RUNTIME);
 
     // Allocate memory for the object using type information
-    void* pointer = LFAlloc(type->GetSize(), type->GetAlignment(), markUp);
+    void* pointer = LFAlloc(type->GetSize(), type->GetAlignment());
     // Call the constructor to setup the object and more importantly the V-table
     type->GetConstructor()(pointer);
 
     // Create a smart pointer with pointer assignment.
     ObjectPtr obj(static_cast<Object*>(pointer));
-    obj->SetPointer(obj);
+    // obj->SetPointer(obj);
     obj->SetType(type);
     return obj;
 }
 
-Object* ReflectionMgr::CreateObjectUnsafe(const Type* type, MemoryMarkupTag markUp) const
+Object* ReflectionMgr::CreateObjectUnsafe(const Type* type) const
 {
     if (!type)
     {
@@ -383,7 +398,7 @@ Object* ReflectionMgr::CreateObjectUnsafe(const Type* type, MemoryMarkupTag mark
     // Only accept those that are Objects!
     AssertEx(type->IsA(typeof(Object)), LF_ERROR_BAD_STATE, ERROR_API_RUNTIME);
     // Allocate memory for the object using type information
-    void* pointer = LFAlloc(type->GetSize(), type->GetAlignment(), markUp);
+    void* pointer = LFAlloc(type->GetSize(), type->GetAlignment());
     // Call the constructor to setup the object and more importantly the V-table
     type->GetConstructor()(pointer);
 
@@ -400,9 +415,9 @@ void ReflectionMgr::Inherit(Type* target, Type* source)
     // Functions..
     if (target != nullptr && source != nullptr)
     {
-        target->mMethods.Insert(target->mMethods.end(), source->mMethods.begin(), source->mMethods.end());
-        target->mFunctions.Insert(target->mFunctions.end(), source->mFunctions.begin(), source->mFunctions.end());
-        target->mMembers.Insert(target->mMembers.end(), source->mMembers.begin(), source->mMembers.end());
+        target->mMethods.insert(target->mMethods.end(), source->mMethods.begin(), source->mMethods.end());
+        target->mFunctions.insert(target->mFunctions.end(), source->mFunctions.begin(), source->mFunctions.end());
+        target->mMembers.insert(target->mMembers.end(), source->mMembers.begin(), source->mMembers.end());
     }
 }
 

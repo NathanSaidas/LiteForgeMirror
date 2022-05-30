@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -18,12 +18,12 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
-#ifndef LF_CORE_FILE_SYSTEM_H
-#define LF_CORE_FILE_SYSTEM_H
+#pragma once
 
 #include "Core/Common/API.h"
 #include "Core/Platform/PlatformTypes.h"
 #include "Core/Utility/Array.h"
+#include "Core/Utility/DateTime.h"
 
 namespace lf {
 
@@ -35,6 +35,8 @@ LF_CORE_API bool FileCreate(const String& filename);
 LF_CORE_API bool FileDelete(const String& filename);
 LF_CORE_API bool FileExists(const String& filename);
 LF_CORE_API bool FileReserve(const String& filename, FileSize size);
+LF_CORE_API bool FileQuerySize(const String& filename, FileSize& size);
+LF_CORE_API bool FileQueryModifyDate(const String& filename, DateTime& dateTime);
 
 // **********************************
 // Create all directories for a leading-up to a path.
@@ -111,33 +113,31 @@ LF_CORE_API String GetWorkingPath();
 // @param {String} path
 // @param {TArray<String>} outFiles
 // **********************************
-LF_CORE_API void GetFiles(const String& path, TArray<String>& outFiles);
+LF_CORE_API void GetFiles(const String& path, TVector<String>& outFiles);
 // **********************************
-// Returns all files in a given path (recursively)
+// Returns all files in a given path
 //
 // note: This function does not retrieve 'hidden files'
 //
 // @param {String} path
 // @param {TArray<String>} outDirectories
 // **********************************
-LF_CORE_API void GetDirectories(const String& path, TArray<String>& outDirectories);
+LF_CORE_API void GetDirectories(const String& path, TVector<String>& outDirectories);
 // **********************************
 // Returns all files in a given path (recursively)
 //
 // @param {String} path
 // **********************************
-LF_CORE_API void GetAllFiles(const String& path, TArray<String>& outFiles);
+LF_CORE_API void GetAllFiles(const String& path, TVector<String>& outFiles);
 // **********************************
 // Returns all directories in a given path (recursively)
 //
 // @param {String} path
 // **********************************
-LF_CORE_API void GetAllDirectories(const String& path, TArray<String>& outFiles);
+LF_CORE_API void GetAllDirectories(const String& path, TVector<String>& outFiles);
 
 
 
 } // namespace FileSystem
 
 } // namespace lf
-
-#endif // LF_CORE_FILE_SYSTEM_H

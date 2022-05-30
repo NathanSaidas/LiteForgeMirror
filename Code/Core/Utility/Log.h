@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -18,8 +18,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
-#ifndef LF_CORE_LOG_H
-#define LF_CORE_LOG_H
+#pragma once
 
 #include "Core/Common/Types.h"
 #include "Core/Common/API.h"
@@ -31,12 +30,33 @@ namespace lf {
 
 class EngineConfig;
 
+#if defined(LF_DEBUG)
+#define LF_LOG_DEBUG(Log_, Expression_) Log_.Debug(LogMessage("") << Expression_)
+#else
+#define LF_LOG_DEBUG(Log_, Expression_)
+#endif
+#define LF_LOG_INFO(Log_, Expression_)  Log_.Info(LogMessage("") << Expression_)
+#define LF_LOG_WARN(Log_, Expression_)  Log_.Warning(LogMessage("") << Expression_)
+#define LF_LOG_ERROR(Log_, Expression_) Log_.Error(LogMessage("") << Expression_)
+
+
+
+
+
 enum LogLevel
 {
     LOG_DEBUG,
     LOG_INFO,
     LOG_WARNING,
     LOG_ERROR
+};
+
+struct LF_CORE_API LogPtr
+{
+    LogPtr() : mValue(0) {}
+    explicit LogPtr(void* value) : mValue(reinterpret_cast<UIntPtrT>(value)) {}
+
+    UIntPtrT mValue;
 };
 
 struct LF_CORE_API LoggerMessage
@@ -73,6 +93,7 @@ struct LF_CORE_API LoggerMessage
     LoggerMessage& operator<<(const char* value) { mContent << value; return *this; }
     LoggerMessage& operator<<(const String& value) { mContent << value; return *this; }
     LoggerMessage& operator<<(const Token& value) { mContent << value; return *this; }
+    LoggerMessage& operator<<(const LogPtr& value) { mContent << GetPointerString(value); return *this; }
 
     LoggerMessage& operator<<(const StreamFillRight& fill) { mContent << fill; return *this; }
     LoggerMessage& operator<<(const StreamFillLeft& fill) { mContent << fill; return *this; }
@@ -80,6 +101,8 @@ struct LF_CORE_API LoggerMessage
     LoggerMessage& operator<<(const StreamPrecision& precision) { mContent << precision; return *this; }
     LoggerMessage& operator<<(const StreamBoolAlpha& option) { mContent << option; return *this; }
     LoggerMessage& operator<<(const StreamCharAlpha& option) { mContent << option; return *this; }
+
+    static String GetPointerString(const LogPtr& ptr);
 
     const char* mFilename;
     SizeT       mLine;
@@ -148,6 +171,8 @@ private:
     String   mName;
     Log*     mMasterLog;
     LogLevel mLogLevel;
+    String   mWorkingDirectoryCached;
+
     const EngineConfig* mConfig;
 };
 
@@ -156,6 +181,5 @@ extern LF_CORE_API Log gSysLog;
 extern LF_CORE_API Log gIOLog;
 extern LF_CORE_API Log gTestLog;
 extern LF_CORE_API Log gGfxLog;
+extern LF_CORE_API Log gNetLog;
 }
-
-#endif // LF_CORE_LOG_H

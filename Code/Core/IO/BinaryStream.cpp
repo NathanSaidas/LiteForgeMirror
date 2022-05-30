@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -18,6 +18,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
+#include "Core/PCH.h"
 #include "BinaryStream.h"
 
 
@@ -86,13 +87,12 @@ namespace lf
         // Read Mode:
         if (mode == SM_READ)
         {
+            AssertEx(mContext->buffer->GetData(), LF_ERROR_INVALID_ARGUMENT, ERROR_API_CORE);
+
             mContext->buffer = buffer;
             mContext->destroyBufferOnClear = false;
-            // TODO: Read Footer:
-
             // Seek End:
-            Assert(mContext->buffer->GetCapacity() == mContext->buffer->GetSize());
-            mContext->cursor = mContext->buffer->GetCapacity();
+            mContext->cursor = mContext->buffer->GetSize();
             // Read Footer:
             UInt32* footerSize = reinterpret_cast<UInt32*>(ReverseRead(4));
             for (SizeT i = 0, size = static_cast<SizeT>(*footerSize); i < size; ++i)
@@ -110,14 +110,28 @@ namespace lf
                 info.super = super;
                 info.location = static_cast<SizeT>(*objLocation);
                 info.size = static_cast<SizeT>(*objSize);
-                mContext->objects.Add(info);
+                mContext->objects.push_back(info);
             }
         }
         // Write Mode:
         else if (mode == SM_WRITE)
         {
             mContext->buffer = buffer;
-            mContext->buffer->Allocate(4096, LF_SIMD_ALIGN);
+            // For static buffer we'll try and allocate all the space it provides,
+            // if not just fallback to at least 'Capacity - Alignment'
+            if (mContext->buffer->GetOwnership() == MemoryBuffer::STATIC)
+            {
+                if (!mContext->buffer->Allocate(buffer->GetCapacity(), LF_SIMD_ALIGN))
+                {
+                    Assert(mContext->buffer->Allocate(buffer->GetCapacity() - LF_SIMD_ALIGN, LF_SIMD_ALIGN));
+                }
+            }
+            else
+            {
+                Assert(mContext->buffer->Allocate(4096, LF_SIMD_ALIGN));
+            }
+
+            
             mContext->buffer->SetSize(0);
             mContext->cursor = 0;
         }
@@ -180,7 +194,7 @@ namespace lf
                     info.super = super;
                     info.location = static_cast<SizeT>(*objLocation);
                     info.size = static_cast<SizeT>(*objSize);
-                    mContext->objects.Add(info);
+                    mContext->objects.push_back(info);
                 }
 
             }
@@ -197,7 +211,7 @@ namespace lf
         if (!IsReading())
         {
             // Save Footer:
-            for (SizeT i = 0, size = mContext->objects.Size(); i < size; ++i)
+            for (SizeT i = 0, size = mContext->objects.size(); i < size; ++i)
             {
                 const ObjectInfo& info = mContext->objects[i];
 
@@ -214,7 +228,7 @@ namespace lf
                 WriteBytes(&superSize, 4);
                 WriteBytes(&nameSize, 4);
             }
-            UInt32 footerSize = static_cast<UInt32>(mContext->objects.Size());
+            UInt32 footerSize = static_cast<UInt32>(mContext->objects.size());
             WriteBytes(&footerSize, 4);
 
             // File file(mContext->filename, io::FM_WRITE);
@@ -247,7 +261,7 @@ namespace lf
             mContext->buffer = nullptr;
         }
 
-        mContext->objects.Clear();
+        mContext->objects.clear();
         mContext->filename.Clear();
         mContext->arraySize = INVALID;
         mContext->cursor = 0;
@@ -511,6 +525,11 @@ namespace lf
         // Do nothing, BinaryStream format doesn't care for names or anything from the property info.
     }
 
+    void BinaryStream::Serialize(const ArrayPropertyInfo&)
+    {
+        // Do nothing, BinaryStream format doesn't care for names or anything from the property info.
+    }
+
     void BinaryStream::SerializeBuffer(MemoryBuffer& buffer)
     {
         if (IsReading())
@@ -538,6 +557,12 @@ namespace lf
             }
         }
     }
+    void BinaryStream::Serialize(MemoryBuffer& value)
+    {
+        SerializeBuffer(value);
+    }
+
+
 
     bool BinaryStream::BeginObject(const String& name, const String& super)
     {
@@ -545,7 +570,7 @@ namespace lf
 
             if (IsReading())
             {
-                for (TArray<ObjectInfo>::iterator it = mContext->objects.begin(), end = mContext->objects.end(); it != end; ++it)
+                for (TVector<ObjectInfo>::iterator it = mContext->objects.begin(), end = mContext->objects.end(); it != end; ++it)
                 {
                     if (it->name == name && it->super == super)
                     {
@@ -562,17 +587,17 @@ namespace lf
                 info.super = super;
                 info.location = mContext->cursor;
                 info.size = 0;
-                mContext->objects.Add(info);
+                mContext->objects.push_back(info);
             }
         return true;
     }
     void BinaryStream::EndObject()
     {
         Assert(mContext);
-        Assert(!mContext->objects.Empty()); // If this trips its because we forgot a BeginObject somewhere
+        Assert(!mContext->objects.empty()); // If this trips its because we forgot a BeginObject somewhere
         if (!IsReading())
         {
-            ObjectInfo& obj = mContext->objects.GetLast();
+            ObjectInfo& obj = mContext->objects.back();
             obj.size = GetCursor() - obj.location;
         }
     }
@@ -606,22 +631,15 @@ namespace lf
 
     size_t BinaryStream::GetArraySize() const
     {
-#ifdef SH_DEBUG
-        // Pop off and make invalid, easier to read errors.
-        size_t tmp = mContext->arraySize;
-        mContext->arraySize = INVALID;
-        return tmp;
-#else 
         return mContext->arraySize;
-#endif
-
     }
 
     void BinaryStream::SetArraySize(size_t size)
     {
         if (!IsReading())
         {
-            Serialize(reinterpret_cast<UInt32&>(size));
+            UInt32 size32 = static_cast<UInt32>(size);
+            Serialize(size32);
         }
     }
 
@@ -653,7 +671,7 @@ namespace lf
 
     size_t BinaryStream::GetObjectCount() const
     {
-        return mContext ? mContext->objects.Size() : 0;
+        return mContext ? mContext->objects.size() : 0;
     }
     const String& BinaryStream::GetObjectName(const size_t index) const
     {

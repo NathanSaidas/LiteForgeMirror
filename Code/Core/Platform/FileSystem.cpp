@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -18,6 +18,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
+#include "Core/PCH.h"
 #include "FileSystem.h"
 #include "Core/Common/Assert.h"
 #include "Core/Utility/ErrorCore.h"
@@ -62,10 +63,18 @@ static bool IsLikelyFilePath(const String& str)
 }
 static bool PathRecursiveCreate(const String& path)
 {
+    if (path.Empty())
+    {
+        return false;
+    }
 #if defined(LF_OS_WINDOWS)
     if (!FileSystem::PathExists(path))
     {
         bool result = PathRecursiveCreate(FileSystem::PathGetParent(path));
+        if (Valid(path.Find('.')))
+        {
+            return true;
+        }
         return result && CreateDirectory(path.CStr(), NULL) == TRUE;
     }
 #else
@@ -168,6 +177,53 @@ bool FileSystem::FileReserve(const String& filename, FileSize size)
 #endif
 }
 
+bool FileSystem::FileQuerySize(const String& filename, FileSize& size)
+{
+#if defined(LF_OS_WINDOWS)
+    WIN32_FILE_ATTRIBUTE_DATA attribs;
+    if (!GetFileAttributesExA(filename.CStr(), GetFileExInfoStandard, &attribs))
+    {
+        return false;
+    }
+
+    LARGE_INTEGER fsize;
+    fsize.HighPart = attribs.nFileSizeHigh;
+    fsize.LowPart = attribs.nFileSizeLow;
+    size = fsize.QuadPart;
+    return true;
+#else
+    LF_STATIC_CRASH("Missing implementation");
+#endif
+}
+
+bool FileSystem::FileQueryModifyDate(const String& filename, DateTime& dateTime)
+{
+#if defined(LF_OS_WINDOWS)
+    WIN32_FILE_ATTRIBUTE_DATA attribs;
+    if (!GetFileAttributesExA(filename.CStr(), GetFileExInfoStandard, &attribs))
+    {
+        return false;
+    }
+
+    SYSTEMTIME systemTime;
+    if (!FileTimeToSystemTime(&attribs.ftLastWriteTime, &systemTime))
+    {
+        return false;
+    }
+
+    dateTime = DateTime(
+        static_cast<SizeT>(systemTime.wDay), 
+        static_cast<SizeT>(systemTime.wMonth), 
+        static_cast<SizeT>(systemTime.wYear), 
+        static_cast<SizeT>(systemTime.wSecond), 
+        static_cast<SizeT>(systemTime.wMinute), 
+        static_cast<SizeT>(systemTime.wHour));
+    return true;
+#else
+    LF_STATIC_CRASH("Missing implementation.");
+#endif
+}
+
 bool FileSystem::PathCreate(const String& path)
 {
     return PathRecursiveCreate(path);
@@ -190,7 +246,7 @@ bool FileSystem::PathDeleteRecursive(const String& path)
         return true;
     }
 
-    TArray<String> paths;
+    TVector<String> paths;
     FileSystem::GetAllFiles(path, paths);
 
     for (const String& file : paths)
@@ -201,7 +257,7 @@ bool FileSystem::PathDeleteRecursive(const String& path)
         }
     }
 
-    paths.Resize(0);
+    paths.resize(0);
     FileSystem::GetAllDirectories(path, paths);
     std::stable_sort(paths.begin(), paths.end(), [](const String& a, const String& b)
     {
@@ -360,7 +416,7 @@ String FileSystem::GetWorkingPath()
 }
 
 
-void FileSystem::GetFiles(const String& path, TArray<String>& outFiles)
+void FileSystem::GetFiles(const String& path, TVector<String>& outFiles)
 {
 #if defined(LF_OS_WINDOWS)
     if (!FileSystem::PathExists(path))
@@ -382,7 +438,7 @@ void FileSystem::GetFiles(const String& path, TArray<String>& outFiles)
                 String filename = data.cFileName;
                 if (filename != "." && filename != "..")
                 {
-                    outFiles.Add(filename);
+                    outFiles.push_back(filename);
                 }
             }
         } while (FindNextFile(handle, &data));
@@ -392,7 +448,7 @@ void FileSystem::GetFiles(const String& path, TArray<String>& outFiles)
     LF_STATIC_CRASH("Missing implementation");
 #endif
 }
-void FileSystem::GetDirectories(const String& path, TArray<String>& outDirectories)
+void FileSystem::GetDirectories(const String& path, TVector<String>& outDirectories)
 {
 #if defined(LF_OS_WINDOWS)
     if (!FileSystem::PathExists(path))
@@ -414,7 +470,7 @@ void FileSystem::GetDirectories(const String& path, TArray<String>& outDirectori
                 String filename = data.cFileName;
                 if (filename != "." && filename != "..")
                 {
-                    outDirectories.Add(filename);
+                    outDirectories.push_back(filename);
                 }
             }
         } while (FindNextFile(handle, &data));
@@ -423,19 +479,19 @@ void FileSystem::GetDirectories(const String& path, TArray<String>& outDirectori
 #else
     LF_STATIC_CRASH("Missing implementation");
 #endif
-}
-void FileSystem::GetAllFiles(const String& path, TArray<String>& outFiles)
+ }
+void FileSystem::GetAllFiles(const String& path, TVector<String>& outFiles)
 {
 #if defined(LF_OS_WINDOWS)
-    TArray<String> paths;
+    TVector<String> paths;
     FileSystem::GetFiles(path, paths);
-    outFiles.Reserve(paths.Size());
+    outFiles.reserve(paths.size());
     for (const String& filePath : paths)
     {
-        outFiles.Add(FileSystem::PathJoin(path, filePath));
+        outFiles.push_back(FileSystem::PathJoin(path, filePath));
     }
 
-    paths.Resize(0);
+    paths.resize(0);
     GetDirectories(path, paths);
     for (const String& directory : paths)
     {
@@ -446,15 +502,15 @@ void FileSystem::GetAllFiles(const String& path, TArray<String>& outFiles)
 #endif
 }
 
-void FileSystem::GetAllDirectories(const String& path, TArray<String>& outFiles)
+void FileSystem::GetAllDirectories(const String& path, TVector<String>& outFiles)
 {
 #if defined(LF_OS_WINDOWS)
-    TArray<String> paths;
+    TVector<String> paths;
     FileSystem::GetDirectories(path, paths);
-    outFiles.Reserve(paths.Size());
+    outFiles.reserve(paths.size());
     for (const String& filePath : paths)
     {
-        outFiles.Add(FileSystem::PathJoin(path, filePath));
+        outFiles.push_back(FileSystem::PathJoin(path, filePath));
     }
 
     for (const String& directory : paths)

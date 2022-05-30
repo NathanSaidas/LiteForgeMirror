@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html>
+    
+
+
+
+<canvas id="mBackground" style="position: absolute; left: 0px; top: 0px"></canvas>
+<canvas id="mThread" style="position: absolute; top: 100px"></canvas>
+
+<script>
+    const canvas = document.getElementById('mBackground');
+    const ctx = canvas.getContext('2d');
+
+    canvas.width = 0;
+    canvas.height = 0;
+
+let abs = function(a) { return a < 0 ? -a : a; };
+let max = function(a,b) { return a > b ? a : b; };
+let min = function(a,b) { return a < b ? a : b; };
+
+// Class Def
+let Transform = function() {
+    let self = {
+        mRect: { 
+            mLeft: 0.0,
+            mRight: 0.0,
+            mTop: 0.0,
+            mBottom: 0.0
+        },
+
+        setX: (value) => {
+            let width = abs(self.mRect.mRight - self.mRect.mLeft );
+            self.mRect.mLeft = value;
+            self.mRect.mRight = value + width;
+        },
+        setY: (value) => {
+            let height = abs(self.mRect.mBottom - self.mRect.mTop );
+            self.mRect.mTop = value;
+            self.mRect.mBottom = value + height;
+        },
+        setWidth: (value) => { self.mRect.mRight = self.mRect.mLeft + value; },
+        setHeight: (value) => { self.mRect.mBottom = self.mRect.mTop + value; },
+        left: () => { return self.mRect.mLeft },
+        right: () => { return self.mRect.mRight },
+        top: () => { return self.mRect.mTop },
+        bottom: () => { return self.mRect.mBottom },
+        containsPoint: (x,y) => { 
+            return x >= self.left() && x <= self.right() && y >= self.top() && y <= self.bottom();
+        }
+    }
+    return self;
+};
+
+let Widget = function() {
+    let self = {
+        mParent: null,
+        mLocalTransform: Transform(),
+        mWorldTransform: Transform(),
+        mBackground: null,
+        mVisible: false,
+        draw: (ctx) => { },
+        computeWorldTransform: () => {
+            if(self.mParent != null) {
+                self.mParent.computeWorldTransform();
+                self.mWorldTransform.mRect.mLeft = self.mParent.mWorldTransform.mLeft + self.mLocalTransform.mRect.mLeft;
+                self.mWorldTransform.mRect.mRight = self.mParent.mWorldTransform.mRight + self.mLocalTransform.mRect.mRight;
+                self.mWorldTransform.mRect.mTop = self.mParent.mWorldTransform.mTop + self.mLocalTransform.mRect.mTop;
+                self.mWorldTransform.mRect.mBottom = self.mParent.mWorldTransform.mBottom + self.mLocalTransform.mRect.mBottom;
+            }
+            else {
+                self.mWorldTransform.mRect.mLeft = self.mLocalTransform.mRect.mLeft;
+                self.mWorldTransform.mRect.mRight = self.mLocalTransform.mRect.mRight;
+                self.mWorldTransform.mRect.mTop = self.mLocalTransform.mRect.mTop;
+                self.mWorldTransform.mRect.mBottom = self.mLocalTransform.mRect.mBottom;
+            }
+        }
+    };
+    return self;
+};
+
+let CanvasWidget = function(canvas) {
+    let self = Widget();
+    self.mCanvas = canvas;
+    self.mVisible = true;
+    self.mLocalTransform = self.mWorldTransform;
+    self.mWorldTransform.left = () => { return 0; };
+    self.mWorldTransform.right = () => { return self.mCanvas.width; }
+    self.mWorldTransform.top = () => { return 0; }
+    self.mWorldTransform.bottom = () => { return self.mCanvas.height; }
+    self.draw = (ctx) => {
+        let rect = self.mWorldTransform;
+        ctx.fillStyle = "#21425b";
+        let r = rect.right();
+        let l = rect.left();
+        let b = rect.bottom();
+        let t = rect.top();
+        
+        ctx.fillRect(l, t, r - l, b - t);
+    }
+    return self;
+}
+
+let GameFrameBarWidget = function(canvasWidget) {
+    let self = Widget();
+    self.mCanvasWidget = canvasWidget;
+    self.mVisible = true;
+    self.mLocalTransform = self.mWorldTransform;
+    self.mWorldTransform.left = () => { return 0; };
+    self.mWorldTransform.right = () => {
+        return self.mCanvasWidget.mWorldTransform.right();
+    }
+    self.mWorldTransform.top = () => { return 25; };
+    self.mWorldTransform.bottom = () => { return self.mWorldTransform.top() + 40; }
+    self.draw = (ctx) => {
+        let rect = self.mWorldTransform;
+        ctx.fillStyle = "#326388";
+
+        let r = rect.right();
+        let l = rect.left();
+        let b = rect.bottom();
+        let t = rect.top();
+        
+        ctx.fillRect(l, t, r - l, b - t);
+
+        const MAX_WIDTH = 40;
+        const MIN_WIDTH = 8;
+        const NUM_FRAMES = 1000;
+        const width = r - l;
+
+        const MAX_FRAMES = width / MIN_WIDTH;
+        let numElements = min(MAX_FRAMES, NUM_FRAMES); 
+        let elementWidth = min(max(MIN_WIDTH, width/NUM_FRAMES), MAX_WIDTH);
+        let totalElementWidth = elementWidth * numElements;
+        let x = (width / 2) - (totalElementWidth / 2);
+
+        for(let i = 0; i < numElements; ++i)
+        {
+            ctx.fillStyle = "#FF0000";
+            ctx.fillRect(x, t, elementWidth, b - t);
+
+            ctx.fillStyle = "#000000";
+            ctx.strokeRect(x, t, elementWidth, b - t);
+
+            x += elementWidth;
+        }
+        
+    }
+
+    self.addFrame = () => {
+        // width = 8px
+
+
+    };
+    return self;
+};
+
+let ThreadWidget = function(canvasWidget, frameBarWidget) {
+    const threadCanvas = document.getElementById('mThread');
+    const threadContext = threadCanvas.getContext('2d');
+
+
+    let self = Widget();
+    self.mVisible = true;
+    self.mCanvasWidget = canvasWidget;
+    self.mFrameBarWidget = frameBarWidget;
+    self.mLocalTransform = self.mWorldTransform;
+    self.mWorldTransform.left = () => { return 0; }
+    self.mWorldTransform.right = () => { return 200; }
+    self.mWorldTransform.top = () => { return self.mFrameBarWidget.mWorldTransform.bottom(); }
+    self.mWorldTransform.bottom = () => { return self.mCanvasWidget.mWorldTransform.bottom(); }
+    self.draw = (ctx) => {
+        
+        
+        const l = self.mWorldTransform.left();
+        const r = self.mWorldTransform.right();
+        const t = self.mWorldTransform.top();
+        const b = self.mWorldTransform.bottom();
+        threadCanvas.style.left = `${l}px`;
+        threadCanvas.style.right = `${r}px`;
+        threadCanvas.style.top = `${t}px`;
+        threadCanvas.style.bottom = `${b}px`;
+
+
+        threadContext.fillStyle = "#0000FF";
+        threadContext.fillRect(0,0,r-l,b-t);
+        
+        // ctx.fillStyle = "#00FF00";
+        // ctx.fillRect(l, t, r - l, b - t );
+    }
+
+    return self;
+}
+// Class Impl
+
+
+
+    let mMouseDown = false;
+    const mBackground = '#21425b';
+    const mTabs = { 
+        mBackground: `#FF00FF`,
+        mVisible: true,
+        mRect: {
+            left: () => { return 0; }, 
+            right: () => { return canvas.width; },
+            top: () => { return 0; },
+            bottom: () => { return mTabs.mRect.top() + 20; }
+        }
+    };
+    const mTimeline = { 
+        mBackground: `#FF0000`,
+        mVisible: true,
+        mRect: {
+            left: () => { return 0; }, 
+            right: () => { return canvas.width; },
+            top: () => { return mTabs.mRect.bottom(); },
+            bottom: () => { return mTimeline.mRect.top() + 60; }
+        }
+    };
+    const mThreads = { 
+        mBackground: `#0000FF`,
+        mVisible: true,
+        mRect: {
+            left: () => { return 0; }, 
+            right: () => { return 200; },
+            top: () => { return mTimeline.mRect.bottom(); },
+            bottom: () => { return canvas.height; }
+        }
+    };
+    const mEvents = {
+        mBackground: `#00FF00`,
+        mVisible: true,
+        mRect: {
+            left: () => { return mThreads.mRect.right(); }, 
+            right: () => { return canvas.width; },
+            top: () => { return mTimeline.mRect.bottom(); },
+            bottom: () => { return canvas.height; }
+        }
+    };
+
+    const mCanvasWidget = CanvasWidget(canvas);
+    const mGameFrameBarWidget = GameFrameBarWidget(mCanvasWidget);
+    const mThreadWidget = ThreadWidget(mCanvasWidget, mGameFrameBarWidget);
+
+    const mWidgets = [ mCanvasWidget, mGameFrameBarWidget, mThreadWidget ];
+
+    // mGameFrameBarWidget.addFrame( /*...*/);
+
+    const mTestWidget = Widget();
+
+    let mSelectionWidget = null;
+    let mSelectionOffset = { x: 0, y: 0 };
+
+    mTestWidget.mLocalTransform.setX(240);
+    mTestWidget.mLocalTransform.setY(240);
+    mTestWidget.mLocalTransform.setWidth(60);
+    mTestWidget.mLocalTransform.setHeight(60);
+    mTestWidget.computeWorldTransform();
+
+    window.addEventListener('resize', resizeCanvas, false);
+    document.addEventListener('click', onclick, false);
+    document.addEventListener('mousemove', onmousemove, false);
+    document.addEventListener('mousedown', onmousedown, false);
+    document.addEventListener('mouseup', onmouseup, false);
+
+    function onclick(event) {
+        const x = event.clientX;
+        const y = event.clientY;
+    }
+
+    function onmousemove(event) {
+        const x = event.clientX;
+        const y = event.clientY;
+
+        if(mSelectionWidget != null) {
+            mSelectionWidget.mWorldTransform.setX( x - mSelectionOffset.x );
+            mSelectionWidget.mWorldTransform.setY( y - mSelectionOffset.y );
+            console.log(`Set pos ${mSelectionWidget.mWorldTransform.left()}, ${mSelectionWidget.mWorldTransform.top()}`);
+            draw();
+        }
+    }
+
+    function onmousedown(event) {
+        const x = event.clientX;
+        const y = event.clientY;
+        if(mTestWidget.mWorldTransform.containsPoint(x,y)) {
+            mSelectionWidget = mTestWidget;
+           console.log("call_once"); 
+            mSelectionOffset.x = x - mTestWidget.mWorldTransform.left();
+            mSelectionOffset.y = y - mTestWidget.mWorldTransform.top();
+
+        }
+    }
+
+    function onmouseup(event) {
+        mSelectionWidget = null;
+    }
+    
+
+    function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        draw();
+    }
+
+    function draw() {
+        for(let i = 0; i < mWidgets.length; ++i) {
+            if(mWidgets[i].mVisible) {
+                mWidgets[i].draw(ctx);
+            }
+        }
+        // ctx.font = "24px Arial";
+        // ctx.fillStyle = "#000000";
+        //ctx.fillText(text, rect.left(), rect.bottom() - 2);
+
+    }
+
+    resizeCanvas();
+</script>
+</html> 

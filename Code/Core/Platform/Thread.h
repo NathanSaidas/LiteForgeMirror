@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -18,8 +18,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
-#ifndef LF_CORE_THREAD_H
-#define LF_CORE_THREAD_H
+#pragma once
 
 #include "Core/Common/API.h"
 #include "Core/Common/Types.h"
@@ -30,6 +29,15 @@ struct ThreadData;
 using  ThreadCallback = void(*)(void*);
 
 const SizeT INVALID_THREAD_ID = INVALID;
+
+// todo: Might introduce these attribs later when we begin organizing/scheduling our threads
+// struct ThreadAttributes
+// {
+//     UInt32 mThreadClass;
+//     UInt32 mThreadClassID;
+//     void*  mTaskScheduler;
+//     void*  mTaskWorker;
+// };
 
 // Wrapper around platform specific thread functions
 // Provides the most basic feature of starting a new execution
@@ -62,6 +70,12 @@ public:
 #endif
     
     static void JoinAll(Thread* threadArray, const size_t numThreads);
+    static void  Sleep(SizeT milliseconds);
+    // Sleep in ~100 microseconds.
+    static void  SleepPrecise(SizeT microseconds);
+    static void  Yield();
+    static SizeT GetId();
+    static SizeT GetExecutingCore();
 private:
     void AddRef();
     void RemoveRef();
@@ -76,7 +90,7 @@ LF_CORE_API bool  IsMainThread();
 LF_CORE_API void  SleepCallingThread(SizeT milliseconds);
 LF_CORE_API void  SetMainThread();
 LF_CORE_API const char* GetThreadName();
+LF_CORE_API SizeT GetActiveThreadCount();
+LF_CORE_API void SetThreadName(const char* name);
 
 } // namespace lf
-
-#endif // LF_CORE_THREAD_H

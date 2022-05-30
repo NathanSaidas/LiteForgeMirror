@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -44,12 +44,12 @@ namespace lf
 
     // Still creates a type, but instructs the static initializer not to generate extra data.
 #define NO_REFLECTION (LF_REFLECTION_PARAM ); return
-#define OFFSET_OF(type,member) offsetof(type,member)
+#define LF_OFFSET_OF(type,member) offsetof(type,member)
     // Internal:
 #define LF_REFLECT_CALLBACK(name, returnType, ...) \
     TCallback<returnType, __VA_ARGS__>(&name, TWeakPointer<ClassType>())
 
-#define typeof(type) type::sClassType
+#define typeof(type) reinterpret_cast<const ::lf::Type*>(*type::GetClassType())
 
     class Type;
     /**
@@ -63,11 +63,12 @@ private:                                                                    \
     static void InternalTypeInitializer(::lf::ProgramContext*);            \
     static void DefineTypeData(::lf::TypeData*);                           \
     using ClassType = type;                                                 \
+    static const ::lf::Type* sClassType;                                    \
 public:                                                                     \
     using Super = super;                                                    \
-    static const ::lf::Type* sClassType;                                   \
-    LF_INLINE const ::lf::TWeakPointer<type>& GetPointer() const                  \
-    { return lf::StaticCast<::lf::TWeakPointer<type>>(mPointer); }                    \
+    static const ::lf::Type** GetClassType();                               \
+    /*LF_INLINE const ::lf::TWeakPointer<type>& GetPointer() const                  \
+    { return lf::StaticCast<::lf::TWeakPointer<type>>(mPointer); }                    */\
 private:    
 
     /**
@@ -75,23 +76,25 @@ private:
     * If there is no reflection just use NO_REFLECTION in the function body.
     * @param type = The full name of the class.
     */
-#define DEFINE_CLASS(type)                                                          \
-void type::InternalTypeInitializer(::lf::ProgramContext*)                                            \
+#define DEFINE_CLASS(type)                                                      \
+void type::InternalTypeInitializer(::lf::ProgramContext*)                       \
 {                                                                               \
-    ::lf::GetTypeRegistry().AddClass<type>(#type, type::DefineTypeData);  \
+    ::lf::GetTypeRegistry().AddClass<type>(#type, type::DefineTypeData);        \
 }                                                                               \
 ::lf::SafeStaticCallback type::sInternalTypeInitializer(InternalTypeInitializer, 1000, ::lf::SafeStaticCallback::INIT);  \
-const ::lf::Type* type::sClassType = nullptr; \
+const ::lf::Type* type::sClassType = nullptr;                                   \
+const ::lf::Type** type::GetClassType() { return &sClassType; }                 \
 void type::DefineTypeData(::lf::TypeData* LF_REFLECTION_PARAM)                  \
 
 
-#define DEFINE_ABSTRACT_CLASS(type)                                                 \
-void type::InternalTypeInitializer(ProgramContext*)                           \
+#define DEFINE_ABSTRACT_CLASS(type)                                             \
+void type::InternalTypeInitializer(ProgramContext*)                             \
 {                                                                               \
     ::lf::GetTypeRegistry().AddAbstractClass<type>(#type, type::DefineTypeData);\
 }                                                                               \
 ::lf::SafeStaticCallback type::sInternalTypeInitializer(InternalTypeInitializer, 1000, ::lf::SafeStaticCallback::INIT);    \
-const ::lf::Type* type::sClassType = nullptr;                                  \
+const ::lf::Type* type::sClassType = nullptr;                                   \
+const ::lf::Type** type::GetClassType() { return &sClassType; }                 \
 void type::DefineTypeData(::lf::TypeData* LF_REFLECTION_PARAM)                  \
 
 
@@ -106,7 +109,7 @@ void type::DefineTypeData(::lf::TypeData* LF_REFLECTION_PARAM)                  
 
     // Add field/member to reflection data
 #define LF_REFLECT_FIELD(name, type)\
-    LF_REFLECTION_PARAM->AddMemberData(#name, #type, OFFSET_OF(ClassType, name))
+    LF_REFLECTION_PARAM->AddMemberData(#name, #type, LF_OFFSET_OF(ClassType, name))
 
     // Adds parameter reflection info to the last added function/method
 #define LF_REFLECT_ARGUMENT(name, type)\
@@ -166,14 +169,14 @@ struct TypeArgument
     const char* mName;
     const char* mType;
 };
-using TypeArgumentArray = TStaticArray<TypeArgument, 4>;
+using TypeArgumentArray = TStackVector<TypeArgument, 4>;
 
 struct LF_RUNTIME_API MethodData
 {
     const char* mName;
     const char* mReturnType;
     TypeArgumentArray mArguments;
-    CallbackHandle    mCallback;
+    AnonymousCallback mCallback;
     AccessSpecifier   mAccessSpecifier;
 };
 
@@ -190,7 +193,7 @@ struct LF_RUNTIME_API FunctionData
     const char* mName;
     const char* mReturnType;
     TypeArgumentArray mArguments;
-    CallbackHandle    mCallback;
+    AnonymousCallback mCallback;
     AccessSpecifier   mAccessSpecifier;
 };
 
@@ -241,28 +244,28 @@ public:
     void AddMemberData(const char* name, const char* typeName, MemberOffset offset)
     {
         Reset();
-        mMemberDatas.Add(MemberData());
-        MemberData& member = mMemberDatas.GetLast();
+        mMemberDatas.push_back(MemberData());
+        MemberData& member = mMemberDatas.back();
         member.mName = name;
         member.mOffset = offset;
         member.mAccessSpecifier = mCurrentAccess;
         member.mType = typeName;
-        mMemberDatas.Add(member);
+        mMemberDatas.push_back(member);
     }
 
     void AddParameter(const char* name, const char* type)
     {
         if (mLastMethod)
         {
-            mLastMethod->mArguments.Add(TypeArgument());
-            TypeArgument& arg = mLastMethod->mArguments.GetLast();
+            mLastMethod->mArguments.push_back(TypeArgument());
+            TypeArgument& arg = mLastMethod->mArguments.back();
             arg.mName = name;
             arg.mType = type;
         }
         else if (mLastFunction)
         {
-            mLastFunction->mArguments.Add(TypeArgument());
-            TypeArgument& arg = mLastFunction->mArguments.GetLast();
+            mLastFunction->mArguments.push_back(TypeArgument());
+            TypeArgument& arg = mLastFunction->mArguments.back();
             arg.mName = name;
             arg.mType = type;
         }
@@ -278,9 +281,9 @@ private:
     MethodData*     mLastMethod;
     FunctionData*   mLastFunction;
 
-    TArray<MethodData> mMethodDatas;
-    TArray<MemberData> mMemberDatas;
-    TArray<FunctionData> mFunctionDatas;
+    TVector<MethodData> mMethodDatas;
+    TVector<MemberData> mMemberDatas;
+    TVector<FunctionData> mFunctionDatas;
 
     friend class ReflectionMgr;
 };
@@ -329,8 +332,8 @@ public:
         AddClassEx
         (
             name,
-            &T::sClassType,
-            &T::Super::sClassType,
+            T::GetClassType(),
+            T::Super::GetClassType(),
             internal_sys::ConstructInstance<T>,
             internal_sys::DestroyInstance<T>,
             registerCallback,
@@ -349,8 +352,8 @@ public:
         AddAbstractClassEx
         (
             name,
-            &T::sClassType,
-            &T::Super::sClassType,
+            T::GetClassType(),
+            T::Super::GetClassType(),
             registerCallback
         );
     }
@@ -367,10 +370,10 @@ public:
 
     void Clear()
     {
-        mTypes.Clear();
+        mTypes.clear();
     }
 private:
-    TArray<TypeInfo> mTypes;
+    TVector<TypeInfo> mTypes;
 };
 
 LF_RUNTIME_API StaticTypeRegistry& GetTypeRegistry();

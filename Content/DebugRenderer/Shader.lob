@@ -1,0 +1,4 @@
+$Shader=Engine/Types/mgf/GfxShader
+{
+    ShaderData="Engine/DebugRenderer/Shader.shader"
+}

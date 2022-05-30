@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -18,7 +18,9 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
+#include "Runtime/PCH.h"
 #include "CacheBlock.h"
+#include "Core/IO/Stream.h"
 #include <algorithm>
 
 namespace lf {
@@ -35,17 +37,19 @@ const char* ERROR_MSG_INVALID_ARGUMENT_INDEX = "Invalid argument 'index'";
 }
 using namespace CacheBlockError;
 
-CacheBlock::CacheBlock() : 
-mName(),
-mDefaultCapacity(0),
-mIndices(),
-mBlobs()
+CacheBlock::CacheBlock()
+: mName()
+, mDefaultCapacity(0)
+, mIndices()
+, mBlobs()
+, mLock()
 {}
 CacheBlock::~CacheBlock()
 {}
 
 void CacheBlock::Initialize(const Token& name, UInt32 defaultCapacity)
 {
+    ScopeRWSpinLockWrite writeLock(mLock);
     if (name.Empty())
     {
         ReportBugMsgEx(ERROR_MSG_INVALID_ARGUMENT_NAME, LF_ERROR_INVALID_ARGUMENT, ERROR_API_RUNTIME);
@@ -68,10 +72,18 @@ void CacheBlock::Initialize(const Token& name, UInt32 defaultCapacity)
 }
 void CacheBlock::Release()
 {
+    ScopeRWSpinLockWrite writeLock(mLock);
     mName.Clear();
     mDefaultCapacity = 0;
-    mIndices.Clear();
-    mBlobs.Clear();
+    mIndices.clear();
+    mBlobs.clear();
+}
+
+void CacheBlock::Serialize(Stream& s)
+{
+    ScopeRWSpinLockWrite writeLock(mLock);
+    SERIALIZE_STRUCT_ARRAY(s, mIndices, "");
+    SERIALIZE_STRUCT_ARRAY(s, mBlobs, "");
 }
 
 CacheIndex CacheBlock::Create(UInt32 uid, UInt32 size)
@@ -100,8 +112,9 @@ CacheIndex CacheBlock::Create(UInt32 uid, UInt32 size)
         return CacheIndex();
     }
 
+    ScopeRWSpinLockWrite writeLock(mLock);
     CacheIndex result;
-    for (SizeT i = 0; i < mBlobs.Size(); ++i)
+    for (SizeT i = 0; i < mBlobs.size(); ++i)
     {
         CacheBlob& blob = mBlobs[i];
         CacheObjectId id = blob.Reserve(uid, size);
@@ -110,26 +123,27 @@ CacheIndex CacheBlock::Create(UInt32 uid, UInt32 size)
             result.mUID = uid;
             result.mObjectID = static_cast<UInt32>(id);
             result.mBlobID = static_cast<UInt32>(i);
-            mIndices.Add(result);
+            mIndices.push_back(result);
             return result;
         }
     }
-    mBlobs.Add(CacheBlob());
+    mBlobs.push_back(CacheBlob());
     {
-        CacheBlob& blob = mBlobs.GetLast();
+        CacheBlob& blob = mBlobs.back();
         blob.Initialize({}, mDefaultCapacity);
         CacheObjectId id = blob.Reserve(uid, size);
         Assert(Valid(id));
         result.mUID = uid;
         result.mObjectID = static_cast<UInt32>(id);
-        result.mBlobID = static_cast<UInt32>(mBlobs.Size()-1);
-        mIndices.Add(result);
+        result.mBlobID = static_cast<UInt32>(mBlobs.size()-1);
+        mIndices.push_back(result);
     }
 
     return result;
 }
 CacheIndex CacheBlock::Update(CacheIndex index, UInt32 size)
 {
+    ScopeRWSpinLockWrite writeLock(mLock);
     if (!index)
     {
         ReportBugMsgEx(ERROR_MSG_INVALID_ARGUMENT_INDEX, LF_ERROR_INVALID_ARGUMENT, ERROR_API_RUNTIME);
@@ -150,7 +164,7 @@ CacheIndex CacheBlock::Update(CacheIndex index, UInt32 size)
     }
 
     // Search:
-    if (index.mBlobID >= mBlobs.Size())
+    if (index.mBlobID >= mBlobs.size())
     {
         ReportBugMsgEx(ERROR_MSG_INVALID_ARGUMENT_INDEX, LF_ERROR_INVALID_ARGUMENT, ERROR_API_RUNTIME);
         return CacheIndex();
@@ -188,7 +202,7 @@ CacheIndex CacheBlock::Update(CacheIndex index, UInt32 size)
     }
 
     // Try allocate existing:
-    for (UInt32 blobID = 0; blobID < mBlobs.Size(); ++blobID)
+    for (UInt32 blobID = 0; blobID < mBlobs.size(); ++blobID)
     {
         if (blobID == index.mBlobID)
         {
@@ -207,12 +221,12 @@ CacheIndex CacheBlock::Update(CacheIndex index, UInt32 size)
     }
 
     // Allocate another blob
-    mBlobs.Add(CacheBlob());
-    mBlobs.GetLast().Initialize({}, mDefaultCapacity);
-    CacheObjectId id = mBlobs.GetLast().Reserve(index.mUID, size);
+    mBlobs.push_back(CacheBlob());
+    mBlobs.back().Initialize({}, mDefaultCapacity);
+    CacheObjectId id = mBlobs.back().Reserve(index.mUID, size);
     Assert(Valid(id));
     result.mUID = index.mUID;
-    result.mBlobID = static_cast<UInt32>(mBlobs.Size() - 1);
+    result.mBlobID = static_cast<UInt32>(mBlobs.size() - 1);
     result.mObjectID = static_cast<UInt32>(id);
     iter->mBlobID = result.mBlobID;
     iter->mObjectID = result.mObjectID;
@@ -220,6 +234,7 @@ CacheIndex CacheBlock::Update(CacheIndex index, UInt32 size)
 }
 CacheIndex CacheBlock::Destroy(CacheIndex index)
 {
+    ScopeRWSpinLockWrite writeLock(mLock);
     if (!index)
     {
         ReportBugMsgEx(ERROR_MSG_INVALID_ARGUMENT_INDEX, LF_ERROR_INVALID_ARGUMENT, ERROR_API_RUNTIME);
@@ -231,7 +246,7 @@ CacheIndex CacheBlock::Destroy(CacheIndex index)
         ReportBugMsgEx(ERROR_MSG_INVALID_OPERATION_INITIALIZATION_REQUIRED, LF_ERROR_INVALID_OPERATION, ERROR_API_RUNTIME);
         return CacheIndex();
     }
-    if (index.mBlobID >= mBlobs.Size())
+    if (index.mBlobID >= mBlobs.size())
     {
         ReportBugMsgEx(ERROR_MSG_INVALID_ARGUMENT_INDEX, LF_ERROR_INVALID_ARGUMENT, ERROR_API_RUNTIME);
         return CacheIndex();
@@ -248,12 +263,13 @@ CacheIndex CacheBlock::Destroy(CacheIndex index)
     auto iter = std::find_if(mIndices.begin(), mIndices.end(), [uid](const CacheIndex& item) { return item.mUID == uid; });
     Assert(iter != mIndices.end());
     Assert(mBlobs[index.mBlobID].Destroy(static_cast<CacheObjectId>(index.mObjectID)));
-    mIndices.SwapRemove(iter);
+    mIndices.swap_erase(iter);
 
     return index;
 }
 CacheIndex CacheBlock::Find(UInt32 uid)
 {
+    ScopeRWSpinLockRead readLock(mLock);
     for (const CacheIndex& index : mIndices)
     {
         if (index.mUID == uid)
@@ -264,9 +280,67 @@ CacheIndex CacheBlock::Find(UInt32 uid)
     return CacheIndex();
 }
 
+bool CacheBlock::DestroyObject(UInt32 uid)
+{
+    ScopeRWSpinLockWrite writeLock(mLock);
+    for (SizeT blobID = 0; blobID < mBlobs.size(); ++blobID)
+    {
+        for (SizeT objectID = 0; objectID < mBlobs[blobID].Size(); ++objectID)
+        {
+            CacheObject object;
+            if (mBlobs[blobID].GetObject(static_cast<CacheObjectId>(objectID), object) && object.mUID == uid)
+            {
+                mBlobs[blobID].Destroy(static_cast<CacheObjectId>(objectID));
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+bool CacheBlock::DestroyIndex(const CacheIndex& cacheIndex)
+{
+    SizeT removed = 0;
+    for (TVector<CacheIndex>::iterator it = mIndices.begin(); it != mIndices.end();)
+    {
+        if (it->mUID == cacheIndex.mUID)
+        {
+            it = mIndices.swap_erase(it);
+            ++removed;
+        }
+        else
+        {
+            ++it;
+        }
+    }
+    return removed > 0;
+}
+
+bool CacheBlock::FindObject(UInt32 uid, CacheObject& outObject, CacheIndex& outIndex) const
+{
+    ScopeRWSpinLockRead readLock(mLock);
+    for (SizeT blobID = 0; blobID < mBlobs.size(); ++blobID)
+    {
+        for (SizeT objectID = 0; objectID < mBlobs[blobID].Size(); ++objectID)
+        {
+            if (mBlobs[blobID].GetObject(static_cast<CacheObjectId>(objectID), outObject) && outObject.mUID == uid)
+            {
+                outIndex.mUID = uid;
+                outIndex.mBlobID = static_cast<UInt32>(blobID);
+                outIndex.mObjectID = static_cast<UInt32>(objectID);
+
+                return true;
+            }
+        }
+    }
+    outObject = CacheObject();
+    return false;
+}
+
 bool CacheBlock::GetObject(CacheIndex index, CacheObject& outObject) const
 {
-    if (index && index.mBlobID < mBlobs.Size() && mBlobs[index.mBlobID].GetObject(static_cast<CacheObjectId>(index.mObjectID), outObject))
+    ScopeRWSpinLockRead readLock(mLock);
+    if (index && index.mBlobID < mBlobs.size() && mBlobs[index.mBlobID].GetObject(static_cast<CacheObjectId>(index.mObjectID), outObject))
     {
         return true;
     }
@@ -275,7 +349,8 @@ bool CacheBlock::GetObject(CacheIndex index, CacheObject& outObject) const
 
 CacheBlobStats CacheBlock::GetBlobStat(SizeT index) const
 {
-    if (index >= mBlobs.Size())
+    ScopeRWSpinLockRead readLock(mLock);
+    if (index >= mBlobs.size())
     {
         return CacheBlobStats();
     }
@@ -292,10 +367,11 @@ CacheBlobStats CacheBlock::GetBlobStat(SizeT index) const
     return stats;
 }
 
-TArray<CacheDefragStep> CacheBlock::GetDefragSteps() const
+TVector<CacheDefragStep> CacheBlock::GetDefragSteps() const
 {
-    TArray<CacheDefragStep> steps;
-    for(SizeT i = 0; i < mBlobs.Size(); ++i)
+    ScopeRWSpinLockRead readLock(mLock);
+    TVector<CacheDefragStep> steps;
+    for(SizeT i = 0; i < mBlobs.size(); ++i)
     {
         const CacheBlob& blob = mBlobs[i];
         for (SizeT k = 0; k < blob.Size(); ++k)
@@ -308,12 +384,12 @@ TArray<CacheDefragStep> CacheBlock::GetDefragSteps() const
                 step.mSize = obj.mSize;
                 step.mSourceBlobID = static_cast<UInt32>(i);
                 step.mSourceObjectID = static_cast<UInt32>(k);
-                steps.Add(step);
+                steps.push_back(step);
             }
         }
     }
 
-    std::sort(steps.begin(), steps.end(), 
+    std::sort(steps.begin(), steps.end(),
         [](const CacheDefragStep& a, const CacheDefragStep& b)
         {
             return a.mSize > b.mSize;

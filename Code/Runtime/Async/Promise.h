@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -91,61 +91,17 @@ public:
     bool IsResolved() const { return AtomicLoad(&mState) == PROMISE_RESOLVED; }
     bool IsRejected() const { return AtomicLoad(&mState) == PROMISE_REJECTED; }
     bool IsEmpty() const { return !mExecutor.IsValid(); }
-    // **********************************
-    // Invokes all callbacks registered as a resolver,
-    // the promise is then marked as resolved.
-    // **********************************
-    template<typename ... ARGS>
-    void Resolve(ARGS&&... args)
-    {
-        if (!IsPending()) 
-        {
-            return;
-        }
-
-        for (CallbackHandle& callback : mResolverCallbacks)
-        {
-            TCallback<void, ARGS...> invoker;
-            invoker.Assign(callback);
-            if (invoker.IsValid())
-            {
-                invoker.Invoke(args...);
-            }
-        }
-        SetState(PROMISE_RESOLVED);
-    }
-
-    // **********************************
-    // Invokes all callbacks registered as an error callback
-    // the promise is then marked as rejected
-    // **********************************
-    template<typename ... ARGS>
-    void Reject(ARGS&&... args)
-    {
-        if (!IsPending())
-        {
-            return;
-        }
-
-        for (CallbackHandle& callback : mErrorCallbacks)
-        {
-            TCallback<void, ARGS...> invoker;
-            invoker.Assign(callback);
-            if (invoker.IsValid())
-            {
-                invoker.Invoke(args...);
-            }
-        }
-        SetState(PROMISE_REJECTED);
-    }
+    
 protected:
-    TArray<CallbackHandle> mResolverCallbacks;
-    TArray<CallbackHandle> mErrorCallbacks;
+    TVector<AnonymousCallback> mResolverCallbacks;
+    TVector<AnonymousCallback> mErrorCallbacks;
     PromiseCallback        mExecutor;
     TaskHandle             mTask;
     Async*                 mAsync;
     ThreadFence            mStateSignaller;
     volatile Atomic32      mState;
+    bool                   mExecuteOnDestroy;
+
 };
 
 } // namespace lf

@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -63,29 +63,31 @@ struct StringHashLess
     }
 };
 
+DECLARE_HASHED_CALLBACK(ObjectFileCallback, void);
+
 struct ObjectFile
 {
-    using GenericPromise = PromiseImpl<TCallback<void>, TCallback<void>>;
+    using GenericPromise = PromiseImpl<ObjectFileCallback, ObjectFileCallback>;
 
     SizeT  mFileSize;
     String mFilename;
     String mSymbolFilename;
     String mSymbolFileText;
 
-    TArray<String> mUndefined;
-    TArray<String> mStatic;
-    TArray<String> mExternal;
+    TVector<String> mUndefined;
+    TVector<String> mStatic;
+    TVector<String> mExternal;
 
-    TArray<StringHashTable::HashedString> mUndefinedHashed;
-    TArray<StringHashTable::HashedString> mStaticHashed;
-    TArray<StringHashTable::HashedString> mExternalHashed;
+    TVector<StringHashTable::HashedString> mUndefinedHashed;
+    TVector<StringHashTable::HashedString> mStaticHashed;
+    TVector<StringHashTable::HashedString> mExternalHashed;
 
-    std::map<const ObjectFile*, TArray<StringHashTable::HashedString>> mDependencies;
-    TArray<const ObjectFile*> mRecursiveDependencies;
+    std::map<const ObjectFile*, TVector<StringHashTable::HashedString>> mDependencies;
+    TVector<const ObjectFile*> mRecursiveDependencies;
 
     PromiseWrapper mPromise;
 
-    TArray<TArray<const ObjectFile*>> mCycles;
+    TVector<TVector<const ObjectFile*>> mCycles;
 };
 
 struct CodeFile
@@ -100,14 +102,14 @@ struct CodeFile
 
     bool mHasCopyrightNotice;
 
-    TArray<String> mIncludes;
-    TArray<const CodeFile*> mIndexedIncludes;
-    TArray<TArray<const CodeFile*>> mCycles;
+    TVector<String> mIncludes;
+    TVector<const CodeFile*> mIndexedIncludes;
+    TVector<TVector<const CodeFile*>> mCycles;
 
 
-    TArray<const CodeFile*> mDependencies;
-    TArray<const CodeFile*> mDependents;
-    std::map<String, TArray<StringHashTable::HashedString>> mBadIncludes;
+    TVector<const CodeFile*> mDependencies;
+    TVector<const CodeFile*> mDependents;
+    std::map<String, TVector<StringHashTable::HashedString>> mBadIncludes;
 
     bool  mHeader;
 };
@@ -115,7 +117,7 @@ struct CodeFile
 struct CodeProject
 {
     String mName;
-    TArray<CodeFile> mFiles;
+    TVector<CodeFile> mFiles;
 };
 
 static void ReadSymbols(ObjectFile& file)
@@ -129,7 +131,7 @@ static void ReadSymbols(ObjectFile& file)
     file.mFileSize = static_cast<SizeT>(f.GetSize());
 }
 
-static bool ParseSymbols(const String& text, TArray<String>& undefinedSymbols, TArray<String>& staticSymbols, TArray<String>& externalSymbols)
+static bool ParseSymbols(const String& text, TVector<String>& undefinedSymbols, TVector<String>& staticSymbols, TVector<String>& externalSymbols)
 {
     const String COFF_SYMBOL_TABLE = "COFF SYMBOL TABLE";
     const SizeT TOKEN_SYMBOL_NUMBER = 0;
@@ -162,8 +164,8 @@ static bool ParseSymbols(const String& text, TArray<String>& undefinedSymbols, T
     bool skipNextLine = false;
     String buffer;
     buffer.Reserve(1024);
-    TArray<String> tokens;
-    tokens.Reserve(10);
+    TVector<String> tokens;
+    tokens.reserve(10);
 
     for (SizeT i = pos; i < text.Size(); )
     {
@@ -200,14 +202,14 @@ static bool ParseSymbols(const String& text, TArray<String>& undefinedSymbols, T
         }
         Assert(Invalid(buffer.Find("String Table Size")));
 
-        tokens.Resize(0);
+        tokens.resize(0);
         StrSplit(buffer, ' ', tokens);
 
         if 
         (
-            tokens.Empty() || 
-            (tokens.Size() > TOKEN_SYMBOL_DEPENDENCY && tokens[TOKEN_SYMBOL_DEPENDENCY] == "ABS") || // ignored:
-            (tokens.Size() >= 2 && tokens[0] == "Relocation" && tokens[1] == "CRC")
+            tokens.empty() || 
+            (tokens.size() > TOKEN_SYMBOL_DEPENDENCY && tokens[TOKEN_SYMBOL_DEPENDENCY] == "ABS") || // ignored:
+            (tokens.size() >= 2 && tokens[0] == "Relocation" && tokens[1] == "CRC")
         )
         {
             continue;
@@ -276,15 +278,15 @@ static bool ParseSymbols(const String& text, TArray<String>& undefinedSymbols, T
 
         if (dependency == PSD_UNDEF)
         {
-            undefinedSymbols.Add(tokens[TOKEN_FUNCTION_SYMBOL]);
+            undefinedSymbols.push_back(tokens[TOKEN_FUNCTION_SYMBOL]);
         }
         else if (vis == PSV_EXTERNAL)
         {
-            externalSymbols.Add(tokens[TOKEN_FUNCTION_SYMBOL]);
+            externalSymbols.push_back(tokens[TOKEN_FUNCTION_SYMBOL]);
         }
         else if (vis == PSV_STATIC)
         {
-            staticSymbols.Add(tokens[TOKEN_FUNCTION_SYMBOL]);
+            staticSymbols.push_back(tokens[TOKEN_FUNCTION_SYMBOL]);
         }
         else
         {
@@ -294,18 +296,18 @@ static bool ParseSymbols(const String& text, TArray<String>& undefinedSymbols, T
     return true;
 }
 
-static TArray<ObjectFile> GetOBJFiles(const String& directory, const String& tempDirectory)
+static TVector<ObjectFile> GetOBJFiles(const String& directory, const String& tempDirectory)
 {
     gSysLog.Info(LogMessage("Calculating Object Files to analyze..."));
 
-    TArray<String> objFiles;
+    TVector<String> objFiles;
     FileSystem::GetAllFiles(directory, objFiles);
 
     for (auto it = objFiles.begin(); it != objFiles.end();)
     {
         if (Invalid(it->FindLast(".obj")))
         {
-            it = objFiles.SwapRemove(it);
+            it = objFiles.swap_erase(it);
         }
         else
         {
@@ -313,10 +315,10 @@ static TArray<ObjectFile> GetOBJFiles(const String& directory, const String& tem
         }
     }
 
-    TArray<ObjectFile> files;
-    files.Resize(objFiles.Size());
+    TVector<ObjectFile> files;
+    files.resize(objFiles.size());
 
-    for (SizeT i = 0, size = files.Size(); i < size; ++i)
+    for (SizeT i = 0, size = files.size(); i < size; ++i)
     {
 
         String name = objFiles[i].SubString(directory.Size());
@@ -330,21 +332,21 @@ static TArray<ObjectFile> GetOBJFiles(const String& directory, const String& tem
     return files;
 }
 
-static void ExportSymbols(const TArray<ObjectFile>& objFiles, SizeT fileCount, SizeT waitTimeMilliseconds)
+static void ExportSymbols(const TVector<ObjectFile>& objFiles, SizeT fileCount, SizeT waitTimeMilliseconds)
 {
-    TArray<DumpbinProcess> dumpbinProcesses;
-    dumpbinProcesses.Resize(objFiles.Size());
+    TVector<DumpbinProcess> dumpbinProcesses;
+    dumpbinProcesses.resize(objFiles.size());
 
-    gSysLog.Info(LogMessage("Exporting ") << objFiles.Size() << " Object Files...");
+    gSysLog.Info(LogMessage("Exporting ") << objFiles.size() << " Object Files...");
 
     SizeT activeIndex = 0;
-    for (SizeT i = 0; i < objFiles.Size(); ++i)
+    for (SizeT i = 0; i < objFiles.size(); ++i)
     {
         // DumpbinProcess& proc = processes[i];
 
         if (i != 0 && (i % fileCount) == 0)
         {
-            gSysLog.Info(LogMessage(i) << "/" << objFiles.Size() << " Pausing for dumpbin...");
+            gSysLog.Info(LogMessage(i) << "/" << objFiles.size() << " Pausing for dumpbin...");
             SleepCallingThread(waitTimeMilliseconds);
             
             // Retire Previous Processes...
@@ -376,11 +378,11 @@ static void ExportSymbols(const TArray<ObjectFile>& objFiles, SizeT fileCount, S
     }
 }
 
-static void CalculateDependencies(ObjectFile& file, const TArray<ObjectFile>& objectFiles)
+static void CalculateDependencies(ObjectFile& file, const TVector<ObjectFile>& objectFiles)
 {
     for (auto& hashedString : file.mUndefinedHashed)
     {
-        TArray<const ObjectFile*> owners;
+        TVector<const ObjectFile*> owners;
         for (const ObjectFile& owner : objectFiles)
         {
             auto iter = std::find_if(owner.mExternalHashed.begin(), owner.mExternalHashed.end(),
@@ -391,14 +393,14 @@ static void CalculateDependencies(ObjectFile& file, const TArray<ObjectFile>& ob
 
             if (iter != owner.mExternalHashed.end())
             {
-                owners.Add(&owner);
+                owners.push_back(&owner);
             }
         }
 
 
         for (const ObjectFile* owner : owners)
         {
-            file.mDependencies[owner].Add(hashedString);
+            file.mDependencies[owner].push_back(hashedString);
         }
     }
 }
@@ -407,9 +409,9 @@ static void CalculateDependenciesRecursive
 (
     ObjectFile& rootFile, 
     const ObjectFile& current, 
-    const TArray<ObjectFile>& objectFiles,
+    const TVector<ObjectFile>& objectFiles,
     std::set<const ObjectFile*>& visited,
-    TArray<const ObjectFile*>& stack
+    TVector<const ObjectFile*>& stack
 )
 {
     if (!visited.emplace(&current).second)
@@ -432,16 +434,16 @@ static void CalculateDependenciesRecursive
                 // cycle detected:
                 if (&owner == &rootFile)
                 {
-                    rootFile.mCycles.Add(stack);
+                    rootFile.mCycles.push_back(stack);
                     return;
                 }
 
                 // already processed.
                 if (visited.find(&owner) == visited.end())
                 {
-                    stack.Add(&owner);
+                    stack.push_back(&owner);
                     CalculateDependenciesRecursive(rootFile, owner, objectFiles, visited, stack);
-                    stack.Remove(stack.rbegin().GetBase());
+                    stack.pop_back();
                 }
             }
         }
@@ -450,15 +452,15 @@ static void CalculateDependenciesRecursive
 
 }
 
-static void CalculateDependenciesRecursive(ObjectFile& file, TArray<ObjectFile>& objFiles)
+static void CalculateDependenciesRecursive(ObjectFile& file, TVector<ObjectFile>& objFiles)
 {
     std::set<const ObjectFile*> visited;
-    TArray<const ObjectFile*> stack;
+    TVector<const ObjectFile*> stack;
 
-    stack.Add(&file);
+    stack.push_back(&file);
     CalculateDependenciesRecursive(file, file, objFiles, visited, stack);
-    stack.Remove(stack.rbegin().GetBase());
-    Assert(stack.Empty());
+    stack.pop_back();
+    Assert(stack.empty());
 
     for (auto dependency : visited)
     {
@@ -466,13 +468,13 @@ static void CalculateDependenciesRecursive(ObjectFile& file, TArray<ObjectFile>&
         {
             continue;
         }
-        file.mRecursiveDependencies.Add(dependency);
+        file.mRecursiveDependencies.push_back(dependency);
     }
 }
 
-static TArray<CodeFile> GetSourceFiles(const String& directory)
+static TVector<CodeFile> GetSourceFiles(const String& directory)
 {
-    TArray<String> sourceFiles;
+    TVector<String> sourceFiles;
     FileSystem::GetAllFiles(directory, sourceFiles);
     for (auto it = sourceFiles.begin(); it != sourceFiles.end();)
     {
@@ -494,7 +496,7 @@ static TArray<CodeFile> GetSourceFiles(const String& directory)
                 LF_DEBUG_BREAK;
             }
 
-            it = sourceFiles.SwapRemove(it);
+            it = sourceFiles.swap_erase(it);
         }
         else
         {
@@ -502,10 +504,10 @@ static TArray<CodeFile> GetSourceFiles(const String& directory)
         }
     }
 
-    TArray<CodeFile> files;
-    files.Resize(sourceFiles.Size());
+    TVector<CodeFile> files;
+    files.resize(sourceFiles.size());
 
-    for (SizeT i = 0, size = files.Size(); i < size; ++i)
+    for (SizeT i = 0, size = files.size(); i < size; ++i)
     {
         files[i].mFileName = sourceFiles[i];
         files[i].mName = sourceFiles[i].SubString(directory.Size() + 1);
@@ -532,7 +534,7 @@ static void ReadSource(CodeFile& file)
     file.mFileSize = static_cast<SizeT>(f.GetSize());
 }
 
-static void ParseIncludes(const String& text, const String& relativePrefix, TArray<String>& includes)
+static void ParseIncludes(const String& text, const String& relativePrefix, TVector<String>& includes)
 {
     const String INCLUDE("#include ");
 
@@ -592,7 +594,7 @@ static void ParseIncludes(const String& text, const String& relativePrefix, TArr
                         {
                             includePath = relativePrefix + includePath;
                         }
-                        includes.Add(includePath);
+                        includes.push_back(includePath);
                     }
                 }
             }
@@ -608,10 +610,10 @@ static void ParseIncludes(const String& text, const String& relativePrefix, TArr
 
 static bool ParseCopyrightNotice(const String& text)
 {
-    return Valid(text.Find("Copyright (c) 2019 Nathan Hanlan"));
+    return Valid(text.Find("Copyright (c)"));
 }
 
-static void IndexIncludes(CodeFile& file, const TArray<CodeFile>& sourceFiles, const StringHashTable& symbolTable)
+static void IndexIncludes(CodeFile& file, const TVector<CodeFile>& sourceFiles, const StringHashTable& symbolTable)
 {
     for (const String& include : file.mIncludes)
     {
@@ -621,12 +623,12 @@ static void IndexIncludes(CodeFile& file, const TArray<CodeFile>& sourceFiles, c
             auto iter = std::find_if(sourceFiles.begin(), sourceFiles.end(), [includeHash](const CodeFile& cf) { return cf.mNameHashed.mString == includeHash.mString; });
             if (iter != sourceFiles.end())
             {
-                file.mIndexedIncludes.Add(&(*iter));
+                file.mIndexedIncludes.push_back(&(*iter));
             }
         }
         else
         {
-            file.mBadIncludes[include].Add(file.mFileNameHashed);
+            file.mBadIncludes[include].push_back(file.mFileNameHashed);
         }
     }
 }
@@ -636,7 +638,7 @@ static void CalculateDependenciesRecursive
     CodeFile& root,
     const CodeFile& current,
     std::set<const CodeFile*>& visited,
-    TArray<const CodeFile*>& stack
+    TVector<const CodeFile*>& stack
 )
 {
     if (!visited.emplace(&current).second)
@@ -649,15 +651,15 @@ static void CalculateDependenciesRecursive
         // cycle detected:
         if (include == &root)
         {
-            root.mCycles.Add(stack);
+            root.mCycles.push_back(stack);
             return;
         }
 
         if (visited.find(include) == visited.end())
         {
-            stack.Add(include);
+            stack.push_back(include);
             CalculateDependenciesRecursive(root, *include, visited, stack);
-            stack.Remove(stack.rbegin().GetBase());
+            stack.pop_back();
         }
     }
 }
@@ -665,12 +667,12 @@ static void CalculateDependenciesRecursive
 static void CalculateDependenciesRecursive(CodeFile& file)
 {
     std::set<const CodeFile*> visited;
-    TArray<const CodeFile*> stack;
+    TVector<const CodeFile*> stack;
 
-    stack.Add(&file);
+    stack.push_back(&file);
     CalculateDependenciesRecursive(file, file, visited, stack);
-    stack.Remove(stack.rbegin().GetBase());
-    Assert(stack.Empty());
+    stack.pop_back();
+    Assert(stack.empty());
 
     for (auto dep : visited)
     {
@@ -678,7 +680,7 @@ static void CalculateDependenciesRecursive(CodeFile& file)
         {
             continue;
         }
-        file.mDependencies.Add(dep);
+        file.mDependencies.push_back(dep);
     }
 }
 
@@ -702,7 +704,7 @@ String AnalyzeProjectApp::GetTempDirectory() const
     return tempDirectory;
 }
 
-void AnalyzeProjectApp::AnalyzeOBJ(const String& objDirectory, bool async, TArray<ObjectCodeCSVRow>& outRows, String& outReport, String& outCycles)
+void AnalyzeProjectApp::AnalyzeOBJ(const String& objDirectory, bool async, TVector<ObjectCodeCSVRow>& outRows, String& outReport, String& outCycles)
 {
     Int64 clockBegin = 0;
     Int64 clockEnd = 0;
@@ -715,7 +717,7 @@ void AnalyzeProjectApp::AnalyzeOBJ(const String& objDirectory, bool async, TArra
         return;
     }
 
-    TArray<ObjectFile> objFiles = GetOBJFiles(objDirectory, tempDirectory);
+    TVector<ObjectFile> objFiles = GetOBJFiles(objDirectory, tempDirectory);
     ExportSymbols(objFiles, 100, 2500);
 
     gSysLog.Info(LogMessage("Reading and Parsing Symbols..."));
@@ -728,14 +730,16 @@ void AnalyzeProjectApp::AnalyzeOBJ(const String& objDirectory, bool async, TArra
 
             file.mPromise = ObjectFile::GenericPromise([filePtr](Promise* self)
             {
+                auto promise = static_cast<ObjectFile::GenericPromise*>(self);
+
                 ReadSymbols(*filePtr);
                 if (!ParseSymbols(filePtr->mSymbolFileText, filePtr->mUndefined, filePtr->mStatic, filePtr->mExternal))
                 {
-                    self->Reject();
+                    promise->Reject();
                 }
                 else
                 {
-                    self->Resolve();
+                    promise->Resolve();
                 }
             })
             .Execute();
@@ -755,14 +759,14 @@ void AnalyzeProjectApp::AnalyzeOBJ(const String& objDirectory, bool async, TArra
     gSysLog.Info(LogMessage("Elapsed Time=") << ((clockEnd - clockBegin) / static_cast<Float64>(GetClockFrequency())));
 
     StringHashTable symbolTable;
-    auto hash = [&symbolTable](TArray<String>& strings, TArray<StringHashTable::HashedString>& hashedStrings)
+    auto hash = [&symbolTable](TVector<String>& strings, TVector<StringHashTable::HashedString>& hashedStrings)
     {
-        hashedStrings.Reserve(strings.Size());
+        hashedStrings.reserve(strings.size());
         for (const String& str : strings)
         {
-            hashedStrings.Add(symbolTable.Create(str.CStr(), str.Size()));
+            hashedStrings.push_back(symbolTable.Create(str.CStr(), str.Size()));
         }
-        strings.Clear();
+        strings.clear();
     };
 
     gSysLog.Info(LogMessage("Hashing symbols..."));
@@ -785,9 +789,11 @@ void AnalyzeProjectApp::AnalyzeOBJ(const String& objDirectory, bool async, TArra
         if (async)
         {
             ObjectFile* filePtr = &file;
-            TArray<ObjectFile>* objectFiles = &objFiles;
-            file.mPromise = ObjectFile::GenericPromise([filePtr, objectFiles](Promise* promise)
+            TVector<ObjectFile>* objectFiles = &objFiles;
+            file.mPromise = ObjectFile::GenericPromise([filePtr, objectFiles](Promise* self)
             {
+                auto promise = static_cast<ObjectFile::GenericPromise*>(self);
+
                 CalculateDependencies(*filePtr, *objectFiles);
                 promise->Resolve();
             })
@@ -816,9 +822,10 @@ void AnalyzeProjectApp::AnalyzeOBJ(const String& objDirectory, bool async, TArra
         if (async)
         {
             ObjectFile* objectFile = &file;
-            TArray<ObjectFile>* objectFiles = &objFiles;
-            file.mPromise = ObjectFile::GenericPromise([objectFile, objectFiles](Promise* promise)
+            TVector<ObjectFile>* objectFiles = &objFiles;
+            file.mPromise = ObjectFile::GenericPromise([objectFile, objectFiles](Promise* self)
             {
+                auto promise = static_cast<ObjectFile::GenericPromise*>(self);
                 CalculateDependenciesRecursive(*objectFile, *objectFiles);
                 promise->Resolve();
             })
@@ -838,33 +845,33 @@ void AnalyzeProjectApp::AnalyzeOBJ(const String& objDirectory, bool async, TArra
     clockEnd = GetClockTime();
     gSysLog.Info(LogMessage("Elapsed Time=") << ((clockEnd - clockBegin) / static_cast<Float64>(GetClockFrequency())));
 
-    outRows.Reserve(objFiles.Size());
+    outRows.reserve(objFiles.size());
 
     SStream report;
     SStream cycles;
 
-    report.Reserve(objFiles.Size() * 512);
+    report.Reserve(objFiles.size() * 512);
     for (ObjectFile& file : objFiles)
     {
         // Add CSV row
-        outRows.Add(ObjectCodeCSVRow());
-        auto& row = outRows.GetLast();
+        outRows.push_back(ObjectCodeCSVRow());
+        auto& row = outRows.back();
         row.mFileName = file.mFilename.SubString(objDirectory.Size());
         row.mNumDependencies = file.mDependencies.size();
-        row.mNumDependenciesRecursive = file.mRecursiveDependencies.Size();
+        row.mNumDependenciesRecursive = file.mRecursiveDependencies.size();
         row.mSize = file.mFileSize;
-        row.mNumUndefined = file.mUndefinedHashed.Size();
-        row.mNumStatic = file.mStaticHashed.Size();
-        row.mNumExternal = file.mExternalHashed.Size();
-        row.mNumCycles = file.mCycles.Size();
+        row.mNumUndefined = file.mUndefinedHashed.size();
+        row.mNumStatic = file.mStaticHashed.size();
+        row.mNumExternal = file.mExternalHashed.size();
+        row.mNumCycles = file.mCycles.size();
 
         // Write Dependency Report
-        if (!file.mRecursiveDependencies.Empty() || !file.mDependencies.empty())
+        if (!file.mRecursiveDependencies.empty() || !file.mDependencies.empty())
         {
             report << file.mFilename << ": Deps=" << row.mNumDependencies << ", Recursive=" << row.mNumDependenciesRecursive << "\n";
         }
 
-        if (!file.mRecursiveDependencies.Empty())
+        if (!file.mRecursiveDependencies.empty())
         {
             report << "  Recursive Deps:\n";
             for (auto& dep : file.mRecursiveDependencies)
@@ -886,12 +893,12 @@ void AnalyzeProjectApp::AnalyzeOBJ(const String& objDirectory, bool async, TArra
         }
 
         // Write Cycles
-        if (!file.mCycles.Empty())
+        if (!file.mCycles.empty())
         {
             cycles << file.mFilename << ": Cycles=" << row.mNumCycles << "\n";
             for (auto& cycle : file.mCycles)
             {
-                cycles << "  " << cycle.GetFirst()->mFilename << " <---> " << cycle.GetLast()->mFilename << "\n";
+                cycles << "  " << cycle.front()->mFilename << " <---> " << cycle.back()->mFilename << "\n";
                 for (auto& cycleFile : cycle)
                 {
                     cycles << "    " << cycleFile->mFilename << "\n";
@@ -907,10 +914,12 @@ void AnalyzeProjectApp::AnalyzeOBJ(const String& objDirectory, bool async, TArra
 
 
 
-void AnalyzeProjectApp::AnalyzeSource(const String& sourceDirectory, bool async, TArray<SourceCodeCSVRow>& srcRows, TArray<HeaderCSVRow>& headerRows, String& outReport, String& outCycles)
+void AnalyzeProjectApp::AnalyzeSource(const String& sourceDirectory, bool async, TVector<SourceCodeCSVRow>& srcRows, TVector<HeaderCSVRow>& headerRows, String& outReport, String& outCycles)
 {
     (async);
 
+    LF_LOG_INFO(gSysLog, FileSystem::PathResolve(sourceDirectory));
+    gSysLog.Sync();
     // Get all source/header files...
     auto sourceFiles = GetSourceFiles(sourceDirectory);
 
@@ -960,10 +969,9 @@ void AnalyzeProjectApp::AnalyzeSource(const String& sourceDirectory, bool async,
                 continue;
             }
 
-            SizeT index = other.mDependencies.IndexOf(&file);
-            if (Valid(index))
+            if (other.mDependencies.end() != std::find(other.mDependencies.begin(), other.mDependencies.end(), &file))
             {
-                file.mDependents.Add(&other);
+                file.mDependents.push_back(&other);
             }
         }
     }
@@ -976,34 +984,34 @@ void AnalyzeProjectApp::AnalyzeSource(const String& sourceDirectory, bool async,
     {
         if (file.mHeader)
         {
-            headerRows.Add(HeaderCSVRow());
-            auto& row = headerRows.GetLast();
+            headerRows.push_back(HeaderCSVRow());
+            auto& row = headerRows.back();
             row.mFileName = file.mFileName;
-            row.mNumDependencies = file.mDependencies.Size();
-            row.mNumDependents = file.mDependents.Size();
+            row.mNumDependencies = file.mDependencies.size();
+            row.mNumDependents = file.mDependents.size();
             row.mNumBadIncludes = file.mBadIncludes.size();
             row.mSize = file.mFileSize;
             row.mHasCopyrightNotice = file.mHasCopyrightNotice;
-            row.mNumCycles = file.mCycles.Size();
+            row.mNumCycles = file.mCycles.size();
 
         }
         else
         {
-            srcRows.Add(SourceCodeCSVRow());
-            auto& row = srcRows.GetLast();
+            srcRows.push_back(SourceCodeCSVRow());
+            auto& row = srcRows.back();
             row.mFileName = file.mFileName;
-            row.mNumDependencies = file.mDependencies.Size();
+            row.mNumDependencies = file.mDependencies.size();
             row.mNumBadIncludes = file.mBadIncludes.size();
             row.mSize = file.mFileSize;
             row.mHasCopyrightNotice = file.mHasCopyrightNotice;
         }
 
-        if (!file.mDependencies.Empty() || !file.mDependents.Empty())
+        if (!file.mDependencies.empty() || !file.mDependents.empty())
         {
-            report << file.mFileName << ": Dependencies=" << file.mDependencies.Size() << ", Dependents=" << file.mDependents.Size() << "\n";
+            report << file.mFileName << ": Dependencies=" << file.mDependencies.size() << ", Dependents=" << file.mDependents.size() << "\n";
         }
 
-        if (!file.mDependencies.Empty())
+        if (!file.mDependencies.empty())
         {
             report << "  Dependencies:\n";
             for (auto& dep : file.mDependencies)
@@ -1012,7 +1020,7 @@ void AnalyzeProjectApp::AnalyzeSource(const String& sourceDirectory, bool async,
             }
         }
 
-        if (!file.mDependents.Empty())
+        if (!file.mDependents.empty())
         {
             report << "  Dependents:\n";
             for (auto& dep : file.mDependents)
@@ -1021,10 +1029,10 @@ void AnalyzeProjectApp::AnalyzeSource(const String& sourceDirectory, bool async,
             }
         }
 
-        if (!file.mCycles.Empty() || !file.mHasCopyrightNotice)
+        if (!file.mCycles.empty() || !file.mHasCopyrightNotice)
         {
-            cycles << file.mFileName << ": Cycles=" << file.mCycles.Size() << ", Copyright=" << file.mHasCopyrightNotice << "\n";
-            if (!file.mCycles.Empty())
+            cycles << file.mFileName << ": Cycles=" << file.mCycles.size() << ", Copyright=" << file.mHasCopyrightNotice << "\n";
+            if (!file.mCycles.empty())
             {
                 cycles << "  Cycles:\n";
                 for (auto& cycle : file.mCycles)
@@ -1087,19 +1095,21 @@ void AnalyzeProjectApp::OnStart()
     SizeT numSources = 0;
     SizeT numObjects = 0;
 
+    TVector<String> fixCopyright;
+
     if (!sourceDirectory.Empty())
     {
         gSysLog.Info(LogMessage("Analyzing source files..."));
 
-        TArray<SourceCodeCSVRow> srcRows;
-        TArray<HeaderCSVRow> headerRows;
+        TVector<SourceCodeCSVRow> srcRows;
+        TVector<HeaderCSVRow> headerRows;
         String outReport;
         String outCycles;
 
         AnalyzeSource(sourceDirectory, false, srcRows, headerRows, outReport, outCycles);
 
         SStream csv;
-        csv.Reserve(srcRows.Size() * 256);
+        csv.Reserve(srcRows.size() * 256);
 
         csv << "File, # Headers, # Bad Includes, Size, Has Copyright Notice\n";
         for (auto& row : srcRows)
@@ -1118,7 +1128,7 @@ void AnalyzeProjectApp::OnStart()
             output.Close();
         }
 
-        csv.Reserve(srcRows.Size() * 256);
+        csv.Reserve(srcRows.size() * 256);
         csv.Clear();
 
         csv << "File, # Headers, # Dependents, # Cycles, # Bad Includes, Size, Has Copyright Notice\n";
@@ -1162,6 +1172,7 @@ void AnalyzeProjectApp::OnStart()
         {
             if (!row.mHasCopyrightNotice)
             {
+                fixCopyright.push_back(row.mFileName);
                 ++missingCopyrightNotices;
             }
             if (Invalid(row.mFileName.Find("SampleCycle")))
@@ -1175,13 +1186,14 @@ void AnalyzeProjectApp::OnStart()
         {
             if (!row.mHasCopyrightNotice)
             {
+                fixCopyright.push_back(row.mFileName);
                 ++missingCopyrightNotices;
             }
             badIncludes += row.mNumBadIncludes;
         }
 
-        numHeaders += headerRows.Size();
-        numSources += srcRows.Size();
+        numHeaders += headerRows.size();
+        numSources += srcRows.size();
     }
 
     
@@ -1189,14 +1201,14 @@ void AnalyzeProjectApp::OnStart()
     {
         gSysLog.Info(LogMessage("Analyzing object files..."));
 
-        TArray<ObjectCodeCSVRow> objRows;
+        TVector<ObjectCodeCSVRow> objRows;
         String objReport;
         String objCycles;
 
         AnalyzeOBJ(objDirectory, true, objRows, objReport, objCycles);
 
         SStream objCSV;
-        objCSV.Reserve(objRows.Size() * 256);
+        objCSV.Reserve(objRows.size() * 256);
 
         objCSV << "File,# Dependencies,# Dependencies Recursive, File Size, # Undefined, # Static, # External, # Cycles\n";
 
@@ -1245,7 +1257,7 @@ void AnalyzeProjectApp::OnStart()
                 objectFileCycles += row.mNumCycles;
             }
         }
-        numObjects += objRows.Size();
+        numObjects += objRows.size();
     }
 
 
@@ -1254,6 +1266,12 @@ void AnalyzeProjectApp::OnStart()
     gSysLog.Info(LogMessage("  Header Cycles=") << headerCycles);
     gSysLog.Info(LogMessage("  Object File Cycles=") << objectFileCycles);
     gSysLog.Info(LogMessage("  Bad Includes=") << badIncludes);
+
+    gSysLog.Info(LogMessage("Copyright Violations"));
+    for (auto& file : fixCopyright)
+    {
+        gSysLog.Info(LogMessage("  ") << file);
+    }
 
     if (!CmdLine::HasArgOption("AnalyzeProject", "nopause"))
     {

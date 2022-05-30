@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -18,8 +18,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
-#ifndef LF_CORE_ASYNC_IO_DEVICE_H
-#define LF_CORE_ASYNC_IO_DEVICE_H
+#pragma once
 
 #include "Core/Common/Types.h"
 #include "Core/Utility/Array.h"
@@ -35,7 +34,7 @@ namespace lf {
 struct FileHandle;
 class AsyncIOBuffer;
 
-struct AsyncIOUserData : public OVERLAPPED
+struct LF_CORE_API AsyncIOUserData : public OVERLAPPED
 {
     AsyncIOUserData()
     {
@@ -55,7 +54,7 @@ struct AsyncIOUserData : public OVERLAPPED
 };
 #endif
 
-class AsyncIODevice
+class LF_CORE_API AsyncIODevice
 {
 public:
     AsyncIODevice();
@@ -75,7 +74,7 @@ public:
     bool IsRunning() const;
 private:
 #if defined(LF_OS_WINDOWS)
-    using ThreadHandleArray = TStaticArray<HANDLE, 16>;
+    using ThreadHandleArray = TStackVector<HANDLE, 16>;
     HANDLE mHandle;
     ThreadHandleArray mThreads;
     volatile long mRunning;
@@ -84,5 +83,3 @@ private:
 };
 
 } // namespace lf
-
-#endif // LF_CORE_ASYNC_IO_DEVICE_H

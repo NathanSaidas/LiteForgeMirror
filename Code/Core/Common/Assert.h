@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -18,8 +18,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
-#ifndef LF_CORE_ASSERT_H
-#define LF_CORE_ASSERT_H
+#pragma once
 
 #include "Core/Common/Types.h"
 #include "Core/Common/API.h"
@@ -79,9 +78,11 @@
 
 #define LF_ERROR_FATAL_BREAK volatile int ERROR_BREAK_ = *(int*)0; (ERROR_BREAK_);
 
+#define LF_ERROR_DEBUG_BREAK __debugbreak()
+
 #if defined(LF_DEBUG) || defined(LF_RELEASE)
-#define LF_ERROR_BREAK __debugbreak()
-#define LF_ERROR_BUG_BREAK __debugbreak()
+#define LF_ERROR_BREAK LF_ERROR_DEBUG_BREAK
+#define LF_ERROR_BUG_BREAK LF_ERROR_DEBUG_BREAK
 #elif defined(LF_FINAL)
 #define LF_ERROR_BREAK LF_ERROR_FATAL_BREAK
 #define LF_ERROR_BUG_BREAK
@@ -91,8 +92,9 @@
 #endif
 
 #if defined(LF_DEBUG) || defined(LF_TEST)
-#define LF_ERROR_THROW(expression_, trace_) throw Exception(expression_, trace_)
-#define LF_ERROR_THROW_EX(expression_, trace_, errorCode_, errorApi_) throw Exception(expression_, trace_, errorCode_, errorApi_)
+#define LF_ERROR_EXCEPTIONS
+#define LF_ERROR_THROW(expression_, trace_) throw ::lf::Exception(expression_, trace_)
+#define LF_ERROR_THROW_EX(expression_, trace_, errorCode_, errorApi_) throw ::lf::Exception(expression_, trace_, errorCode_, errorApi_)
 #define LF_ERROR_STACK_TRACE_VAR ERROR_STACK_TRACE_
 #define LF_ERROR_STACK_TRACE ::lf::StackTrace LF_ERROR_STACK_TRACE_VAR; ::lf::CaptureStackTrace(LF_ERROR_STACK_TRACE_VAR, 64)
 #define LF_ERROR_RELEASE_STACK_TRACE ::lf::ReleaseStackTrace(LF_ERROR_STACK_TRACE_VAR)
@@ -113,7 +115,7 @@
 #endif
 
 #if defined(LF_OS_WINDOWS)
-#define LF_SET_PLATFORM_ERROR_CODE SetPlatformErrorCode();
+#define LF_SET_PLATFORM_ERROR_CODE ::lf::SetPlatformErrorCode();
 #else
 #define LF_SET_PLATFORM_ERROR_CODE
 #endif
@@ -130,7 +132,7 @@
         {                                                                                           \
             LF_SET_PLATFORM_ERROR_CODE;                                                             \
             LF_ERROR_STACK_TRACE;                                                                   \
-            ::lf::gAssertCallback(#expression_, LF_ERROR_STACK_TRACE_VAR, INVALID32, INVALID32);     \
+            ::lf::gAssertCallback(#expression_, LF_ERROR_STACK_TRACE_VAR, ::lf::INVALID32, ::lf::INVALID32);     \
             LF_ERROR_BREAK;                                                                         \
             LF_ERROR_THROW(#expression_, LF_ERROR_STACK_TRACE_VAR);                                 \
         }                                                                                           \
@@ -324,13 +326,6 @@ private:
 
 namespace lf {
 
-enum ErrorFlags
-{
-    ERROR_FLAG_LOG = 1 << 0,
-    ERROR_FLAG_LOG_CALLSTACK = 1 << 1,
-    ERROR_FLAG_LOG_THREAD = 1 << 2
-};
-
 using ErrorCode = UInt32;
 enum ErrorApi : UInt32
 {
@@ -367,7 +362,3 @@ LF_CORE_API extern BugCallback    gReportBugCallback;
 
 LF_CORE_API void SetPlatformErrorCode();
 } // namespace lf
-
-
-
-#endif // LF_CORE_ASSERT_H

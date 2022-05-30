@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -18,14 +18,15 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
-#ifndef LF_CORE_CONCURRENT_RING_BUFFER_H
-#define LF_CORE_CONCURRENT_RING_BUFFER_H
+#pragma once
 
 #include "Core/Common/Types.h"
 #include "Core/Common/API.h"
+#include "Core/Common/Assert.h"
 #include "Core/Platform/Thread.h"
 #include "Core/Platform/Atomic.h"
-#include "Core/Utility/Array.h"
+#include "Core/Utility/StdVector.h"
+#include "Core/Utility/ErrorCore.h"
 
 namespace lf {
 
@@ -121,7 +122,7 @@ public:
     using WorkItem = T;
     using WorkTraits = TraitsT;
     using WorkSlot = ConcurrentRingBufferSlot<T>;
-    using WorkSlots = TArray<WorkSlot>;
+    using WorkSlots = TVector<WorkSlot>;
     using WorkResult = typename WorkTraits::WorkResult;
 
     ConcurrentRingBuffer() :
@@ -237,16 +238,16 @@ public:
     SizeT Size() const { return static_cast<SizeT>(AtomicLoad(&mSize)); }
     SizeT Capacity() const { return mSlots.Size(); }
 private:
-    WorkSlot& AllocatePushSlot() { return mSlots[AtomicIncrement32(&mPushId) % mSlots.Size()]; }
-    WorkSlot& AllocatePopSlot() { return mSlots[AtomicIncrement32(&mPopId) % mSlots.Size()]; }
+    WorkSlot& AllocatePushSlot() { return mSlots[AtomicIncrement32(&mPushId) % mSlots.size()]; }
+    WorkSlot& AllocatePopSlot() { return mSlots[AtomicIncrement32(&mPopId) % mSlots.size()]; }
 
     void InitializeSlots(SizeT size)
     {
-        if (size < mSlots.Size())
+        if (size < mSlots.size())
         {
-            mSlots.Clear();
+            mSlots.clear();
         }
-        mSlots.Resize(size);
+        mSlots.resize(size);
         for (WorkSlot& slot : mSlots)
         {
             AtomicStore(&slot.mState, CRBS_PRODUCER_READY);
@@ -263,5 +264,3 @@ private:
 };
 
 } // namespace lf
-
-#endif // LF_CORE_CONCURRENT_RING_BUFFER_H

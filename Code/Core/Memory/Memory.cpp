@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -18,6 +18,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
+#include "Core/PCH.h"
 #include "Memory.h"
 #include <memory>
 
@@ -25,6 +26,7 @@
 #define NOMINMAX
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
+#include <intrin.h>
 #endif
 
 // Enable to output allocation/free for use with /Tools/LogAnaylzer <filename>
@@ -36,6 +38,9 @@ PointerNode gNullPointerNode;
 AtomicPointerNode gNullAtomicPointerNode;
 const NullPtr NULL_PTR(&gNullPointerNode);
 const AtomicNullPtr ATOMIC_NULL_PTR(&gNullAtomicPointerNode);
+#if defined(LF_TRACK_ALLOCS)
+Atomic32 gTrackAllocs = 0;
+#endif
 
 struct MemoryHeader
 {
@@ -44,6 +49,13 @@ struct MemoryHeader
     UInt8 tag;
     UInt8 headerSize;
 };
+
+#if defined(LF_TRACK_ALLOCS)
+LF_FORCE_INLINE static bool TrackAlloc()
+{
+    return _InterlockedCompareExchange(&gTrackAllocs, 0, 0) > 0;
+}
+#endif
 
 LF_FORCE_INLINE static void* PtrAdd(void* pointer, SizeT amount)
 {
@@ -64,7 +76,19 @@ mAllocs(0)
 MemoryMarkup MEMORY_MARK_UP[MMT_MAX_VALUE];
 const char*  MEMORY_MARK_UP_STRING[MMT_MAX_VALUE];
 
-void* LFAlloc(SizeT size, SizeT alignment, MemoryMarkupTag tag)
+LF_THREAD_LOCAL MemoryMarkupTag gCurrentMarkupTag = MMT_GENERAL;
+
+MemoryMarkupTag LFGetCurrentMemoryTag()
+{
+    return gCurrentMarkupTag;
+}
+void LFSetCurrentMemoryTag(MemoryMarkupTag tag)
+{
+    gCurrentMarkupTag = tag;
+}
+
+
+void* LFAlloc(SizeT size, SizeT alignment)
 {
     if (size == 0)
     {
@@ -72,10 +96,13 @@ void* LFAlloc(SizeT size, SizeT alignment, MemoryMarkupTag tag)
     }
     size = size < alignment ? alignment : size;
 #if defined(LF_TRACK_ALLOCS)
-    UIntPtrT callingAddress = reinterpret_cast<UIntPtrT>(_ReturnAddress());
-    char buffer[64];
-    sprintf_s(buffer, sizeof(buffer), "[DEBUG:Allocate] %llu %llu\n", size, callingAddress);
-    OutputDebugString(buffer);
+    if (TrackAlloc())
+    {
+        UIntPtrT callingAddress = reinterpret_cast<UIntPtrT>(_ReturnAddress());
+        char buffer[64];
+        sprintf_s(buffer, sizeof(buffer), "[DEBUG:Allocate] %llu %llu\n", size, callingAddress);
+        OutputDebugString(buffer);
+    }
 #endif
     const SizeT actualHeaderSize = sizeof(MemoryHeader) + ((size + sizeof(MemoryHeader)) % alignment);
     const SizeT sizeWithHeader = size + actualHeaderSize;
@@ -87,13 +114,13 @@ void* LFAlloc(SizeT size, SizeT alignment, MemoryMarkupTag tag)
     MemoryHeader* header = static_cast<MemoryHeader*>(pointer);
     header->size = size;
     header->alignment = alignment;
-    header->tag = static_cast<UInt8>(tag);
+    header->tag = static_cast<UInt8>(LFGetCurrentMemoryTag());
     header->headerSize = static_cast<ByteT>(actualHeaderSize);
 
     ByteT* headerSize = static_cast<ByteT*>(PtrAdd(pointer, actualHeaderSize - 1));
     *headerSize = static_cast<ByteT>(actualHeaderSize);
-    _InterlockedAdd64(&MEMORY_MARK_UP[tag].mBytesAllocated, static_cast<long long>(size));
-    _InterlockedIncrement64(&MEMORY_MARK_UP[tag].mAllocs);
+    _InlineInterlockedAdd64(&MEMORY_MARK_UP[LFGetCurrentMemoryTag()].mBytesAllocated, static_cast<long long>(size));
+    _InterlockedIncrement64(&MEMORY_MARK_UP[LFGetCurrentMemoryTag()].mAllocs);
     return PtrAdd(pointer, actualHeaderSize);
 }
 void LFFree(void* pointer)
@@ -101,12 +128,15 @@ void LFFree(void* pointer)
     ByteT* headerSize = static_cast<ByteT*>(PtrSub(pointer, 1));
     MemoryHeader* header = static_cast<MemoryHeader*>(PtrSub(pointer, static_cast<SizeT>(*headerSize)));
 #if defined(LF_TRACK_ALLOCS)
-    UIntPtrT callingAddress = reinterpret_cast<UIntPtrT>(_ReturnAddress());
-    char buffer[64];
-    sprintf_s(buffer, sizeof(buffer), "[DEBUG:Free] %llu %llu\n", header->size, callingAddress);
-    OutputDebugString(buffer);
+    if (TrackAlloc())
+    {
+        UIntPtrT callingAddress = reinterpret_cast<UIntPtrT>(_ReturnAddress());
+        char buffer[64];
+        sprintf_s(buffer, sizeof(buffer), "[DEBUG:Free] %llu %llu\n", header->size, callingAddress);
+        OutputDebugString(buffer);
+    }
 #endif
-    _InterlockedAdd64(&MEMORY_MARK_UP[header->tag].mBytesAllocated, -static_cast<long long>(header->size));
+    _InlineInterlockedAdd64(&MEMORY_MARK_UP[header->tag].mBytesAllocated, -static_cast<long long>(header->size));
     _InterlockedDecrement64(&MEMORY_MARK_UP[header->tag].mAllocs);
     _aligned_free(header);
 }
@@ -128,6 +158,19 @@ SizeT LFGetAllocations()
         result += static_cast<SizeT>(MEMORY_MARK_UP[i].mAllocs);
     }
     return result;
+}
+
+void LFEnterTrackAllocs()
+{
+#if defined(LF_TRACK_ALLOCS)
+    _InterlockedIncrement(&gTrackAllocs);
+#endif
+}
+void LFExitTrackAllocs()
+{
+#if defined(LF_TRACK_ALLOCS)
+    _InterlockedDecrement(&gTrackAllocs);
+#endif
 }
 
 } // namespace lf

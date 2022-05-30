@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -18,8 +18,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
-#ifndef LF_CORE_TEXT_STREAM_H
-#define LF_CORE_TEXT_STREAM_H
+#pragma once
 
 // #include "core/io/Stream.h"
 // #include "core/io/IOTypes.h"
@@ -48,7 +47,7 @@ namespace lf
     using StreamObjectWPtr = TWeakPointer<StreamObject>;
     using StreamObjectPtr = TStrongPointer<StreamObject>;
 
-    using StreamPropertyList = TArray<StreamPropertyPtr>;
+    using StreamPropertyList = TVector<StreamPropertyPtr>;
 
     struct LF_CORE_API StreamVariable
     {
@@ -134,13 +133,13 @@ namespace lf
     // "Name={" = StreamStruct
     // "Name=[" = StreamArray
 
-    typedef TArray<StreamObjectPtr> StreamObjectList;
-    typedef TArray<StreamVariable> StreamVariableList;
+    typedef TVector<StreamObjectPtr> StreamObjectList;
+    typedef TVector<StreamVariable> StreamVariableList;
 
     class LF_CORE_API TextStream : public Stream
     {
     public:
-        typedef TArray<String> t_TokenList;
+        typedef TVector<String> t_TokenList;
 
         TextStream();
         TextStream(Stream::StreamText, String* text, StreamMode mode);
@@ -199,6 +198,8 @@ namespace lf
         virtual void SerializeGuid(ByteT* value, SizeT size) override;
         virtual void SerializeAsset(Token& value, bool isWeak) override;
         virtual void Serialize(const StreamPropertyInfo& info) override;
+        virtual void Serialize(const ArrayPropertyInfo& info) override;
+        void Serialize(MemoryBuffer& value) override;
 
         virtual bool BeginObject(const String& name, const String& super) override;
         virtual void EndObject() override;
@@ -298,5 +299,3 @@ namespace lf
         TextStreamContext* mContext;
     };
 }
-
-#endif 

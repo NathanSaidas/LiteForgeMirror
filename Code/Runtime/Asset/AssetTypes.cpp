@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -18,26 +18,30 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
+#include "Runtime/PCH.h"
 #include "AssetTypes.h"
 #include "Core/IO/Stream.h"
 
 namespace lf {
 
-AssetHash::AssetHash() :
-mData()
+AssetHash::AssetHash() 
+: mValue()
 {
     // data type must be byte
-    LF_STATIC_ASSERT(sizeof(mData) == LF_ARRAY_SIZE(mData));
     SetZero();
 }
+AssetHash::AssetHash(const Crypto::MD5Hash& hash)
+: mValue(hash)
+{}
+
 
 void AssetHash::Serialize(Stream& s)
 {
-    s.SerializeGuid(mData, sizeof(mData));
+    s.SerializeGuid(mValue.Bytes(), mValue.Size());
 }
 bool AssetHash::Parse(const String& string)
 {
-    const SizeT HEX_LENGTH = sizeof(mData) * 2;
+    const SizeT HEX_LENGTH = mValue.Size() * 2;
     if (string.Size() != HEX_LENGTH)
     {
         return false;
@@ -53,20 +57,20 @@ bool AssetHash::Parse(const String& string)
             SetZero();
             return false;
         }
-        mData[byteIndex] = (first << 4) | second;
+        mValue.Bytes()[byteIndex] = (first << 4) | second;
         ++byteIndex;
     }
     return true;
 }
 String AssetHash::ToString() const
 {
-    const SizeT HEX_LENGTH = sizeof(mData) * 2;
+    const SizeT HEX_LENGTH = mValue.Size() * 2;
     String hex;
     hex.Reserve(HEX_LENGTH);
-    for (SizeT i = 0; i < sizeof(mData); ++i)
+    for (SizeT i = 0; i < mValue.Size(); ++i)
     {
-        Char8 first = ByteToHex((mData[i] >> 4) & 0x0F);
-        Char8 second = ByteToHex(mData[i] & 0x0F);
+        Char8 first = ByteToHex((mValue.Bytes()[i] >> 4) & 0x0F);
+        Char8 second = ByteToHex(mValue.Bytes()[i] & 0x0F);
         if (first == '\0' || second == '\0')
         {
             return String();
@@ -79,44 +83,50 @@ String AssetHash::ToString() const
 
 void AssetHash::SetZero()
 {
-    memset(mData, 0, sizeof(mData));
+    mValue = Crypto::MD5Hash();
 }
 bool AssetHash::IsZero() const
 {
-    for (SizeT i = 0; i < sizeof(mData); ++i)
-    {
-        if (mData[i] != 0)
-        {
-            return false;
-        }
-    }
-    return true;
+    return mValue.Empty();
 }
 
-AssetTypeData::AssetTypeData() :
-mFullName(),
-mConcreteType(),
-mCacheName(),
-mUID(INVALID32),
-mParentUID(INVALID32),
-mVersion(0),
-mAttributes(0),
-mFlags(0),
-mCategory(0),
-mHash()
+bool AssetLoadState::IsCreated(AssetLoadState::Value value)
 {
+    return value >= ALS_CREATED && value <= ALS_LOADED;
+}
+bool AssetLoadState::IsPropertyLoaded(AssetLoadState::Value value)
+{
+    return value >= ALS_SERIALIZED_PROPERTIES && value <= ALS_LOADED;
+}
+bool AssetLoadState::IsDependencyLoaded(AssetLoadState::Value value)
+{
+    return value >= ALS_SERIALIZED_DEPENDENCIES && value <= ALS_LOADED;
+}
 
-}
-void AssetTypeData::Serialize(Stream& s)
-{
-    SERIALIZE(s, mCacheName, "");
-    SERIALIZE(s, mUID, "");
-    SERIALIZE(s, mParentUID, "");
-    SERIALIZE(s, mVersion, "");
-    SERIALIZE(s, mAttributes, "");
-    SERIALIZE(s, mFlags, "");
-    SERIALIZE(s, mCategory, "");
-    SERIALIZE(s, mHash, "");
-}
+// AssetTypeData::AssetTypeData() :
+// mFullName(),
+// mConcreteType(),
+// mCacheName(),
+// mUID(INVALID32),
+// mParentUID(INVALID32),
+// mVersion(0),
+// mAttributes(0),
+// mFlags(0),
+// mCategory(0),
+// mHash()
+// {
+// 
+// }
+// void AssetTypeData::Serialize(Stream& s)
+// {
+//     SERIALIZE(s, mCacheName, "");
+//     SERIALIZE(s, mUID, "");
+//     SERIALIZE(s, mParentUID, "");
+//     SERIALIZE(s, mVersion, "");
+//     SERIALIZE(s, mAttributes, "");
+//     SERIALIZE(s, mFlags, "");
+//     SERIALIZE(s, mCategory, "");
+//     SERIALIZE(s, mHash, "");
+// }
 
 } // namespace lf

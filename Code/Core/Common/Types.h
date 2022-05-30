@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -18,8 +18,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
-#ifndef LF_CORE_TYPES_H
-#define LF_CORE_TYPES_H
+#pragma once
 
 #pragma warning(disable : 4251) //  template needs to have a dll interface
 
@@ -61,7 +60,7 @@
 #define LF_CONCAT_WRAPPER(a,b) a##b
 #define LF_CONCAT(a,b) LF_CONCAT_WRAPPER(a,b)
 #define LF_ANONYMOUS_NAME(name) LF_CONCAT(name, __LINE__)
-#define LF_STATIC_ASSERT(expression) static_assert(expression, #expression)
+#define LF_STATIC_ASSERT(expression, ...) static_assert(expression, #expression)
 #define LF_STATIC_CRASH(message) static_assert(false, message)
 #define LF_STATIC_IS_A(SourceT, DestT) { SourceT* compile_is_a_src = 0; DestT* compile_is_a_dest = compile_is_a_src; (compile_is_a_dest); }
 #define LF_EXPORT_DLL _declspec(dllexport)
@@ -105,6 +104,7 @@ using UIntPtrT = unsigned long long;
 using Atomic16 = short;
 using Atomic32 = long;
 using Atomic64 = long long;
+using AtomicU32 = unsigned long;
 
 enum CopyOnWriteTag { COPY_ON_WRITE };
 enum LazyTag { LAZY };
@@ -116,6 +116,15 @@ const UInt16 INVALID16 = static_cast<UInt16>(-1);
 const UInt32 INVALID32 = static_cast<UInt32>(-1);
 const UInt64 INVALID64 = static_cast<UInt64>(-1);
 const SizeT INVALID = static_cast<SizeT>(-1);
+
+template<typename T>
+LF_INLINE constexpr T ToKB(const T value) { return value * 1024; }
+
+template<typename T>
+LF_INLINE constexpr T ToMB(const T value) { return value * 1024 * 1024; }
+
+template<typename T>
+LF_INLINE constexpr T ToGB(const T value) { return value * 1024 * 1024 * 1024; }
 
 LF_FORCE_INLINE bool Valid(UInt8 v) { return v != INVALID8; }
 LF_FORCE_INLINE bool Invalid(UInt8 v) { return v == INVALID8; }
@@ -208,6 +217,44 @@ struct ConstructPlacementNew { };
 //      void Foo(T* memory) { *memory = T(); }
 struct ConstructDefaultAssign { };
 
+enum ErrorFlags
+{
+    ERROR_FLAG_LOG = 1 << 0,
+    ERROR_FLAG_LOG_CALLSTACK = 1 << 1,
+    ERROR_FLAG_LOG_THREAD = 1 << 2,
+    ERROR_FLAG_REQUEST_DEBUGGER = 1 << 3,
+};
+
+// ********************************************************************
+// UnsafePtr is a class we use to wrap raw pointers to ensure they are 
+// not copied for use later on.
+//
+// DO NOT USE std::move!
+// 
+// Usage:
+// TUnsafePtr<String> == String*
+// TUnsafePtr<const String> == const String*
+// ********************************************************************
+template<typename T>
+class TUnsafePtr
+{
+public:
+    TUnsafePtr(T* pointer) : mPointer(pointer) {}
+    TUnsafePtr(TUnsafePtr&& other) : mPointer(other.mPointer) { other.mPointer = nullptr; }
+    TUnsafePtr& operator=(TUnsafePtr&& other) { mPointer = other.mPointer; other.mPointer = nullptr; return *this; }
+
+    T* operator->() { return mPointer; }
+    operator bool() const { return mPointer != nullptr; }
+    bool operator==(const std::nullptr_t) { return mPointer == nullptr; }
+    bool operator!=(const std::nullptr_t) { return mPointer != nullptr; }
+
+private:
+    TUnsafePtr() = delete;
+    TUnsafePtr(const TUnsafePtr&) = delete;
+    TUnsafePtr& operator=(const TUnsafePtr&) = delete;
+    T* mPointer;
+};
+
 } // namespace lf
 
 // The type trait for type construction, by default everything uses the new placement operator
@@ -227,8 +274,3 @@ template<> struct TypeConstructionTraits<lf::Float64> { using TypeT = lf::Constr
 template<> struct TypeConstructionTraits<lf::Float32> { using TypeT = lf::ConstructDefaultAssign; };
 template<> struct TypeConstructionTraits<bool> { using TypeT = lf::ConstructDefaultAssign; };
 template<> struct TypeConstructionTraits<lf::Char16> { using TypeT = lf::ConstructDefaultAssign; };
-
-
-
-
-#endif // LF_CORE_TYPES_H

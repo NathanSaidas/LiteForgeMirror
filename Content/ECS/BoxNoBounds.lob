@@ -1,0 +1,7 @@
+$BoxNoBounds.lob=Engine//Types/lf/EntityDefinition
+{
+    ComponentTypes=[
+        "lf::TransformComponent",
+        "lf::ModelComponent"
+    ]
+}

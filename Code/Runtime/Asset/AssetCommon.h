@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -22,6 +22,7 @@
 #define LF_RUNTIME_ASSET_COMMON_H
 
 #include "Core/Common/API.h"
+#include "Core/Common/Enum.h"
 #include "Core/String/String.h"
 
 namespace lf {
@@ -34,6 +35,11 @@ LF_RUNTIME_API String GetConcreteAssetName(const Type* type);
 LF_RUNTIME_API String GetConcreteAssetName(const String& fullname);
 
 }
+
+DECLARE_ENUM(AssetOpThread,
+MAIN_THREAD,
+WORKER_THREAD
+);
 
 
 } // namespace lf

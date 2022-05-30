@@ -1,23 +1,170 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Config">
-      <UniqueIdentifier>{2501dc59-91c5-4bcf-9818-68c8fda0a9b5}</UniqueIdentifier>
-    </Filter>
     <Filter Include="App">
       <UniqueIdentifier>{927a7cbf-de05-41ac-89c3-6403b5b23499}</UniqueIdentifier>
     </Filter>
+    <Filter Include="DX12">
+      <UniqueIdentifier>{14fa68bf-ef2e-41cf-b940-e49a583893fe}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DX11">
+      <UniqueIdentifier>{924af988-4750-4cdc-b6c8-99674d9814b0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DebugRenderer">
+      <UniqueIdentifier>{3f1f7b52-2e83-4dee-88ae-bc9e03e61394}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Win32Input">
+      <UniqueIdentifier>{4d55d8c2-7e4d-471f-bfba-663a45b36402}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="World">
+      <UniqueIdentifier>{925ef740-0c2d-4256-b988-f840cea04c85}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Gfx">
+      <UniqueIdentifier>{dbcfe986-ed0b-4c5c-967b-163bea3d5a6c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DX12\Experimental">
+      <UniqueIdentifier>{7a9fb301-a1e9-4d7b-89b8-5daf8d58338e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DX12\Experimental\Base">
+      <UniqueIdentifier>{ad0cf8f8-8da7-4435-a18c-47883b04aac9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DX12\Experimental\Impl">
+      <UniqueIdentifier>{d91ca97c-969d-4610-ad8a-5d1f22100a9a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Gfx\ComponentTypes">
+      <UniqueIdentifier>{5060dc34-ddae-4d66-8001-156669534b67}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Gfx\ComponentSystem">
+      <UniqueIdentifier>{84c7c952-3bcc-42bd-a204-05cdd0868571}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Gfx\ModelRenderers">
+      <UniqueIdentifier>{7e573be7-4552-4702-9d04-38a9182c6fd6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="World\ComponentTypes">
+      <UniqueIdentifier>{c2d43304-9785-4f10-a4c8-87971ea15208}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Config.cpp">
-      <Filter>Config</Filter>
-    </ClCompile>
     <ClCompile Include="App\Application.cpp">
       <Filter>App</Filter>
     </ClCompile>
     <ClCompile Include="App\Program.cpp">
       <Filter>App</Filter>
     </ClCompile>
+    <ClCompile Include="DX12\DX12GfxDevice.cpp">
+      <Filter>DX12</Filter>
+    </ClCompile>
+    <ClCompile Include="DX12\DX12GfxWindow.cpp">
+      <Filter>DX12</Filter>
+    </ClCompile>
+    <ClCompile Include="DX12\DX12GfxFactory.cpp">
+      <Filter>DX12</Filter>
+    </ClCompile>
+    <ClCompile Include="DX12\DX12GfxDependencyContext.cpp">
+      <Filter>DX12</Filter>
+    </ClCompile>
+    <ClCompile Include="DX12\DX12GfxShader.cpp">
+      <Filter>DX12</Filter>
+    </ClCompile>
+    <ClCompile Include="DX12\DX12GfxPipelineState.cpp">
+      <Filter>DX12</Filter>
+    </ClCompile>
+    <ClCompile Include="DX11\DX11GfxFactory.cpp">
+      <Filter>DX11</Filter>
+    </ClCompile>
+    <ClCompile Include="DX11\DX11GfxWindow.cpp">
+      <Filter>DX11</Filter>
+    </ClCompile>
+    <ClCompile Include="DX11\DX11GfxDependencyContext.cpp">
+      <Filter>DX11</Filter>
+    </ClCompile>
+    <ClCompile Include="DX11\DX11GfxShader.cpp">
+      <Filter>DX11</Filter>
+    </ClCompile>
+    <ClCompile Include="DX11\DX11GfxDevice.cpp">
+      <Filter>DX11</Filter>
+    </ClCompile>
+    <ClCompile Include="DX11\DX11GfxMaterial.cpp">
+      <Filter>DX11</Filter>
+    </ClCompile>
+    <ClCompile Include="DebugRenderer\DebugRenderer.cpp">
+      <Filter>DebugRenderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Win32Input\Win32InputMgr.cpp">
+      <Filter>Win32Input</Filter>
+    </ClCompile>
+    <ClCompile Include="App\GameApp.cpp">
+      <Filter>App</Filter>
+    </ClCompile>
+    <ClCompile Include="PCH.cpp" />
+    <ClCompile Include="World\WorldContainerImpl.cpp">
+      <Filter>World</Filter>
+    </ClCompile>
+    <ClCompile Include="World\WorldImpl.cpp">
+      <Filter>World</Filter>
+    </ClCompile>
+    <ClCompile Include="Gfx\GfxShaderManagerImpl.cpp">
+      <Filter>Gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="DX12\DX12GfxRenderer.cpp">
+      <Filter>DX12</Filter>
+    </ClCompile>
+    <ClCompile Include="DX12\DX12GfxShaderCompiler.cpp">
+      <Filter>DX12</Filter>
+    </ClCompile>
+    <ClCompile Include="DX12\DX12GfxBuffer.cpp">
+      <Filter>DX12</Filter>
+    </ClCompile>
+    <ClCompile Include="DX12\DX12GfxSwapChain.cpp">
+      <Filter>DX12</Filter>
+    </ClCompile>
+    <ClCompile Include="DX12\DX12GfxResourceCommandList.cpp">
+      <Filter>DX12</Filter>
+    </ClCompile>
+    <ClCompile Include="DX12\DX12GfxVertexBuffer.cpp">
+      <Filter>DX12</Filter>
+    </ClCompile>
+    <ClCompile Include="Gfx\GameRenderer.cpp">
+      <Filter>Gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="DX12\DX12GfxCommandContext.cpp">
+      <Filter>DX12</Filter>
+    </ClCompile>
+    <ClCompile Include="DX12\DX12GfxCommandQueue.cpp">
+      <Filter>DX12</Filter>
+    </ClCompile>
+    <ClCompile Include="DX12\DX12GfxIndexBuffer.cpp">
+      <Filter>DX12</Filter>
+    </ClCompile>
+    <ClCompile Include="DX12\DX12GfxFence.cpp">
+      <Filter>DX12</Filter>
+    </ClCompile>
+    <ClCompile Include="DX12\DX12GfxTexture.cpp">
+      <Filter>DX12</Filter>
+    </ClCompile>
+    <ClCompile Include="DX12\DX12GfxResourceHeap.cpp">
+      <Filter>DX12</Filter>
+    </ClCompile>
+    <ClCompile Include="Gfx\ComponentTypes\ProceduralMeshComponent.cpp">
+      <Filter>Gfx\ComponentTypes</Filter>
+    </ClCompile>
+    <ClCompile Include="Gfx\ModelRenderers\ProceduralModelRenderer.cpp">
+      <Filter>Gfx\ModelRenderers</Filter>
+    </ClCompile>
+    <ClCompile Include="Gfx\ComponentSystem\GfxModelRenderSetupComponentSystem.cpp">
+      <Filter>Gfx\ComponentSystem</Filter>
+    </ClCompile>
+    <ClCompile Include="World\ComponentTypes\WorldDataComponent.cpp" />
+    <ClCompile Include="DX12\DX12Util.cpp" />
+    <ClCompile Include="Gfx\ComponentTypes\MeshSimpleComponent.cpp" />
+    <ClCompile Include="Gfx\ModelRenderers\MeshModelRenderer.cpp" />
+    <ClCompile Include="Gfx\ComponentTypes\MeshRendererComponent.cpp" />
+    <ClCompile Include="Gfx\ComponentTypes\MeshRendererFlagsComponent.cpp" />
+    <ClCompile Include="Gfx\ComponentSystem\MeshSetupComponentSystem.cpp" />
+    <ClCompile Include="Gfx\ComponentTypes\MeshTextureComponent.cpp" />
+    <ClCompile Include="Gfx\ComponentTypes\MeshStandardComponent.cpp" />
+    <ClCompile Include="DX12\DX12GfxUploadBuffer.cpp" />
+    <ClCompile Include="DX12\DX12GfxRenderTexture.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App\Application.h">
@@ -26,5 +173,132 @@
     <ClInclude Include="App\Program.h">
       <Filter>App</Filter>
     </ClInclude>
+    <ClInclude Include="ForcedExports.h" />
+    <ClInclude Include="DX12\DX12GfxDevice.h">
+      <Filter>DX12</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12\DX12Common.h">
+      <Filter>DX12</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12\DX12GfxWindow.h">
+      <Filter>DX12</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12\DX12GfxFactory.h">
+      <Filter>DX12</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12\DX12GfxDependencyContext.h">
+      <Filter>DX12</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12\DX12GfxShader.h">
+      <Filter>DX12</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12\DX12GfxPipelineState.h">
+      <Filter>DX12</Filter>
+    </ClInclude>
+    <ClInclude Include="DX11\DX11Common.h">
+      <Filter>DX11</Filter>
+    </ClInclude>
+    <ClInclude Include="DX11\DX11GfxFactory.h">
+      <Filter>DX11</Filter>
+    </ClInclude>
+    <ClInclude Include="DX11\DX11GfxWindow.h">
+      <Filter>DX11</Filter>
+    </ClInclude>
+    <ClInclude Include="DX11\DX11GfxDependencyContext.h">
+      <Filter>DX11</Filter>
+    </ClInclude>
+    <ClInclude Include="DX11\DX11GfxShader.h">
+      <Filter>DX11</Filter>
+    </ClInclude>
+    <ClInclude Include="DX11\DX11GfxDevice.h">
+      <Filter>DX11</Filter>
+    </ClInclude>
+    <ClInclude Include="DX11\DX11GfxMaterial.h">
+      <Filter>DX11</Filter>
+    </ClInclude>
+    <ClInclude Include="DebugRenderer\DebugRenderer.h">
+      <Filter>DebugRenderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Win32Input\Win32InputMgr.h">
+      <Filter>Win32Input</Filter>
+    </ClInclude>
+    <ClInclude Include="App\GameApp.h">
+      <Filter>App</Filter>
+    </ClInclude>
+    <ClInclude Include="PCH.h" />
+    <ClInclude Include="World\WorldContainerImpl.h">
+      <Filter>World</Filter>
+    </ClInclude>
+    <ClInclude Include="World\WorldImpl.h">
+      <Filter>World</Filter>
+    </ClInclude>
+    <ClInclude Include="World\ComponentSystemTuple.h">
+      <Filter>World</Filter>
+    </ClInclude>
+    <ClInclude Include="Gfx\GfxShaderManagerImpl.h">
+      <Filter>Gfx</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12\Experimental\Impl\d3dx12.h">
+      <Filter>DX12\Experimental\Impl</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12\DX12GfxRenderer.h">
+      <Filter>DX12</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12\DX12GfxShaderCompiler.h">
+      <Filter>DX12</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12\DX12GfxBuffer.h">
+      <Filter>DX12</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12\DX12GfxSwapChain.h">
+      <Filter>DX12</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12\DX12GfxResourceCommandList.h">
+      <Filter>DX12</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12\DX12GfxVertexBuffer.h">
+      <Filter>DX12</Filter>
+    </ClInclude>
+    <ClInclude Include="Gfx\GameRenderer.h">
+      <Filter>Gfx</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12\DX12GfxCommandContext.h">
+      <Filter>DX12</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12\DX12GfxCommandQueue.h">
+      <Filter>DX12</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12\DX12GfxIndexBuffer.h">
+      <Filter>DX12</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12\DX12GfxFence.h">
+      <Filter>DX12</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12\DX12GfxTexture.h">
+      <Filter>DX12</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12\DX12GfxResourceHeap.h">
+      <Filter>DX12</Filter>
+    </ClInclude>
+    <ClInclude Include="Gfx\ComponentTypes\ProceduralMeshComponent.h">
+      <Filter>Gfx\ComponentTypes</Filter>
+    </ClInclude>
+    <ClInclude Include="Gfx\ModelRenderers\ProceduralModelRenderer.h">
+      <Filter>Gfx\ModelRenderers</Filter>
+    </ClInclude>
+    <ClInclude Include="Gfx\ComponentSystem\GfxModelRenderSetupComponentSystem.h">
+      <Filter>Gfx\ComponentSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="World\ComponentTypes\WorldDataComponent.h" />
+    <ClInclude Include="DX12\DX12Util.h" />
+    <ClInclude Include="Gfx\ComponentTypes\MeshSimpleComponent.h" />
+    <ClInclude Include="Gfx\ModelRenderers\MeshModelRenderer.h" />
+    <ClInclude Include="Gfx\ComponentTypes\MeshRendererComponent.h" />
+    <ClInclude Include="Gfx\ComponentTypes\MeshRendererFlagsComponent.h" />
+    <ClInclude Include="Gfx\ComponentSystem\MeshSetupComponentSystem.h" />
+    <ClInclude Include="Gfx\ComponentTypes\MeshTextureComponent.h" />
+    <ClInclude Include="Gfx\ComponentTypes\MeshStandardComponent.h" />
+    <ClInclude Include="DX12\DX12GfxUploadBuffer.h" />
+    <ClInclude Include="DX12\DX12GfxRenderTexture.h" />
   </ItemGroup>
 </Project>

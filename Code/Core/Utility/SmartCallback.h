@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -19,548 +19,673 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
 
-#ifndef LF_CORE_SMART_CALLBACK_H
-#define LF_CORE_SMART_CALLBACK_H
-
-#include "Core/Common/Types.h"
-#include "Core/Common/Enum.h"
-
-// =======================================================================
-// ShieldHeart Smart Callback:
-// Smart callback provides an interface for wrapping methods / functions
-// into a common use interface.
-//  
-// Note: The return type for callbacks is limited to value types that are default constructible.
-// =======================================================================
+#pragma once
+#include "Core/Memory/SmartPointer.h"
+#include "Core/Memory/AtomicSmartPointer.h"
+#include "Core/Utility/FNVHash.h"
+#include <utility>
 
 namespace lf
 {
-    DECLARE_STRICT_ENUM(CallbackType,
-        CT_FUNCTION,
-        CT_METHOD,
-        CT_CONST_METHOD,
-        CT_LAMBDA
-        );
 
-    template<typename T, typename ... ARGS>
-    class TCallback;
+    // ********************************************************************
+    // 
+    // TCallback< ReturnT, ArgsT ... >
+    //      This is the base class for all callback types, its a wrapper around
+    //      function/lambda/method/const method pointers, as well supports 
+    //      object binding for raw/smart/atomic-smart pointers.
+    // 
+    //      TCallback is designed to be 'type-safe' but not dynamic, eg doesn't
+    //      support object binding for polymorphic types (re-create the callback)
+    //
+    //      Use TCallback<...>::Make( ... ) to create a callback
+    // 
+    // THashedCallback< Tag, ReturnT, Args ... >
+    //      This is a extension of 'TCallback' that has built-in hashing 
+    //      functionality WHEN USED WITH the macros DECLARE_HASHED_CALLBACK/
+    //      DECLARE_HASHED_CALLBACK_WITH_SIZE.
+    // 
+    //      Hashed callbacks allow you to convert between anonymous callback
+    //      and back to hashed callback (as long as the signature matches)
+    //
+    // Signature: The signature of a callback is defined as the arguments
+    //      you passed in for ReturnT / ArgsT (ignoring spaces)
+    //
+    // Anonymous Callback: A representation of a callback in data only
+    //      (runtime safe only, do not save to memory!) 
+    //
+    // Usage w/ hashing:
+    //          DECLARE_HASHED_CALLBACK( Name, ReturnT, ArgsT ... )
+    //          DECLARE_HASHED_CALLBACK_WITH_SIZE( Name, ReturnT, ArgsT ... )
+    // 
+    // Usage w/o hashing:
+    //          using Name = TCallback<ReturnT, ArgsT...>
+    // 
+    // ********************************************************************
 
-    class CallbackHandle
+
+#define DECLARE_HASHED_CALLBACK(Name, ...)                              \
+using Name = THashedCallbackBase<ComputeCallbackHash(#__VA_ARGS__), 64, __VA_ARGS__>;   \
+
+#define DECLARE_HASHED_CALLBACK_WITH_SIZE(Name, Size, ...)              \
+using Name = THashedCallbackBase<ComputeCallbackHash(#__VA_ARGS__), Size, __VA_ARGS__>; \
+
+    template<SizeT CBufferSize>
+    LF_INLINE constexpr FNV::HashT ComputeCallbackHash(const char(&string)[CBufferSize])
     {
-    public:
-        static const SizeT DATA_SIZE = 64;
-        typedef bool(*t_IsValidCallback)(const void*);
-        typedef void(*t_WrapperCallback)(void*, void*);
-        typedef void(*t_WrapperDestroyCallback)(void*);
-
-        LF_INLINE CallbackHandle() :
-            mType(CallbackType::INVALID_ENUM),
-            mInvokeCallback(nullptr),
-            mCopyCallback(nullptr),
-            mMoveCallback(nullptr),
-            mDestroyCallback(nullptr),
-            mData()
+        FNV::HashT hash = FNV::FNV_OFFSET_BASIS;
+        for (SizeT i = 0; i < CBufferSize; ++i)
         {
-            memset(mData, 0, sizeof(mData));
-        }
-
-        LF_INLINE CallbackHandle(const CallbackHandle& other) :
-            mType(other.mType),
-            mInvokeCallback(other.mInvokeCallback),
-            mIsValidCallback(other.mIsValidCallback),
-            mCopyCallback(other.mCopyCallback),
-            mMoveCallback(other.mMoveCallback),
-            mDestroyCallback(other.mDestroyCallback),
-            mData()
-        {
-            if (mCopyCallback)
+            if (string[i] == ' ' || string[i] == '\t' || string[i] == '\0')
             {
-                mCopyCallback(mData, other.mData);
+                continue;
             }
+            hash = hash * FNV::FNV_PRIME;
+            hash = hash ^ string[i];
         }
+        return hash;
+    }
 
-        LF_INLINE CallbackHandle(CallbackHandle&& other) :
-            mType(std::move(other.mType)),
-            mInvokeCallback(std::move(other.mInvokeCallback)),
-            mIsValidCallback(std::move(other.mIsValidCallback)),
-            mCopyCallback(std::move(other.mCopyCallback)),
-            mMoveCallback(std::move(other.mMoveCallback)),
-            mDestroyCallback(std::move(other.mDestroyCallback)),
-            mData()
-        {
-            if (mMoveCallback)
-            {
-                mMoveCallback(mData, other.mData);
-            }
-
-            other.mType = CallbackType::INVALID_ENUM;
-            other.mInvokeCallback = nullptr;
-            other.mIsValidCallback = nullptr;
-            other.mCopyCallback = nullptr;
-            other.mMoveCallback = nullptr;
-            other.mDestroyCallback = nullptr;
-            memset(other.mData, 0, sizeof(other.mData));
-        }
-
-        LF_INLINE ~CallbackHandle()
-        {
-            if (mDestroyCallback)
-            {
-                mDestroyCallback(mData);
-            }
-        }
-
-        // Called to assign the callback to this
-        template<typename R, typename ... ARGS>
-        void Assign(const TCallback<R, ARGS...>& callback) const;
-
-        // Called to assign this to the callback
-        template<typename R, typename ... ARGS>
-        void Acquire(const TCallback<R, ARGS...>& callback) const;
-
-        LF_INLINE CallbackHandle& operator=(const CallbackHandle& other)
-        {
-            if (mDestroyCallback)
-            {
-                mDestroyCallback(mData);
-            }
-            mType = other.mType;
-            mIsValidCallback = other.mIsValidCallback;
-            mInvokeCallback = other.mInvokeCallback;
-            mCopyCallback = other.mCopyCallback;
-            mMoveCallback = other.mMoveCallback;
-            mDestroyCallback = other.mDestroyCallback;
-            if (mCopyCallback)
-            {
-                mCopyCallback(mData, other.mData);
-            }
-            return(*this);
-        }
-
-        LF_INLINE CallbackHandle& operator=(CallbackHandle&& other)
-        {
-            if (mDestroyCallback)
-            {
-                mDestroyCallback(mData);
-            }
-            mType = std::move(other.mType);
-            mInvokeCallback = std::move(other.mInvokeCallback);
-            mIsValidCallback = std::move(other.mIsValidCallback);
-            mCopyCallback = std::move(other.mCopyCallback);
-            mMoveCallback = std::move(other.mMoveCallback);
-            mDestroyCallback = std::move(other.mDestroyCallback);
-            if (mMoveCallback)
-            {
-                mMoveCallback(mData, other.mData);
-            }
-
-            other.mType = CallbackType::INVALID_ENUM;
-            other.mInvokeCallback = nullptr;
-            other.mIsValidCallback = nullptr;
-            other.mCopyCallback = nullptr;
-            other.mMoveCallback = nullptr;
-            other.mDestroyCallback = nullptr;
-            memset(other.mData, 0, sizeof(other.mData));
-
-            return(*this);
-        }
-
-
-        LF_INLINE bool IsValid() const
-        {
-            return IsLambda() || (mIsValidCallback && mIsValidCallback(mData));
-        }
-
-        LF_INLINE operator bool() const
-        {
-            return IsValid();
-        }
-
-        bool IsMethod() const
-        {
-            return mType == CallbackType::CT_METHOD || mType == CallbackType::CT_CONST_METHOD;
-        }
-
-        bool IsFunction() const
-        {
-            return mType == CallbackType::CT_FUNCTION;
-        }
-
-        bool IsLambda() const
-        {
-            return mType == CallbackType::CT_LAMBDA;
-        }
-
-    private:
-        mutable CallbackType mType;
-        mutable void* mInvokeCallback;
-        mutable t_IsValidCallback mIsValidCallback;
-        mutable t_WrapperCallback mCopyCallback;
-        mutable t_WrapperCallback mMoveCallback;
-        mutable t_WrapperDestroyCallback mDestroyCallback;
-        mutable UInt8 mData[DATA_SIZE];
+    enum class CallbackType : SizeT
+    {
+        CT_FUNCTION,
+        CT_LAMBDA,
+        CT_METHOD,
+        CT_WEAK_PTR_METHOD,
+        CT_ATOMIC_WEAK_PTR_METHOD,
+        CT_CONST_METHOD,
+        CT_WEAK_PTR_CONST_METHOD,
+        CT_ATOMIC_WEAK_PTR_CONST_METHOD,
+        MAX_VALUE,
+        INVALID_ENUM
     };
 
-    template<typename R, typename ... ARGS>
-    class TCallback
+    template<SizeT CBufferSize>
+    struct TAnonymousCallback
+    {
+        FNV::HashT      mSignatureHash;
+        CallbackType    mType;
+        ByteT           mData[CBufferSize];
+    };
+
+    struct AnonymousCallback
+    {
+        FNV::HashT   mSignatureHash;
+        CallbackType mType;
+        ByteT        mData[64];
+    };
+
+    struct ArgumentPackVoid
+    {};
+
+    template<typename T, typename ... ArgsT>
+    struct TArgumentPackBase
+    {
+        TArgumentPackBase(T value, ArgsT ... args)
+            : mValue(value)
+            , mNext(std::forward<ArgsT>(args)...)
+        {}
+
+        template<typename CallbackT, typename ... ArgsT>
+        typename CallbackT::ReturnType Invoke(CallbackT& callback, ArgsT&& ... args)
+        {
+            return mNext.Invoke(callback, std::forward<T>(mValue), std::forward<ArgsT>(args)...);
+        }
+
+        T mValue;
+        TArgumentPackBase<ArgsT...> mNext;
+    };
+
+    template<>
+    struct TArgumentPackBase<ArgumentPackVoid>
+    {
+        TArgumentPackBase()
+        {}
+        TArgumentPackBase(ArgumentPackVoid)
+        {}
+
+        template<typename CallbackT, typename ... ArgsT>
+        typename CallbackT::ReturnType Invoke(CallbackT& callback, ArgsT&& ... args)
+        {
+            return callback.Invoke(std::forward<ArgsT>(args)...);
+        }
+    };
+
+    template<typename ... ArgsT>
+    struct TArgumentPack : public TArgumentPackBase<ArgsT..., ArgumentPackVoid>
+    {
+        using Super = TArgumentPackBase<ArgsT..., ArgumentPackVoid>;
+        TArgumentPack(ArgsT ... args)
+            : Super(std::forward<ArgsT>(args)..., ArgumentPackVoid())
+        {}
+    };
+
+    // NOTE: This was derived from C++ MSVC, it might not necessarily hold true for other compilers
+    LF_FORCE_INLINE UIntPtrT VTableFromThis(void* thisPtr)
+    {
+        return reinterpret_cast<UIntPtrT>((reinterpret_cast<void**>(thisPtr))[0]);
+    }
+
+    template<typename ReturnT, SizeT CBufferSize, typename ... ArgsT>
+    class TCallbackBase
     {
     public:
-        static const SizeT DATA_SIZE = 64;
-        typedef R(*t_InvokeCallback)(void*, ARGS ...);
-        typedef bool(*t_IsValidCallback)(const void*);
-        typedef void(*t_WrapperCallback)(void*, void*);
-        typedef void(*t_WrapperDestroyCallback)(void*);
-
-    private:
-        class FunctionWrapper
+        // ** Base class for invoking 
+        struct BaseInvoke
         {
-        public:
-            typedef R(*t_Delegate)(ARGS...);
-            LF_INLINE FunctionWrapper() : pointer(nullptr) {}
-            LF_INLINE FunctionWrapper(const FunctionWrapper& other) : pointer(other.pointer) {}
-            LF_INLINE FunctionWrapper(FunctionWrapper&& other) : pointer(std::move(other.pointer)) {}
-            LF_INLINE ~FunctionWrapper() {}
-            LF_INLINE bool IsValid() const { return pointer != nullptr; }
-            LF_INLINE R Invoke(ARGS... args) const { return(pointer(args...)); }
+            virtual ~BaseInvoke() {}
+            virtual ReturnT Invoke(ArgsT&&... args) const = 0;
+            virtual BaseInvoke* CopyTo(ByteT(&buffer)[CBufferSize]) const = 0;
+            virtual bool IsValid() const = 0;
+        };
 
-            static R Invoke(void* data, ARGS ... args)
+        struct BaseMethodInvoke : public BaseInvoke
+        {
+            virtual ~BaseMethodInvoke() {}
+            virtual void UnbindObject() = 0;
+        };
+
+        template<typename LambdaT>
+        struct LambdaType : public BaseInvoke
+        {
+            using Type = LambdaT;
+
+            LambdaType(Type function)
+                : mFunction(function)
+            {}
+
+            ReturnT Invoke(ArgsT&& ... args) const override
             {
-                FunctionWrapper* wrapper = reinterpret_cast<FunctionWrapper*>(data);
-                return(wrapper->Invoke(args...));
+                return mFunction(std::forward<ArgsT>(args)...);
             }
 
-            static void Copy(void* data, void* otherData)
+            BaseInvoke* CopyTo(ByteT(&buffer)[CBufferSize]) const override
             {
-                FunctionWrapper* otherWrapper = reinterpret_cast<FunctionWrapper*>(otherData);
-                FunctionWrapper* wrapper = new(data)FunctionWrapper(*otherWrapper);
-                Assert(wrapper == data);
+                return new (buffer) LambdaType(mFunction);
             }
 
-            static void Move(void* data, void* otherData)
+            bool IsValid() const override
             {
-                FunctionWrapper* otherWrapper = reinterpret_cast<FunctionWrapper*>(otherData);
-                FunctionWrapper* wrapper = new(data)FunctionWrapper(std::move(*otherWrapper));
-                Assert(wrapper == data);
+                return true;
             }
 
-            static void Destroy(void* data)
+            Type mFunction;
+        };
+
+        struct FunctionType : public BaseInvoke
+        {
+            using Type = ReturnT(*)(ArgsT...);
+            FunctionType(Type function)
+                : mFunction(function)
+            {}
+
+            ReturnT Invoke(ArgsT&& ... args) const override
             {
-                FunctionWrapper* wrapper = reinterpret_cast<FunctionWrapper*>(data);
-                wrapper->~FunctionWrapper();
+                return mFunction(std::forward<ArgsT>(args)...);
             }
 
-            static bool IsValid(const void* data)
+            BaseInvoke* CopyTo(ByteT(&buffer)[CBufferSize]) const override
             {
-                const FunctionWrapper* wrapper = reinterpret_cast<const FunctionWrapper*>(data);
-                return wrapper->IsValid();
+                return new (buffer) FunctionType(mFunction);
             }
 
-            t_Delegate pointer;
+            bool IsValid() const override
+            {
+                return mFunction;
+            }
+
+            Type mFunction;
         };
 
         template<typename T>
-        class MethodWrapper
+        struct MethodType : public BaseMethodInvoke
         {
-        public:
-            typedef R(T::value_type::*t_Delegate)(ARGS...);
-            LF_INLINE MethodWrapper() : pointer(nullptr), object() {}
-            LF_INLINE MethodWrapper(const MethodWrapper& other) : pointer(other.pointer), object(other.object) {}
-            LF_INLINE MethodWrapper(MethodWrapper&& other) : pointer(std::move(other.pointer)), object(std::move(other.object)) {}
-            LF_INLINE ~MethodWrapper() {}
-            LF_INLINE bool IsValid() const { return pointer != nullptr && object; }
-            LF_INLINE R Invoke(ARGS... args) const { return(((*object)->*pointer)(args...)); }
+            using Type = ReturnT(T::*)(ArgsT...);
+            using PointerType = T*;
 
-            static R Invoke(void* data, ARGS ... args)
+            MethodType(PointerType object, Type function)
+                : mFunction(function)
+                , mObject(object)
             {
-                MethodWrapper* wrapper = reinterpret_cast<MethodWrapper*>(data);
-                return(wrapper->Invoke(args...));
             }
 
-            static void Copy(void* data, void* otherData)
+            ReturnT Invoke(ArgsT&& ... args) const override
             {
-                MethodWrapper* otherWrapper = reinterpret_cast<MethodWrapper*>(otherData);
-                MethodWrapper* wrapper = new(data)MethodWrapper(*otherWrapper);
-                Assert(wrapper == data);
+                return ((*mObject).*mFunction)(std::forward<ArgsT>(args)...);
             }
 
-            static void Move(void* data, void* otherData)
+            BaseInvoke* CopyTo(ByteT(&buffer)[CBufferSize]) const override
             {
-                MethodWrapper* otherWrapper = reinterpret_cast<MethodWrapper*>(otherData);
-                MethodWrapper* wrapper = new(data)MethodWrapper(std::move(*otherWrapper));
-                Assert(wrapper == data);
+                return new (buffer) MethodType(mObject, mFunction);
             }
 
-            static void Destroy(void* data)
+            bool IsValid() const override
             {
-                MethodWrapper* wrapper = reinterpret_cast<MethodWrapper*>(data);
-                wrapper->~MethodWrapper();
+                return mFunction && mObject;
             }
 
-            static bool IsValid(const void* data)
+            void UnbindObject() override
             {
-                const MethodWrapper* wrapper = reinterpret_cast<const MethodWrapper*>(data);
-                return wrapper->IsValid();
+                mObject = nullptr;
             }
 
-            t_Delegate pointer;
-            T object;
+            static UIntPtrT GetVTableAddress()
+            {
+                MethodType instance(nullptr, nullptr);
+                return VTableFromThis(&instance);
+            }
+
+            Type        mFunction;
+            PointerType mObject;
+        };
+        template<typename T>
+        struct MethodType < TWeakPointer<T> > : public BaseMethodInvoke
+        {
+            using Type = ReturnT(T::*)(ArgsT...);
+            using PointerType = TWeakPointer<T>;
+
+            MethodType(PointerType object, Type function)
+                : mFunction(function)
+                , mObject(object)
+            {
+            }
+
+            ReturnT Invoke(ArgsT&& ... args) const override
+            {
+                return ((*mObject).*mFunction)(std::forward<ArgsT>(args)...);
+            }
+
+            BaseInvoke* CopyTo(ByteT(&buffer)[CBufferSize]) const override
+            {
+                return new (buffer) MethodType(mObject, mFunction);
+            }
+
+            bool IsValid() const override
+            {
+                return mFunction && mObject;
+            }
+
+            void UnbindObject() override
+            {
+                mObject = NULL_PTR;
+            }
+
+            static UIntPtrT GetVTableAddress()
+            {
+                MethodType instance(PointerType(), nullptr);
+                return VTableFromThis(&instance);
+            }
+
+            Type                mFunction;
+            mutable PointerType mObject;
         };
 
         template<typename T>
-        class ConstMethodWrapper
+        struct MethodType < TAtomicWeakPointer<T> > : public BaseMethodInvoke
         {
-        public:
-            typedef R(T::value_type::*t_Delegate)(ARGS...) const;
-            LF_INLINE ConstMethodWrapper() : pointer(nullptr), object() {}
-            LF_INLINE ConstMethodWrapper(const ConstMethodWrapper& other) : pointer(other.pointer), object(other.object) {}
-            LF_INLINE ConstMethodWrapper(ConstMethodWrapper&& other) : pointer(std::move(other.pointer)), object(std::move(other.object)) {}
-            LF_INLINE ~ConstMethodWrapper() {}
-            LF_INLINE bool IsValid() const { return pointer != nullptr && object; }
-            LF_INLINE R Invoke(ARGS... args) const { return(((*object)->*pointer)(args...)); }
+            using Type = ReturnT(T::*)(ArgsT...);
+            using PointerType = TAtomicWeakPointer<T>;
 
-            static R Invoke(void* data, ARGS ... args)
+            MethodType(PointerType object, Type function)
+                : mFunction(function)
+                , mObject(object)
             {
-                ConstMethodWrapper* wrapper = reinterpret_cast<ConstMethodWrapper*>(data);
-                return(wrapper->Invoke(args...));
             }
 
-            static void Copy(void* data, void* otherData)
+            ReturnT Invoke(ArgsT&& ... args) const override
             {
-                ConstMethodWrapper* otherWrapper = reinterpret_cast<ConstMethodWrapper*>(otherData);
-                ConstMethodWrapper* wrapper = new(data)ConstMethodWrapper(*otherWrapper);
-                Assert(wrapper == data);
+                return ((*mObject).*mFunction)(std::forward<ArgsT>(args)...);
             }
 
-            static void Move(void* data, void* otherData)
+            BaseInvoke* CopyTo(ByteT(&buffer)[CBufferSize]) const override
             {
-                ConstMethodWrapper* otherWrapper = reinterpret_cast<ConstMethodWrapper*>(otherData);
-                ConstMethodWrapper* wrapper = new(data)ConstMethodWrapper(std::move(*otherWrapper));
-                Assert(wrapper == data);
+                return new (buffer) MethodType(mObject, mFunction);
             }
 
-            static void Destroy(void* data)
+            bool IsValid() const override
             {
-                ConstMethodWrapper* wrapper = reinterpret_cast<ConstMethodWrapper*>(data);
-                wrapper->~ConstMethodWrapper();
+                return mFunction && mObject;
             }
 
-            static bool IsValid(const void* data)
+            void UnbindObject() override
             {
-                const ConstMethodWrapper* wrapper = reinterpret_cast<const ConstMethodWrapper*>(data);
-                return wrapper->IsValid();
+                mObject = NULL_PTR;
             }
 
-            t_Delegate pointer;
-            T object;
+            static UIntPtrT GetVTableAddress()
+            {
+                MethodType instance(PointerType(), nullptr);
+                return VTableFromThis(&instance);
+            }
+
+            Type                mFunction;
+            mutable PointerType mObject;
+        };
+        template<typename T>
+        struct ConstMethodType : public BaseMethodInvoke
+        {
+            using Type = ReturnT(T::*)(ArgsT...) const;
+            using PointerType = const T*;
+
+            ConstMethodType(PointerType object, Type function)
+                : mFunction(function)
+                , mObject(object)
+            {
+            }
+
+            ReturnT Invoke(ArgsT&& ... args) const override
+            {
+                return ((*mObject).*mFunction)(std::forward<ArgsT>(args)...);
+            }
+
+            BaseInvoke* CopyTo(ByteT(&buffer)[CBufferSize]) const override
+            {
+                return new (buffer) ConstMethodType(mObject, mFunction);
+            }
+
+            bool IsValid() const override
+            {
+                return mFunction && mObject;
+            }
+
+            void UnbindObject() override
+            {
+                mObject = nullptr;
+            }
+
+            static UIntPtrT GetVTableAddress()
+            {
+                ConstMethodType instance(nullptr, nullptr);
+                return VTableFromThis(&instance);
+            }
+
+            Type        mFunction;
+            PointerType mObject;
+        };
+        template<typename T>
+        struct ConstMethodType < TWeakPointer<T> > : public BaseMethodInvoke
+        {
+            using Type = ReturnT(T::*)(ArgsT...) const;
+            using PointerType = TWeakPointer<T>;
+
+            ConstMethodType(PointerType object, Type function)
+                : mFunction(function)
+                , mObject(object)
+            {
+            }
+
+            ReturnT Invoke(ArgsT&& ... args) const override
+            {
+                return ((*mObject).*mFunction)(std::forward<ArgsT>(args)...);
+            }
+
+            BaseInvoke* CopyTo(ByteT(&buffer)[CBufferSize]) const override
+            {
+                return new (buffer) ConstMethodType(mObject, mFunction);
+            }
+
+            bool IsValid() const override
+            {
+                return mFunction && mObject;
+            }
+
+            void UnbindObject() override
+            {
+                mObject = NULL_PTR;
+            }
+
+            static UIntPtrT GetVTableAddress()
+            {
+                ConstMethodType instance(PointerType(), nullptr);
+                return VTableFromThis(&instance);
+            }
+
+            Type                mFunction;
+            mutable PointerType mObject;
         };
 
-        template<typename LAMBDA>
-        class LambdaWrapper
+        template<typename T>
+        struct ConstMethodType < TAtomicWeakPointer<T> > : public BaseMethodInvoke
         {
-        public:
-            typedef LAMBDA t_Delegate;
-            LF_INLINE LambdaWrapper(const LambdaWrapper& other) : pointer(other.pointer) {}
-            LF_INLINE LambdaWrapper(LambdaWrapper&& other) : pointer(std::move(other.pointer)) {}
-            LF_INLINE LambdaWrapper(const LAMBDA& lambda) : pointer(lambda) {}
-            // LF_INLINE LambdaWrapper(LAMBDA&& lambda) : pointer(std::forward<LAMBDA>(lambda)) {}
-            LF_INLINE ~LambdaWrapper() {}
-            LF_INLINE bool IsValid() const { return true; }
-            LF_INLINE R Invoke(ARGS... args) const
+            using Type = ReturnT(T::*)(ArgsT...) const;
+            using PointerType = TAtomicWeakPointer<T>;
+
+            ConstMethodType(PointerType object, Type function)
+                : mFunction(function)
+                , mObject(object)
             {
-                return(pointer(args...));
             }
 
-            static R Invoke(void* data, ARGS ... args)
+            ReturnT Invoke(ArgsT&& ... args) const override
             {
-                LambdaWrapper* wrapper = reinterpret_cast<LambdaWrapper*>(data);
-                return(wrapper->Invoke(args...));
+                return ((*mObject).*mFunction)(std::forward<ArgsT>(args)...);
             }
 
-            static void Copy(void* data, void* otherData)
+            BaseInvoke* CopyTo(ByteT(&buffer)[CBufferSize]) const override
             {
-                LambdaWrapper* otherWrapper = reinterpret_cast<LambdaWrapper*>(otherData);
-                LambdaWrapper* wrapper = new(data)LambdaWrapper(*otherWrapper);
-                Assert(wrapper == data);
+                return new (buffer) ConstMethodType(mObject, mFunction);
             }
 
-            static void Move(void* data, void* otherData)
+            bool IsValid() const override
             {
-                LambdaWrapper* otherWrapper = reinterpret_cast<LambdaWrapper*>(otherData);
-                LambdaWrapper* wrapper = new(data)LambdaWrapper(std::move(*otherWrapper));
-                Assert(wrapper == data);
+                return mFunction && mObject;
             }
 
-            static void Destroy(void* data)
+            void UnbindObject() override
             {
-                LambdaWrapper* wrapper = reinterpret_cast<LambdaWrapper*>(data);
-                wrapper->~LambdaWrapper();
+                mObject = NULL_PTR;
             }
 
-            t_Delegate pointer;
+            static UIntPtrT GetVTableAddress()
+            {
+                ConstMethodType instance(PointerType(), nullptr);
+                return VTableFromThis(&instance);
+            }
+
+            Type                mFunction;
+            mutable PointerType mObject;
         };
-    public:
 
-        TCallback() :
-            mType(CallbackType::INVALID_ENUM),
-            mInvokeCallback(nullptr),
-            mIsValidCallback(nullptr),
-            mCopyCallback(nullptr),
-            mMoveCallback(nullptr),
-            mDestroyCallback(nullptr),
-            mData()
+        using ReturnType = ReturnT;
+        using ArgsType = TArgumentPack<ArgsT...>;
+
+        TCallbackBase()
+            : mType(CallbackType::INVALID_ENUM)
+            , mInvoker(nullptr)
+            , mData{ 0 }
         {
-
+            LF_STATIC_ASSERT(CBufferSize >= 16);
         }
 
-        TCallback(const TCallback& other) :
-            mType(other.mType),
-            mInvokeCallback(other.mInvokeCallback),
-            mIsValidCallback(other.mIsValidCallback),
-            mCopyCallback(other.mCopyCallback),
-            mMoveCallback(other.mMoveCallback),
-            mDestroyCallback(other.mDestroyCallback),
-            mData()
+        TCallbackBase(const TCallbackBase& other)
+            : mType(other.mType)
+            , mInvoker(nullptr)
+            , mData{ 0 }
         {
-            Copy(other);
+            if (other.mInvoker)
+            {
+                mInvoker = other.mInvoker->CopyTo(mData);
+            }
         }
 
-        TCallback(TCallback&& other) :
-            mType(other.mType),
-            mInvokeCallback(std::move(other.mInvokeCallback)),
-            mIsValidCallback(std::move(other.mIsValidCallback)),
-            mCopyCallback(std::move(other.mCopyCallback)),
-            mMoveCallback(std::move(other.mMoveCallback)),
-            mDestroyCallback(std::move(other.mDestroyCallback)),
-            mData()
+        TCallbackBase(TCallbackBase&& other)
+            : mType(CallbackType::INVALID_ENUM)
+            , mInvoker(nullptr)
+            , mData{ 0 }
         {
-            Move(std::forward<TCallback>(other));
+            if (other.mInvoker)
+            {
+                mType = other.mType;
+                other.mType = CallbackType::INVALID_ENUM;
+                memcpy(mData, other.mData, CBufferSize);
+                mInvoker = reinterpret_cast<BaseInvoke*>(mData);
+                other.mInvoker = nullptr;
+                memset(other.mData, 0, CBufferSize);
+            }
         }
 
-        ~TCallback()
+        ~TCallbackBase()
         {
-            Destroy();
+            Release();
         }
 
-        // function ctor
-        TCallback(typename FunctionWrapper::t_Delegate function)
+        TCallbackBase& operator=(const TCallbackBase& other)
         {
-            BindFunction(function);
+            if (this == &other)
+            {
+                return *this;
+            }
+
+            Release();
+
+            if (other.mInvoker)
+            {
+                mType = other.mType;
+                mInvoker = other.mInvoker->CopyTo(mData);
+            }
+            return *this;
         }
 
-        // method ctor
-        template<typename T>
-        TCallback(typename MethodWrapper<T>::t_Delegate method, const T& obj)
+        TCallbackBase& operator=(TCallbackBase&& other)
         {
-            BindMethod(obj, method);
+            if (this == &other)
+            {
+                return *this;
+            }
+
+            Release();
+
+            if (other.mInvoker)
+            {
+                mType = other.mType;
+                other.mType = CallbackType::INVALID_ENUM;
+                memcpy(mData, other.mData, CBufferSize);
+                mInvoker = reinterpret_cast<BaseInvoke*>(mData);
+                other.mInvoker = nullptr;
+                memset(other.mData, 0, CBufferSize);
+            }
+
+            return *this;
         }
 
-        // method const ctor
-        template<typename T>
-        TCallback(typename ConstMethodWrapper<T>::t_Delegate method, const T& obj)
-        {
-            BindConstMethod(obj, method);
-        }
 
-        template<typename LAMBDA>
-        static TCallback CreateLambda(const LAMBDA& lambda)
+        static TCallbackBase Make(typename FunctionType::Type function)
         {
-            TCallback callback;
-            callback.Bind(lambda);
+            TCallbackBase callback;
+            callback.mInvoker = new (callback.mData) FunctionType(function);
+            callback.mType = CallbackType::CT_FUNCTION;
+            CriticalAssert(reinterpret_cast<void*>(callback.mInvoker) == reinterpret_cast<void*>(callback.mData));
             return callback;
         }
 
-        // invoke
-        R Invoke(ARGS ... args) const
+        template<typename LambdaT, SizeT CLambdaSize = sizeof(LambdaT)>
+        static TCallbackBase Make(LambdaT function)
         {
-            return(mInvokeCallback(mData, args...));
-        }
-
-        bool IsValid() const
-        {
-            return(IsLambda() || (mIsValidCallback && mIsValidCallback(mData)));
-        }
-
-        void Bind(typename FunctionWrapper::t_Delegate function)
-        {
-            Destroy();
-            BindFunction(function);
+            LF_STATIC_ASSERT(sizeof(LambdaT) <= CBufferSize);
+            TCallbackBase callback;
+            callback.mInvoker = new (callback.mData) LambdaType<LambdaT>(function);
+            callback.mType = CallbackType::CT_LAMBDA;
+            CriticalAssert(reinterpret_cast<void*>(callback.mInvoker) == reinterpret_cast<void*>(callback.mData));
+            return callback;
         }
 
         template<typename T>
-        void Bind(const T& obj, typename MethodWrapper<T>::t_Delegate method)
+        static TCallbackBase Make(T* object, typename MethodType<T>::Type function)
         {
-            Destroy();
-            BindMethod(method);
+            TCallbackBase callback;
+            callback.mInvoker = new (callback.mData) MethodType<T>(object, function);
+            callback.mType = CallbackType::CT_METHOD;
+            CriticalAssert(reinterpret_cast<void*>(callback.mInvoker) == reinterpret_cast<void*>(callback.mData));
+            return callback;
         }
 
         template<typename T>
-        void Bind(const T& obj, typename ConstMethodWrapper<T>::t_Delegate method)
+        static TCallbackBase Make(const TWeakPointer<T>& object, typename MethodType<T>::Type function)
         {
-            Destroy();
-            BindConstMethod(method);
-        }
-
-        template<typename LAMBDA>
-        void Bind(const LAMBDA& lambda)
-        {
-            Destroy();
-            BindLambda(lambda);
+            TCallbackBase callback;
+            callback.mInvoker = new (callback.mData) MethodType<TWeakPointer<T>>(object, function);
+            callback.mType = CallbackType::CT_WEAK_PTR_METHOD;
+            CriticalAssert(reinterpret_cast<void*>(callback.mInvoker) == reinterpret_cast<void*>(callback.mData));
+            return callback;
         }
 
         template<typename T>
-        void BindObject(const T& obj)
+        static TCallbackBase Make(const TStrongPointer<T>& object, typename MethodType<T>::Type function)
         {
-            if (mType == CallbackType::CT_METHOD)
-            {
-                MethodWrapper<T>* wrapper = static_cast<MethodWrapper<T>*>(static_cast<void*>(mData));
-                wrapper->object = obj;
-            }
-            else if (mType == CallbackType::CT_CONST_METHOD)
-            {
-                ConstMethodWrapper<T>* wrapper = static_cast<ConstMethodWrapper<T>*>(static_cast<void*>(mData));
-                wrapper->object = obj;
-            }
+            return Make<T>(TWeakPointer<T>(object), function);
         }
 
         template<typename T>
-        void GetObject(T& obj)
+        static TCallbackBase Make(const TAtomicWeakPointer<T>& object, typename MethodType<T>::Type function)
         {
-            if (mType == CallbackType::CT_METHOD)
-            {
-                MethodWrapper<T>* wrapper = static_cast<MethodWrapper<T>*>(static_cast<void*>(mData));
-                obj = wrapper->object;
-            }
-            else if (mType == CallbackType::CT_CONST_METHOD)
-            {
-                ConstMethodWrapper<T>* wrapper = static_cast<ConstMethodWrapper<T>*>(static_cast<void*>(mData));
-                obj = wrapper->object;
-            }
+            TCallbackBase callback;
+            callback.mInvoker = new (callback.mData) MethodType<TAtomicWeakPointer<T>>(object, function);
+            callback.mType = CallbackType::CT_ATOMIC_WEAK_PTR_METHOD;
+            CriticalAssert(reinterpret_cast<void*>(callback.mInvoker) == reinterpret_cast<void*>(callback.mData));
+            return callback;
         }
 
-        TCallback& operator=(const TCallback& other)
+        template<typename T>
+        static TCallbackBase Make(const TAtomicStrongPointer<T>& object, typename MethodType<T>::Type function)
         {
-            Destroy();
-            mType = other.mType;
-            mInvokeCallback = other.mInvokeCallback;
-            mIsValidCallback = other.mIsValidCallback;
-            mCopyCallback = other.mCopyCallback;
-            mMoveCallback = other.mMoveCallback;
-            mDestroyCallback = other.mDestroyCallback;
-            Copy(other);
-            return(*this);
+            return Make<T>(TAtomicWeakPointer<T>(object), function);
         }
 
-        TCallback& operator=(TCallback&& other)
+        template<typename T>
+        static TCallbackBase Make(const T* object, typename ConstMethodType<T>::Type function)
         {
-            Destroy();
-            mType = other.mType;
-            mInvokeCallback = std::move(other.mInvokeCallback);
-            mIsValidCallback = std::move(other.mIsValidCallback);
-            mCopyCallback = std::move(other.mCopyCallback);
-            mMoveCallback = std::move(other.mMoveCallback);
-            mDestroyCallback = std::move(other.mDestroyCallback);
-            Move(std::forward<TCallback>(other));
-            return(*this);
+            TCallbackBase callback;
+            callback.mInvoker = new (callback.mData) ConstMethodType<T>(object, function);
+            callback.mType = CallbackType::CT_CONST_METHOD;
+            CriticalAssert(reinterpret_cast<void*>(callback.mInvoker) == reinterpret_cast<void*>(callback.mData));
+            return callback;
+        }
+
+        template<typename T>
+        static TCallbackBase Make(const TWeakPointer<T>& object, typename ConstMethodType<T>::Type function)
+        {
+            TCallbackBase callback;
+            callback.mInvoker = new (callback.mData) ConstMethodType<TWeakPointer<T>>(object, function);
+            callback.mType = CallbackType::CT_WEAK_PTR_CONST_METHOD;
+            CriticalAssert(reinterpret_cast<void*>(callback.mInvoker) == reinterpret_cast<void*>(callback.mData));
+            return callback;
+        }
+
+        template<typename T>
+        static TCallbackBase Make(const TStrongPointer<T>& object, typename ConstMethodType<T>::Type function)
+        {
+            return Make<T>(TWeakPointer<T>(object), function);
+        }
+
+        template<typename T>
+        static TCallbackBase Make(const TAtomicWeakPointer<T>& object, typename ConstMethodType<T>::Type function)
+        {
+            TCallbackBase callback;
+            callback.mInvoker = new (callback.mData) ConstMethodType<TAtomicWeakPointer<T>>(object, function);
+            callback.mType = CallbackType::CT_ATOMIC_WEAK_PTR_CONST_METHOD;
+            CriticalAssert(reinterpret_cast<void*>(callback.mInvoker) == reinterpret_cast<void*>(callback.mData));
+            return callback;
+        }
+
+        template<typename T>
+        static TCallbackBase Make(const TAtomicStrongPointer<T>& object, typename ConstMethodType<T>::Type function)
+        {
+            return Make<T>(TAtomicWeakPointer<T>(object), function);
+        }
+
+        ReturnT Invoke(ArgsT ... args) const
+        {
+            return mInvoker->Invoke(std::forward<ArgsT>(args)...);
+        }
+
+        ReturnT operator()(ArgsT ... args) const
+        {
+            return mInvoker->Invoke(std::forward<ArgsT>(args)...);
+        }
+
+        bool operator==(const TCallbackBase& other) const
+        {
+            return mType == other.mType && memcmp(mData, other.mData, CBufferSize) == 0;
         }
 
         operator bool() const
@@ -568,22 +693,43 @@ namespace lf
             return IsValid();
         }
 
-        void Assign(const CallbackHandle& handle)
+        void Release()
         {
-            Destroy();
-            handle.Acquire(*this);
-        }
-
-        CallbackHandle GetHandle() const
-        {
-            CallbackHandle handle;
-            handle.Assign(*this);
-            return handle;
+            if (mInvoker)
+            {
+                mInvoker->~BaseInvoke();
+                mInvoker = nullptr;
+                memset(mData, 0, CBufferSize);
+                mType = CallbackType::INVALID_ENUM;
+            }
         }
 
         bool IsMethod() const
         {
-            return mType == CallbackType::CT_METHOD || mType == CallbackType::CT_CONST_METHOD;
+            switch (mType)
+            {
+            case CallbackType::CT_METHOD:
+            case CallbackType::CT_WEAK_PTR_METHOD:
+            case CallbackType::CT_ATOMIC_WEAK_PTR_METHOD:
+                return true;
+            default:
+                break;
+            }
+            return false;
+        }
+
+        bool IsConstMethod() const
+        {
+            switch (mType)
+            {
+            case CallbackType::CT_CONST_METHOD:
+            case CallbackType::CT_WEAK_PTR_CONST_METHOD:
+            case CallbackType::CT_ATOMIC_WEAK_PTR_CONST_METHOD:
+                return true;
+            default:
+                break;
+            }
+            return false;
         }
 
         bool IsFunction() const
@@ -596,145 +742,244 @@ namespace lf
             return mType == CallbackType::CT_LAMBDA;
         }
 
-    private:
-        void BindFunction(typename FunctionWrapper::t_Delegate function)
+        bool IsValid() const
         {
-            LF_STATIC_ASSERT(sizeof(FunctionWrapper) < DATA_SIZE);
-            FunctionWrapper* wrapper = new(mData)FunctionWrapper();
-            Assert(wrapper == static_cast<void*>(mData));
-            wrapper->pointer = function;
-            mInvokeCallback = FunctionWrapper::Invoke;
-            mIsValidCallback = FunctionWrapper::IsValid;
-            mCopyCallback = FunctionWrapper::Copy;
-            mMoveCallback = FunctionWrapper::Move;
-            mDestroyCallback = FunctionWrapper::Destroy;
-            mType = CallbackType::CT_FUNCTION;
+            return mInvoker != nullptr && mInvoker->IsValid();
         }
 
         template<typename T>
-        void BindMethod(const T& obj, typename MethodWrapper<T>::t_Delegate method)
+        bool BindObject(T* object)
         {
-            LF_STATIC_ASSERT(sizeof(MethodWrapper<T>) < DATA_SIZE);
-            MethodWrapper<T>* wrapper = new(mData)MethodWrapper<T>();
-            Assert(wrapper == static_cast<void*>(mData));
-            wrapper->pointer = method;
-            wrapper->object = obj;
-            mInvokeCallback = MethodWrapper<T>::Invoke;
-            mIsValidCallback = MethodWrapper<T>::IsValid;
-            mCopyCallback = MethodWrapper<T>::Copy;
-            mMoveCallback = MethodWrapper<T>::Move;
-            mDestroyCallback = MethodWrapper<T>::Destroy;
-            mType = CallbackType::CT_METHOD;
+            MethodType<T>* method = AsMethod<T>();
+            if (method)
+            {
+                method->mObject = object;
+                return true;
+            }
+            return false;
         }
 
         template<typename T>
-        void BindConstMethod(const T& obj, typename ConstMethodWrapper<T>::t_Delegate method)
+        bool BindObject(const TWeakPointer<T>& object)
         {
-            LF_STATIC_ASSERT(sizeof(ConstMethodWrapper<T>) < DATA_SIZE);
-            ConstMethodWrapper<T>* wrapper = new(mData)ConstMethodWrapper<T>();
-            Assert(wrapper == static_cast<void*>(mData));
-            wrapper->pointer = method;
-            wrapper->object = obj;
-            mInvokeCallback = ConstMethodWrapper<T>::Invoke;
-            mIsValidCallback = ConstMethodWrapper<T>::IsValid;
-            mCopyCallback = ConstMethodWrapper<T>::Copy;
-            mMoveCallback = ConstMethodWrapper<T>::Move;
-            mDestroyCallback = ConstMethodWrapper<T>::Destroy;
-            mType = CallbackType::CT_CONST_METHOD;
-        }
-
-        template<typename LAMBDA>
-        void BindLambda(const LAMBDA& lambda)
-        {
-            // If this trips, either the amount of data you're capturing in the lambda is too much or were not reserving enough at static time.
-            LF_STATIC_ASSERT(sizeof...(ARGS) < DATA_SIZE);
-            LambdaWrapper<LAMBDA>* wrapper = new(mData)LambdaWrapper<LAMBDA>(lambda);
-            Assert(wrapper == static_cast<void*>(mData));
-            mInvokeCallback = LambdaWrapper<LAMBDA>::Invoke;
-            mIsValidCallback = nullptr;
-            mCopyCallback = LambdaWrapper<LAMBDA>::Copy;
-            mMoveCallback = LambdaWrapper<LAMBDA>::Move;
-            mDestroyCallback = LambdaWrapper<LAMBDA>::Destroy;
-            mType = CallbackType::CT_LAMBDA;
-        }
-
-        void Copy(const TCallback& other)
-        {
-            if (mCopyCallback)
+            MethodType<TWeakPointer<T>>* method = AsMethod<TWeakPointer<T>>();
+            if (method)
             {
-                mCopyCallback(mData, const_cast<UInt8*>(other.mData));
+                method->mObject = object;
+                return true;
+            }
+            return false;
+        }
+
+        template<typename T>
+        bool BindObject(const TStrongPointer<T>& object)
+        {
+            return BindObject<T>(TWeakPointer<T>(object));
+        }
+
+        template<typename T>
+        bool BindObject(const TAtomicWeakPointer<T>& object)
+        {
+            MethodType<TAtomicWeakPointer<T>>* method = AsMethod<TAtomicWeakPointer<T>>();
+            if (method)
+            {
+                method->mObject = object;
+                return true;
+            }
+            return false;
+        }
+
+        template<typename T>
+        bool BindObject(const TAtomicStrongPointer<T>& object)
+        {
+            return BindObject<T>(TAtomicWeakPointer<T>(object));
+        }
+
+        template<typename T>
+        bool BindConstObject(const T* object)
+        {
+            ConstMethodType<T>* method = AsConstMethod<T>();
+            if (method)
+            {
+                method->mObject = object;
+                return true;
+            }
+            return false;
+        }
+
+        template<typename T>
+        bool BindConstObject(const TWeakPointer<T>& object)
+        {
+            ConstMethodType<TWeakPointer<T>>* method = AsConstMethod<TWeakPointer<T>>();
+            if (method)
+            {
+                method->mObject = object;
+                return true;
+            }
+            return false;
+        }
+
+        template<typename T>
+        bool BindConstObject(const TStrongPointer<T>& object)
+        {
+            return BindConstObject<T>(TWeakPointer<T>(object));
+        }
+
+        template<typename T>
+        bool BindConstObject(const TAtomicWeakPointer<T>& object)
+        {
+            ConstMethodType<TAtomicWeakPointer<T>>* method = AsConstMethod<TAtomicWeakPointer<T>>();
+            if (method)
+            {
+                method->mObject = object;
+                return true;
+            }
+            return false;
+        }
+
+        template<typename T>
+        bool BindConstObject(const TAtomicStrongPointer<T>& object)
+        {
+            return BindConstObject<T>(TAtomicWeakPointer<T>(object));
+        }
+
+        void UnbindObject()
+        {
+            if (IsMethod() || IsConstMethod())
+            {
+                static_cast<BaseMethodInvoke*>(mInvoker)->UnbindObject();
             }
         }
 
-        void Move(TCallback&& other)
+        typename FunctionType::Type GetFunctionPtr() const
         {
-            if (mMoveCallback)
+            if (!mInvoker || !IsFunction())
             {
-                mMoveCallback(mData, other.mData);
+                return nullptr;
             }
-
-            other.mType = CallbackType::INVALID_ENUM;
-            other.mInvokeCallback = nullptr;
-            other.mIsValidCallback = nullptr;
-            other.mCopyCallback = nullptr;
-            other.mMoveCallback = nullptr;
-            other.mDestroyCallback = nullptr;
-            memset(other.mData, 0, sizeof(other.mData));
-        }
-        void Destroy()
-        {
-            if (mDestroyCallback)
-            {
-                mDestroyCallback(mData);
-            }
+            return static_cast<FunctionType*>(mInvoker)->mFunction;
         }
 
-        mutable CallbackType mType;
-        mutable t_InvokeCallback mInvokeCallback;
-        mutable t_IsValidCallback mIsValidCallback;
-        mutable t_WrapperCallback mCopyCallback;
-        mutable t_WrapperCallback mMoveCallback;
-        mutable t_WrapperDestroyCallback mDestroyCallback;
-        mutable UInt8 mData[DATA_SIZE];
+        template<typename T>
+        typename MethodType<T>::Type GetMethodPtr() const
+        {
+            if (!mInvoker || !IsMethod())
+            {
+                return nullptr;
+            }
+            return static_cast<MethodType<T>*>(mInvoker)->mFunction;
+        }
 
-        friend class CallbackHandle;
+        template<typename T>
+        typename ConstMethodType<T>::Type GetConstMethodPtr() const
+        {
+            if (!mInvoker || !IsConstMethod())
+            {
+                return nullptr;
+            }
+            return static_cast<ConstMethodType<T>*>(mInvoker)->mFunction;
+        }
+
+    protected:
+        UIntPtrT GetInvokerTypeAddress()
+        {
+            return mInvoker ? VTableFromThis(mInvoker) : 0;
+        }
+
+        template<typename T>
+        MethodType<T>* AsMethod()
+        {
+            if (MethodType<T>::GetVTableAddress() != GetInvokerTypeAddress())
+            {
+                return nullptr;
+            }
+            return static_cast<MethodType<T>*>(mInvoker);
+        }
+
+        template<typename T>
+        ConstMethodType<T>* AsConstMethod()
+        {
+            if (ConstMethodType<T>::GetVTableAddress() != GetInvokerTypeAddress())
+            {
+                return nullptr;
+            }
+            return static_cast<MethodType<T>*>(mInvoker);
+        }
+
+        CallbackType mType;
+        BaseInvoke* mInvoker;
+        ByteT mData[CBufferSize];
     };
 
+    template<typename ReturnT, typename ... ArgsT>
+    using TCallback = TCallbackBase<ReturnT, 64, ArgsT...>;
 
-    template<typename R, typename ... ARGS>
-    void CallbackHandle::Assign(const TCallback<R, ARGS...>& callback) const
+    template<FNV::HashT CHash, SizeT CBufferSize, typename ReturnT, typename ... ArgsT>
+    class THashedCallbackBase : public TCallbackBase<ReturnT, CBufferSize, ArgsT...>
     {
-        if (mDestroyCallback)
+    public:
+        using Super = TCallbackBase<ReturnT, CBufferSize, ArgsT...>;
+        using HashType = FNV::HashT;
+        using AnonymousCallbackType = TAnonymousCallback<CBufferSize>;
+        static const HashType HASH_VALUE = CHash;
+
+        THashedCallbackBase() : Super()
+        {}
+
+        THashedCallbackBase(const Super& super) : Super(super)
+        {}
+
+        AnonymousCallbackType DownCast()
         {
-            mDestroyCallback(mData);
+            // Note: Callback has no way to know how to inc/dec ref on smart pointers.
+            AnonymousCallbackType callback;
+            memcpy(callback.mData, mData, CBufferSize);
+            callback.mType = mType;
+            callback.mSignatureHash = HASH_VALUE;
+            return callback;
         }
 
-        mType = callback.mType;
-        mInvokeCallback = callback.mInvokeCallback;
-        mIsValidCallback = callback.mIsValidCallback;
-        mCopyCallback = callback.mCopyCallback;
-        mMoveCallback = callback.mMoveCallback;
-        mDestroyCallback = callback.mDestroyCallback;
-        if (mCopyCallback)
+        bool UpCast(const AnonymousCallbackType& callback)
         {
-            mCopyCallback(mData, callback.mData);
+            // Note: Callback has no way to know how to inc/dec ref on smart pointers.
+            if (callback.mSignatureHash != HASH_VALUE)
+            {
+                return false;
+            }
+            memcpy(mData, callback.mData, CBufferSize);
+            mInvoker = reinterpret_cast<BaseInvoke*>(mData);
+            mType = callback.mType;
+            return true;
         }
-    }
 
-    template<typename R, typename ... ARGS>
-    void CallbackHandle::Acquire(const TCallback<R, ARGS...>& callback) const
-    {
-        callback.mType = mType;
-        callback.mInvokeCallback = static_cast<typename TCallback<R, ARGS...>::t_InvokeCallback>(mInvokeCallback);
-        callback.mIsValidCallback = mIsValidCallback;
-        callback.mCopyCallback = mCopyCallback;
-        callback.mMoveCallback = mMoveCallback;
-        callback.mDestroyCallback = mDestroyCallback;
-        if (callback.mCopyCallback)
+        AnonymousCallback DownCastAnonymous()
         {
-            callback.mCopyCallback(callback.mData, mData);
+            LF_STATIC_ASSERT(sizeof(AnonymousCallback::mData) >= CBufferSize);
+            AnonymousCallback callback;
+            memcpy(callback.mData, mData, CBufferSize);
+            callback.mType = mType;
+            callback.mSignatureHash = HASH_VALUE;
+            return callback;
         }
-    }
-}
 
-#endif // LF_CORE_SMART_CALLBACK_H
+        bool UpCast(const AnonymousCallback& callback)
+        {
+            LF_STATIC_ASSERT(sizeof(AnonymousCallback::mData) >= CBufferSize);
+
+            // Note: Callback has no way to know how to inc/dec ref on smart pointers.
+            if (callback.mSignatureHash != HASH_VALUE)
+            {
+                return false;
+            }
+            memcpy(mData, callback.mData, CBufferSize);
+            mInvoker = reinterpret_cast<BaseInvoke*>(mData);
+            mType = callback.mType;
+            return true;
+        }
+
+    };
+
+    template<FNV::HashT CHash, typename ReturnT, typename ... ArgsT>
+    using THashedCallback = THashedCallbackBase<CHash, 64, ReturnT, ArgsT...>;
+
+} // namespace lf

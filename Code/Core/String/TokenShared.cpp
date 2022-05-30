@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -18,6 +18,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
+#include "Core/PCH.h"
 #include "Token.h"
 #include "TokenTable.h"
 #include "Core/Common/Assert.h"
@@ -29,6 +30,8 @@
 #include <string.h>
 
 namespace lf {
+
+const Token EMPTY_TOKEN;
 
 TokenTable* gTokenTable = nullptr;
 static const SizeT TOKEN_TABLE_SIZE = 20000;
@@ -66,7 +69,7 @@ void TokenTable::LookUp(const char* string, Token& token, AcquireTag)
         CriticalAssertMsgEx("Token table not initialized! Use STATIC_TOKEN instead.", LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
         return;
     }
-    if (string == gNullString)
+    if (string == gNullString || string == nullptr || *string == '\0')
     {
         return;
     }
@@ -92,7 +95,7 @@ void TokenTable::LookUp(const char* string, Token& token, CopyOnWriteTag)
         CriticalAssertMsgEx("Token table not initialized! Use STATIC_TOKEN instead.", LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
         return;
     }
-    if (string == gNullString)
+    if (string == gNullString || string == nullptr || *string == '\0')
     {
         return;
     }
@@ -133,7 +136,7 @@ void TokenTable::LookUp(const char* string, Token& token)
         CriticalAssertMsgEx("Token table not initialized! Use STATIC_TOKEN instead.", LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
         return;
     }
-    if (string == gNullString)
+    if (string == gNullString || string == nullptr || *string == '\0')
     {
         return;
     }
@@ -264,7 +267,7 @@ void TokenTable::DecrementReference(Token& token)
                     node->mReleaseOnDestroy = last->mReleaseOnDestroy;
                     node = nullptr;
 
-                    HashNode* newList = LFNew<HashNode>();
+                    HashNode* newList = static_cast<HashNode*>(LFAlloc(newSize * sizeof(HashNode), 16));
                     memcpy(newList, key.mList, sizeof(HashNode) * newSize);
                     LFFree(key.mList);
                     key.mList = newList;

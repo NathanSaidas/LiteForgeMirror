@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -18,8 +18,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
-#ifndef LF_CORE_POOL_HEAP_H
-#define LF_CORE_POOL_HEAP_H
+#pragma once
 #include "Core/Common/Types.h"
 #include "Core/Common/API.h"
 #include "Core/Platform/SpinLock.h"
@@ -201,5 +200,3 @@ private:
 
 
 } // namespace lf
-
-#endif // LF_CORE_POOL_HEAP_H

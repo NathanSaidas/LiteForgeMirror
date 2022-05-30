@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -18,8 +18,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
-#ifndef LF_CORE_TASK_SCHEDULER_H
-#define LF_CORE_TASK_SCHEDULER_H
+#pragma once
 
 #include "Core/Platform/ThreadFence.h"
 #include "Core/Concurrent/TaskTypes.h"
@@ -32,9 +31,20 @@ class TaskWorker;
 class TaskDeliveryThread;
 #endif
 
+class LF_CORE_API TaskSchedulerBase
+{
+public:
+    virtual ~TaskSchedulerBase() {}
+    virtual TaskHandle RunTask(TaskCallback func, void* param = nullptr) = 0;
 
+    template<typename LambdaT>
+    TaskHandle RunTask(const LambdaT& lambda, void* param = nullptr)
+    {
+        return RunTask(TaskCallback::Make(lambda), param);
+    }
+};
 
-class LF_CORE_API TaskScheduler
+class LF_CORE_API TaskScheduler : public TaskSchedulerBase
 {
 public:
     using TaskItemType = TaskTypes::TaskItemType;
@@ -76,12 +86,6 @@ public:
     // void RunTask(TaskItemAtomicPtr& task, TaskLambdaCallback func, void* param = nullptr);
     TaskHandle RunTask(TaskCallback func, void* param = nullptr);
 
-    template<typename LambdaT>
-    TaskHandle RunTask(const LambdaT& lambda, void* param = nullptr)
-    {
-        return RunTask(TaskCallback::CreateLambda(lambda), param);
-    }
-
     // void RunTask(TaskItemAtomicPtr& task, TaskCallback func, void* param = nullptr);
     // **********************************
     // Check if the scheduler is currently running
@@ -91,13 +95,17 @@ public:
     // Check if the scheduler is running as a asynchronous task scheduler
     // **********************************
     bool IsAsync() const { return mAsync; }
+    // **********************************
+    // Manually updates the task scheduler if it's not async
+    // **********************************
+    void UpdateSync(Float64 budgetSeconds);
 private:
     void SetRunning(bool value) { AtomicStore(&mRunning, value ? 1 : 0); }
 
     RingBufferType mDispatcherQueue;
     ThreadFence    mDispatcherFence;
     // Workers:
-    TArray<TaskWorker> mWorkerThreads;
+    TVector<TaskWorker> mWorkerThreads;
 
     volatile Atomic32 mRunning;
     bool mAsync;
@@ -192,5 +200,3 @@ private:
 #endif
 
 } // namespace lf
-
-#endif // LF_CORE_TASK_SCHEDULER_H

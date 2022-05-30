@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -18,7 +18,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
-
+#pragma once
 #include "Core/Net/NetTypes.h"
 
 namespace lf {
@@ -98,5 +98,14 @@ LF_CORE_API bool IPCast(const IPv4EndPoint& endPoint, IPEndPointAny& outEndPoint
 LF_CORE_API bool IPCast(const IPv6EndPoint& endPoint, IPEndPointAny& outEndPoint);
 
 LF_CORE_API String IPToString(const IPEndPointAny& endPoint);
+
+LF_CORE_API UInt16 IPEndPointGetPort(const IPEndPointAny& endPoint);
+LF_CORE_API UInt16 IPEndPointGetPort(const IPv4EndPoint& endPoint);
+LF_CORE_API UInt16 IPEndPointGetPort(const IPv6EndPoint& endPoint);
+
+LF_CORE_API bool IPIsLocal(const IPEndPointAny& endPoint);
+LF_CORE_API bool IPIsLocal(const IPv4EndPoint& endPoint);
+LF_CORE_API bool IPIsLocal(const IPv6EndPoint& endPoint);
+
 
 }

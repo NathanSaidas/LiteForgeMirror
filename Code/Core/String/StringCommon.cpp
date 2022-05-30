@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -18,6 +18,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
+#include "Core/PCH.h"
 #include "StringCommon.h"
 
 #include "Core/Math/MathCombined.h"
@@ -103,14 +104,14 @@ String StrStripWhitespace(const String& string, bool ignoreQuotes)
     }
     return storage;
 }
-SizeT StrSplit(const String& s, Char8 token, TArray<String>& output)
+SizeT StrSplit(const String& s, Char8 token, TVector<String>& output)
 {
     if (s.Empty())
     {
         return 0;
     }
 
-    SizeT sizeBefore = output.Size();
+    SizeT sizeBefore = output.size();
     SizeT firstIndex = 0;
     SizeT lastIndex = 0;
     bool ignoringDelimiter = false;
@@ -126,7 +127,7 @@ SizeT StrSplit(const String& s, Char8 token, TArray<String>& output)
                 lastIndex = firstIndex;
                 continue;
             }
-            output.Add(s.SubString(firstIndex, (lastIndex - firstIndex)));
+            output.push_back(s.SubString(firstIndex, (lastIndex - firstIndex)));
             firstIndex = i + 1;
             lastIndex = firstIndex;
         }
@@ -137,9 +138,9 @@ SizeT StrSplit(const String& s, Char8 token, TArray<String>& output)
     }
     if (firstIndex != lastIndex)
     {
-        output.Add(s.SubString(firstIndex, (lastIndex - firstIndex) + 1));
+        output.push_back(s.SubString(firstIndex, (lastIndex - firstIndex) + 1));
     }
-    return output.Size() - sizeBefore;;
+    return output.size() - sizeBefore;;
 }
 
 SizeT StrSplit(const String& s, Char8 token, String* inOutArray, SizeT arraySize)
@@ -187,7 +188,7 @@ SizeT StrSplit(const String& s, Char8 token, String* inOutArray, SizeT arraySize
 
 void StrParseExtension(const String& str, String& outExtension)
 {
-    SizeT ext = str.FindLast(',');
+    SizeT ext = str.FindLast('.');
     if (Valid(ext))
     {
         str.SubString(ext + 1, outExtension);
@@ -388,15 +389,19 @@ bool StrIsNumber(const Char8* string)
 
 String StrToLower(const String& string)
 {
-    String result(string);
+    String result(string.CStr());
     ToLower(const_cast<Char8*>(result.CStr()));
     return result;
 }
 String StrToUpper(const String& string)
 {
-    String result(string);
+    String result(string.CStr());
     ToUpper(const_cast<Char8*>(result.CStr()));
     return result;
+}
+bool StrCompareAgnostic(const String& a, const String& b)
+{
+    return _stricmp(a.CStr(), b.CStr()) == 0;
 }
 
 String StrTrimRight(const String& string)

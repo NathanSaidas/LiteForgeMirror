@@ -2,4 +2,4 @@
 REM TestRunner
 SETLOCAL
 
-"../Code/Game_x64Test.exe" -app /type=TestRunner -test /all
+"../Code/Game_x64Test.exe" -app /type=TestRunner -test /all /setup /clean

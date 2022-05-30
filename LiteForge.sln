@@ -1,34 +1,22 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31515.178
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Core", "Code\Core\Core.vcxproj", "{F3FC9249-17E9-4FC4-A514-3CF8FC276950}"
-	GlobalSection(PerforceSourceControlProviderSolutionProperties) = preSolution
-		SolutionIsControlled = True
-	EndGlobalSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Runtime", "Code\Runtime\Runtime.vcxproj", "{2DBBA66D-F5FA-46D4-AB99-8704CE462948}"
-	GlobalSection(PerforceSourceControlProviderSolutionProperties) = preSolution
-		SolutionIsControlled = True
-	EndGlobalSection
 	ProjectSection(ProjectDependencies) = postProject
 		{F3FC9249-17E9-4FC4-A514-3CF8FC276950} = {F3FC9249-17E9-4FC4-A514-3CF8FC276950}
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "AbstractEngine", "Code\AbstractEngine\AbstractEngine.vcxproj", "{6AD81C44-040D-458D-9B94-31D47377A6C7}"
-	GlobalSection(PerforceSourceControlProviderSolutionProperties) = preSolution
-		SolutionIsControlled = True
-	EndGlobalSection
 	ProjectSection(ProjectDependencies) = postProject
 		{F3FC9249-17E9-4FC4-A514-3CF8FC276950} = {F3FC9249-17E9-4FC4-A514-3CF8FC276950}
 		{2DBBA66D-F5FA-46D4-AB99-8704CE462948} = {2DBBA66D-F5FA-46D4-AB99-8704CE462948}
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Service", "Code\Service\Service.vcxproj", "{7E076562-33DC-432C-92ED-84E189D53948}"
-	GlobalSection(PerforceSourceControlProviderSolutionProperties) = preSolution
-		SolutionIsControlled = True
-	EndGlobalSection
 	ProjectSection(ProjectDependencies) = postProject
 		{6AD81C44-040D-458D-9B94-31D47377A6C7} = {6AD81C44-040D-458D-9B94-31D47377A6C7}
 		{F3FC9249-17E9-4FC4-A514-3CF8FC276950} = {F3FC9249-17E9-4FC4-A514-3CF8FC276950}
@@ -36,9 +24,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Service", "Code\Service\Ser
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Engine", "Code\Engine\Engine.vcxproj", "{F196A472-BC12-43AD-AAAE-1DC7AA4AE5B7}"
-	GlobalSection(PerforceSourceControlProviderSolutionProperties) = preSolution
-		SolutionIsControlled = True
-	EndGlobalSection
 	ProjectSection(ProjectDependencies) = postProject
 		{6AD81C44-040D-458D-9B94-31D47377A6C7} = {6AD81C44-040D-458D-9B94-31D47377A6C7}
 		{F3FC9249-17E9-4FC4-A514-3CF8FC276950} = {F3FC9249-17E9-4FC4-A514-3CF8FC276950}
@@ -47,9 +32,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Engine", "Code\Engine\Engin
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Game", "Code\Game\Game.vcxproj", "{FCD33A39-9982-4E52-AAF2-06DBB5185320}"
-	GlobalSection(PerforceSourceControlProviderSolutionProperties) = preSolution
-		SolutionIsControlled = True
-	EndGlobalSection
 	ProjectSection(ProjectDependencies) = postProject
 		{6AD81C44-040D-458D-9B94-31D47377A6C7} = {6AD81C44-040D-458D-9B94-31D47377A6C7}
 		{F3FC9249-17E9-4FC4-A514-3CF8FC276950} = {F3FC9249-17E9-4FC4-A514-3CF8FC276950}
@@ -58,67 +40,126 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Game", "Code\Game\Game.vcxp
 		{F196A472-BC12-43AD-AAAE-1DC7AA4AE5B7} = {F196A472-BC12-43AD-AAAE-1DC7AA4AE5B7}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Content", "Content\Content.vcxproj", "{76506B74-4A76-45C8-8F17-F03F09B41383}"
+EndProject
 Global
-	GlobalSection(PerforceSourceControlProviderSolutionProperties) = preSolution
-		SolutionIsControlled = True
-	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
 		Final|x64 = Final|x64
+		Final|x86 = Final|x86
 		Release|x64 = Release|x64
+		Release|x86 = Release|x86
 		Test|x64 = Test|x64
+		Test|x86 = Test|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{F3FC9249-17E9-4FC4-A514-3CF8FC276950}.Debug|x64.ActiveCfg = Debug|x64
 		{F3FC9249-17E9-4FC4-A514-3CF8FC276950}.Debug|x64.Build.0 = Debug|x64
+		{F3FC9249-17E9-4FC4-A514-3CF8FC276950}.Debug|x86.ActiveCfg = Debug|x64
 		{F3FC9249-17E9-4FC4-A514-3CF8FC276950}.Final|x64.ActiveCfg = Final|x64
 		{F3FC9249-17E9-4FC4-A514-3CF8FC276950}.Final|x64.Build.0 = Final|x64
+		{F3FC9249-17E9-4FC4-A514-3CF8FC276950}.Final|x86.ActiveCfg = Final|x64
 		{F3FC9249-17E9-4FC4-A514-3CF8FC276950}.Release|x64.ActiveCfg = Release|x64
 		{F3FC9249-17E9-4FC4-A514-3CF8FC276950}.Release|x64.Build.0 = Release|x64
+		{F3FC9249-17E9-4FC4-A514-3CF8FC276950}.Release|x86.ActiveCfg = Release|x64
 		{F3FC9249-17E9-4FC4-A514-3CF8FC276950}.Test|x64.ActiveCfg = Test|x64
 		{F3FC9249-17E9-4FC4-A514-3CF8FC276950}.Test|x64.Build.0 = Test|x64
+		{F3FC9249-17E9-4FC4-A514-3CF8FC276950}.Test|x86.ActiveCfg = Test|x64
 		{2DBBA66D-F5FA-46D4-AB99-8704CE462948}.Debug|x64.ActiveCfg = Debug|x64
 		{2DBBA66D-F5FA-46D4-AB99-8704CE462948}.Debug|x64.Build.0 = Debug|x64
+		{2DBBA66D-F5FA-46D4-AB99-8704CE462948}.Debug|x86.ActiveCfg = Debug|x64
 		{2DBBA66D-F5FA-46D4-AB99-8704CE462948}.Final|x64.ActiveCfg = Final|x64
 		{2DBBA66D-F5FA-46D4-AB99-8704CE462948}.Final|x64.Build.0 = Final|x64
+		{2DBBA66D-F5FA-46D4-AB99-8704CE462948}.Final|x86.ActiveCfg = Final|x64
 		{2DBBA66D-F5FA-46D4-AB99-8704CE462948}.Release|x64.ActiveCfg = Release|x64
 		{2DBBA66D-F5FA-46D4-AB99-8704CE462948}.Release|x64.Build.0 = Release|x64
+		{2DBBA66D-F5FA-46D4-AB99-8704CE462948}.Release|x86.ActiveCfg = Release|x64
 		{2DBBA66D-F5FA-46D4-AB99-8704CE462948}.Test|x64.ActiveCfg = Test|x64
 		{2DBBA66D-F5FA-46D4-AB99-8704CE462948}.Test|x64.Build.0 = Test|x64
+		{2DBBA66D-F5FA-46D4-AB99-8704CE462948}.Test|x86.ActiveCfg = Test|x64
 		{6AD81C44-040D-458D-9B94-31D47377A6C7}.Debug|x64.ActiveCfg = Debug|x64
 		{6AD81C44-040D-458D-9B94-31D47377A6C7}.Debug|x64.Build.0 = Debug|x64
+		{6AD81C44-040D-458D-9B94-31D47377A6C7}.Debug|x86.ActiveCfg = Debug|x64
 		{6AD81C44-040D-458D-9B94-31D47377A6C7}.Final|x64.ActiveCfg = Final|x64
 		{6AD81C44-040D-458D-9B94-31D47377A6C7}.Final|x64.Build.0 = Final|x64
+		{6AD81C44-040D-458D-9B94-31D47377A6C7}.Final|x86.ActiveCfg = Final|x64
 		{6AD81C44-040D-458D-9B94-31D47377A6C7}.Release|x64.ActiveCfg = Release|x64
 		{6AD81C44-040D-458D-9B94-31D47377A6C7}.Release|x64.Build.0 = Release|x64
+		{6AD81C44-040D-458D-9B94-31D47377A6C7}.Release|x86.ActiveCfg = Release|x64
 		{6AD81C44-040D-458D-9B94-31D47377A6C7}.Test|x64.ActiveCfg = Test|x64
 		{6AD81C44-040D-458D-9B94-31D47377A6C7}.Test|x64.Build.0 = Test|x64
+		{6AD81C44-040D-458D-9B94-31D47377A6C7}.Test|x86.ActiveCfg = Test|x64
 		{7E076562-33DC-432C-92ED-84E189D53948}.Debug|x64.ActiveCfg = Debug|x64
 		{7E076562-33DC-432C-92ED-84E189D53948}.Debug|x64.Build.0 = Debug|x64
+		{7E076562-33DC-432C-92ED-84E189D53948}.Debug|x86.ActiveCfg = Debug|x64
 		{7E076562-33DC-432C-92ED-84E189D53948}.Final|x64.ActiveCfg = Final|x64
 		{7E076562-33DC-432C-92ED-84E189D53948}.Final|x64.Build.0 = Final|x64
+		{7E076562-33DC-432C-92ED-84E189D53948}.Final|x86.ActiveCfg = Final|x64
 		{7E076562-33DC-432C-92ED-84E189D53948}.Release|x64.ActiveCfg = Release|x64
 		{7E076562-33DC-432C-92ED-84E189D53948}.Release|x64.Build.0 = Release|x64
+		{7E076562-33DC-432C-92ED-84E189D53948}.Release|x86.ActiveCfg = Release|x64
 		{7E076562-33DC-432C-92ED-84E189D53948}.Test|x64.ActiveCfg = Test|x64
 		{7E076562-33DC-432C-92ED-84E189D53948}.Test|x64.Build.0 = Test|x64
+		{7E076562-33DC-432C-92ED-84E189D53948}.Test|x86.ActiveCfg = Test|x64
 		{F196A472-BC12-43AD-AAAE-1DC7AA4AE5B7}.Debug|x64.ActiveCfg = Debug|x64
 		{F196A472-BC12-43AD-AAAE-1DC7AA4AE5B7}.Debug|x64.Build.0 = Debug|x64
+		{F196A472-BC12-43AD-AAAE-1DC7AA4AE5B7}.Debug|x86.ActiveCfg = Debug|x64
 		{F196A472-BC12-43AD-AAAE-1DC7AA4AE5B7}.Final|x64.ActiveCfg = Final|x64
 		{F196A472-BC12-43AD-AAAE-1DC7AA4AE5B7}.Final|x64.Build.0 = Final|x64
+		{F196A472-BC12-43AD-AAAE-1DC7AA4AE5B7}.Final|x86.ActiveCfg = Final|x64
 		{F196A472-BC12-43AD-AAAE-1DC7AA4AE5B7}.Release|x64.ActiveCfg = Release|x64
 		{F196A472-BC12-43AD-AAAE-1DC7AA4AE5B7}.Release|x64.Build.0 = Release|x64
+		{F196A472-BC12-43AD-AAAE-1DC7AA4AE5B7}.Release|x86.ActiveCfg = Release|x64
 		{F196A472-BC12-43AD-AAAE-1DC7AA4AE5B7}.Test|x64.ActiveCfg = Test|x64
 		{F196A472-BC12-43AD-AAAE-1DC7AA4AE5B7}.Test|x64.Build.0 = Test|x64
+		{F196A472-BC12-43AD-AAAE-1DC7AA4AE5B7}.Test|x86.ActiveCfg = Test|x64
 		{FCD33A39-9982-4E52-AAF2-06DBB5185320}.Debug|x64.ActiveCfg = Debug|x64
 		{FCD33A39-9982-4E52-AAF2-06DBB5185320}.Debug|x64.Build.0 = Debug|x64
+		{FCD33A39-9982-4E52-AAF2-06DBB5185320}.Debug|x86.ActiveCfg = Debug|x64
 		{FCD33A39-9982-4E52-AAF2-06DBB5185320}.Final|x64.ActiveCfg = Final|x64
 		{FCD33A39-9982-4E52-AAF2-06DBB5185320}.Final|x64.Build.0 = Final|x64
+		{FCD33A39-9982-4E52-AAF2-06DBB5185320}.Final|x86.ActiveCfg = Final|x64
 		{FCD33A39-9982-4E52-AAF2-06DBB5185320}.Release|x64.ActiveCfg = Release|x64
 		{FCD33A39-9982-4E52-AAF2-06DBB5185320}.Release|x64.Build.0 = Release|x64
+		{FCD33A39-9982-4E52-AAF2-06DBB5185320}.Release|x86.ActiveCfg = Release|x64
 		{FCD33A39-9982-4E52-AAF2-06DBB5185320}.Test|x64.ActiveCfg = Test|x64
 		{FCD33A39-9982-4E52-AAF2-06DBB5185320}.Test|x64.Build.0 = Test|x64
+		{FCD33A39-9982-4E52-AAF2-06DBB5185320}.Test|x86.ActiveCfg = Test|x64
+		{76506B74-4A76-45C8-8F17-F03F09B41383}.Debug|x64.ActiveCfg = Debug|x64
+		{76506B74-4A76-45C8-8F17-F03F09B41383}.Debug|x86.ActiveCfg = Debug|Win32
+		{76506B74-4A76-45C8-8F17-F03F09B41383}.Final|x64.ActiveCfg = Debug|x64
+		{76506B74-4A76-45C8-8F17-F03F09B41383}.Final|x86.ActiveCfg = Debug|Win32
+		{76506B74-4A76-45C8-8F17-F03F09B41383}.Release|x64.ActiveCfg = Release|x64
+		{76506B74-4A76-45C8-8F17-F03F09B41383}.Release|x86.ActiveCfg = Release|Win32
+		{76506B74-4A76-45C8-8F17-F03F09B41383}.Test|x64.ActiveCfg = Debug|x64
+		{76506B74-4A76-45C8-8F17-F03F09B41383}.Test|x86.ActiveCfg = Debug|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {34C450B7-3891-4AA7-9B7F-2F9ADDF6B266}
+	EndGlobalSection
+	GlobalSection(PerforceSourceControlProviderSolutionProperties) = preSolution
+		SolutionIsControlled = False
+	EndGlobalSection
+	GlobalSection(PerforceSourceControlProviderSolutionProperties) = preSolution
+		SolutionIsControlled = False
+	EndGlobalSection
+	GlobalSection(PerforceSourceControlProviderSolutionProperties) = preSolution
+		SolutionIsControlled = False
+	EndGlobalSection
+	GlobalSection(PerforceSourceControlProviderSolutionProperties) = preSolution
+		SolutionIsControlled = False
+	EndGlobalSection
+	GlobalSection(PerforceSourceControlProviderSolutionProperties) = preSolution
+		SolutionIsControlled = False
+	EndGlobalSection
+	GlobalSection(PerforceSourceControlProviderSolutionProperties) = preSolution
+		SolutionIsControlled = False
+	EndGlobalSection
+	GlobalSection(PerforceSourceControlProviderSolutionProperties) = preSolution
+		SolutionIsControlled = False
 	EndGlobalSection
 EndGlobal

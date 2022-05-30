@@ -1,24 +1,348 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Config">
-      <UniqueIdentifier>{ef536c2e-d1ca-4b26-b450-393861072018}</UniqueIdentifier>
-    </Filter>
     <Filter Include="App">
       <UniqueIdentifier>{721343d1-dd0e-4906-81cb-1195dddaaec3}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Service">
+      <UniqueIdentifier>{4c77edb3-ccf7-44f4-a7bf-7007a582bafa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Gfx">
+      <UniqueIdentifier>{3d0b0c3a-1f79-4398-a3d8-a7ad158574d6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Geometry">
+      <UniqueIdentifier>{83de3943-a15c-4028-8c2d-4e77a44f3f07}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Input">
+      <UniqueIdentifier>{d3c676ac-54b8-43f4-bfa2-0c27aaef603f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="World">
+      <UniqueIdentifier>{390865cc-3500-4154-936a-36c03b6faa5f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Config.cpp">
-      <Filter>Config</Filter>
-    </ClCompile>
     <ClCompile Include="App\ApplicationBase.cpp">
       <Filter>App</Filter>
     </ClCompile>
+    <ClCompile Include="Service\RestService.cpp">
+      <Filter>Service</Filter>
+    </ClCompile>
+    <ClCompile Include="Gfx\GfxBase.cpp">
+      <Filter>Gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="Gfx\GfxDevice.cpp">
+      <Filter>Gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="Gfx\GfxShader.cpp">
+      <Filter>Gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="Gfx\GfxMaterial.cpp">
+      <Filter>Gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="Gfx\GfxMaterialProcessor.cpp">
+      <Filter>Gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="Gfx\GfxTypes.cpp">
+      <Filter>Gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="Gfx\GfxTypeFactory.cpp">
+      <Filter>Gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="Gfx\GfxMaterialProperty.cpp">
+      <Filter>Gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="Gfx\GfxRenderer.cpp">
+      <Filter>Gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry\Cube.cpp">
+      <Filter>Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry\Plane.cpp">
+      <Filter>Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="Input\InputMgr.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
+    <ClCompile Include="App\AppService.cpp">
+      <Filter>App</Filter>
+    </ClCompile>
+    <ClCompile Include="Input\InputDevice.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
+    <ClCompile Include="Input\MouseDevice.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
+    <ClCompile Include="Input\KeyboardDevice.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
+    <ClCompile Include="PCH.cpp" />
+    <ClCompile Include="World\Component.cpp">
+      <Filter>World</Filter>
+    </ClCompile>
+    <ClCompile Include="World\Entity.cpp">
+      <Filter>World</Filter>
+    </ClCompile>
+    <ClCompile Include="World\World.cpp">
+      <Filter>World</Filter>
+    </ClCompile>
+    <ClCompile Include="World\WorldContainer.cpp">
+      <Filter>World</Filter>
+    </ClCompile>
+    <ClCompile Include="World\ComponentSystem.cpp">
+      <Filter>World</Filter>
+    </ClCompile>
+    <ClCompile Include="App\AppConfig.cpp">
+      <Filter>App</Filter>
+    </ClCompile>
+    <ClCompile Include="Gfx\GfxVertexInputFormat.cpp">
+      <Filter>Gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="Gfx\GfxShaderText.cpp">
+      <Filter>Gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="Gfx\GfxShaderTextProcessor.cpp">
+      <Filter>Gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="Gfx\GfxShaderBinary.cpp">
+      <Filter>Gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="Gfx\GfxShaderBinaryProcessor.cpp">
+      <Filter>Gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="Gfx\GfxShaderUtil.cpp">
+      <Filter>Gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="Gfx\GfxShaderManager.cpp">
+      <Filter>Gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="Gfx\GfxResourceObject.cpp">
+      <Filter>Gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="Gfx\GfxTaskScheduler.cpp">
+      <Filter>Gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="Gfx\GfxVertexBuffer.cpp">
+      <Filter>Gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="Gfx\GfxResourceCommandList.cpp">
+      <Filter>Gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="App\AppWindow.cpp">
+      <Filter>App</Filter>
+    </ClCompile>
+    <ClCompile Include="App\Win32Window.cpp">
+      <Filter>App</Filter>
+    </ClCompile>
+    <ClCompile Include="Gfx\GfxSwapChain.cpp">
+      <Filter>Gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="Gfx\GfxModelRenderer.cpp">
+      <Filter>Gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="Gfx\GfxCommandContext.cpp">
+      <Filter>Gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="Gfx\GfxCommandQueue.cpp">
+      <Filter>Gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="Gfx\GfxRendererDependencyContext.cpp">
+      <Filter>Gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="Gfx\GfxIndexBuffer.cpp">
+      <Filter>Gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="Gfx\GfxFence.cpp">
+      <Filter>Gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="Gfx\GfxPipelineState.cpp">
+      <Filter>Gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="Gfx\GfxTextureBinary.cpp">
+      <Filter>Gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="Gfx\GfxTextureBinaryProcessor.cpp">
+      <Filter>Gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="Gfx\GfxTexture.cpp">
+      <Filter>Gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="World\EntityCollection.cpp">
+      <Filter>World</Filter>
+    </ClCompile>
+    <ClCompile Include="World\WorldScene.cpp">
+      <Filter>World</Filter>
+    </ClCompile>
+    <ClCompile Include="Gfx\GfxUploadBuffer.cpp">
+      <Filter>Gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="Gfx\GfxRenderTexture.cpp" />
+    <ClCompile Include="Gfx\GfxInputLayout.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App\ApplicationBase.h">
       <Filter>App</Filter>
     </ClInclude>
+    <ClInclude Include="Service\RestService.h">
+      <Filter>Service</Filter>
+    </ClInclude>
+    <ClInclude Include="Gfx\GfxBase.h">
+      <Filter>Gfx</Filter>
+    </ClInclude>
+    <ClInclude Include="Gfx\GfxDevice.h">
+      <Filter>Gfx</Filter>
+    </ClInclude>
+    <ClInclude Include="Gfx\GfxTypes.h">
+      <Filter>Gfx</Filter>
+    </ClInclude>
+    <ClInclude Include="Gfx\GfxShader.h">
+      <Filter>Gfx</Filter>
+    </ClInclude>
+    <ClInclude Include="Gfx\GfxMaterial.h">
+      <Filter>Gfx</Filter>
+    </ClInclude>
+    <ClInclude Include="Gfx\GfxMaterialProcessor.h">
+      <Filter>Gfx</Filter>
+    </ClInclude>
+    <ClInclude Include="Gfx\GfxTypeFactory.h">
+      <Filter>Gfx</Filter>
+    </ClInclude>
+    <ClInclude Include="Gfx\GfxMaterialProperty.h">
+      <Filter>Gfx</Filter>
+    </ClInclude>
+    <ClInclude Include="Gfx\GfxRenderer.h">
+      <Filter>Gfx</Filter>
+    </ClInclude>
+    <ClInclude Include="Geometry\GeometryTypes.h">
+      <Filter>Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="Input\InputMgr.h">
+      <Filter>Input</Filter>
+    </ClInclude>
+    <ClInclude Include="App\AppService.h">
+      <Filter>App</Filter>
+    </ClInclude>
+    <ClInclude Include="Input\InputDevice.h">
+      <Filter>Input</Filter>
+    </ClInclude>
+    <ClInclude Include="Input\MouseDevice.h">
+      <Filter>Input</Filter>
+    </ClInclude>
+    <ClInclude Include="Input\KeyboardDevice.h">
+      <Filter>Input</Filter>
+    </ClInclude>
+    <ClInclude Include="PCH.h" />
+    <ClInclude Include="World\Entity.h">
+      <Filter>World</Filter>
+    </ClInclude>
+    <ClInclude Include="World\Component.h">
+      <Filter>World</Filter>
+    </ClInclude>
+    <ClInclude Include="World\World.h">
+      <Filter>World</Filter>
+    </ClInclude>
+    <ClInclude Include="World\WorldContainer.h">
+      <Filter>World</Filter>
+    </ClInclude>
+    <ClInclude Include="World\WorldTypes.h">
+      <Filter>World</Filter>
+    </ClInclude>
+    <ClInclude Include="World\ComponentSystem.h">
+      <Filter>World</Filter>
+    </ClInclude>
+    <ClInclude Include="World\ComponentFactory.h">
+      <Filter>World</Filter>
+    </ClInclude>
+    <ClInclude Include="World\ComponentList.h">
+      <Filter>World</Filter>
+    </ClInclude>
+    <ClInclude Include="App\AppConfig.h">
+      <Filter>App</Filter>
+    </ClInclude>
+    <ClInclude Include="World\ECSCommon.h">
+      <Filter>World</Filter>
+    </ClInclude>
+    <ClInclude Include="Gfx\GfxVertexInputFormat.h">
+      <Filter>Gfx</Filter>
+    </ClInclude>
+    <ClInclude Include="Gfx\GfxShaderText.h">
+      <Filter>Gfx</Filter>
+    </ClInclude>
+    <ClInclude Include="Gfx\GfxShaderTextProcessor.h">
+      <Filter>Gfx</Filter>
+    </ClInclude>
+    <ClInclude Include="Gfx\GfxShaderBinary.h">
+      <Filter>Gfx</Filter>
+    </ClInclude>
+    <ClInclude Include="Gfx\GfxShaderBinaryProcessor.h">
+      <Filter>Gfx</Filter>
+    </ClInclude>
+    <ClInclude Include="Gfx\GfxShaderUtil.h">
+      <Filter>Gfx</Filter>
+    </ClInclude>
+    <ClInclude Include="Gfx\GfxShaderManager.h">
+      <Filter>Gfx</Filter>
+    </ClInclude>
+    <ClInclude Include="Gfx\GfxResourceObject.h">
+      <Filter>Gfx</Filter>
+    </ClInclude>
+    <ClInclude Include="Gfx\GfxTaskScheduler.h">
+      <Filter>Gfx</Filter>
+    </ClInclude>
+    <ClInclude Include="Gfx\GfxVertexBuffer.h">
+      <Filter>Gfx</Filter>
+    </ClInclude>
+    <ClInclude Include="Gfx\GfxResourceCommandList.h">
+      <Filter>Gfx</Filter>
+    </ClInclude>
+    <ClInclude Include="App\AppWindow.h">
+      <Filter>App</Filter>
+    </ClInclude>
+    <ClInclude Include="App\Win32Window.h">
+      <Filter>App</Filter>
+    </ClInclude>
+    <ClInclude Include="Gfx\GfxSwapChain.h">
+      <Filter>Gfx</Filter>
+    </ClInclude>
+    <ClInclude Include="Gfx\GfxModelRenderer.h">
+      <Filter>Gfx</Filter>
+    </ClInclude>
+    <ClInclude Include="Gfx\GfxCommandContext.h">
+      <Filter>Gfx</Filter>
+    </ClInclude>
+    <ClInclude Include="Gfx\GfxCommandQueue.h">
+      <Filter>Gfx</Filter>
+    </ClInclude>
+    <ClInclude Include="Gfx\GfxRendererDependencyContext.h">
+      <Filter>Gfx</Filter>
+    </ClInclude>
+    <ClInclude Include="Gfx\GfxIndexBuffer.h">
+      <Filter>Gfx</Filter>
+    </ClInclude>
+    <ClInclude Include="Gfx\GfxFence.h">
+      <Filter>Gfx</Filter>
+    </ClInclude>
+    <ClInclude Include="Gfx\GfxPipelineState.h">
+      <Filter>Gfx</Filter>
+    </ClInclude>
+    <ClInclude Include="Gfx\GfxTextureBinary.h">
+      <Filter>Gfx</Filter>
+    </ClInclude>
+    <ClInclude Include="Gfx\GfxTextureBinaryProcessor.h">
+      <Filter>Gfx</Filter>
+    </ClInclude>
+    <ClInclude Include="Gfx\GfxTexture.h">
+      <Filter>Gfx</Filter>
+    </ClInclude>
+    <ClInclude Include="World\EntityCollection.h">
+      <Filter>World</Filter>
+    </ClInclude>
+    <ClInclude Include="World\WorldScene.h">
+      <Filter>World</Filter>
+    </ClInclude>
+    <ClInclude Include="Gfx\GfxUploadBuffer.h">
+      <Filter>Gfx</Filter>
+    </ClInclude>
+    <ClInclude Include="Gfx\GfxRenderTexture.h" />
+    <ClInclude Include="Gfx\GfxInputLayout.h" />
   </ItemGroup>
 </Project>

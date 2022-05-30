@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -18,16 +18,21 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
+#include "Core/PCH.h"
 #include "Thread.h"
 #include "Core/Common/Assert.h"
 #include "Core/Memory/Memory.h"
 #include "Core/String/StringUtil.h"
+#include "Core/Platform/Atomic.h"
 #include "Core/Utility/ErrorCore.h"
 
 #if defined(LF_OS_WINDOWS)
 #define NOMINMAX
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
+#ifdef Yield
+#undef Yield
+#endif
 #endif
 
 namespace lf {
@@ -36,6 +41,8 @@ static const SizeT THREAD_STACK_SIZE = (2ULL * 1024ULL * 1024ULL);
 LF_THREAD_LOCAL bool        gIsMainThread = false;
 LF_THREAD_LOCAL SizeT       gCurrentThreadId = 0;
 LF_THREAD_LOCAL ThreadData* gCurrentThread = nullptr;
+
+static Atomic32             gActiveThreads = 0;
 
 struct ThreadData
 {
@@ -55,6 +62,7 @@ struct ThreadData
 
 DWORD WINAPI PlatformThreadCallback(LPVOID param)
 {
+    AtomicIncrement32(&gActiveThreads);
     ThreadData* thread = reinterpret_cast<ThreadData*>(param);
     gCurrentThread = thread;
     gCurrentThreadId = thread->mThreadId;
@@ -64,6 +72,7 @@ DWORD WINAPI PlatformThreadCallback(LPVOID param)
     }
     gCurrentThread = nullptr;
     gCurrentThreadId = INVALID_THREAD_ID;
+    AtomicDecrement32(&gActiveThreads);
     return 0;
 }
 
@@ -97,7 +106,21 @@ void PlatformSetThreadName(const char* name, SizeT threadId)
 
     }
 }
-
+#endif
+#if defined(LF_DEBUG) || defined(LF_TEST)
+static void SetThreadDebugName(ThreadData* data, const char* name)
+{
+    if (data->mDebugName)
+    {
+        LFFree(data->mDebugName);
+        data->mDebugName = nullptr;
+    }
+    SizeT length = StrLen(name);
+    data->mDebugName = reinterpret_cast<char*>(LFAlloc(length + 1, 16));
+    memcpy(data->mDebugName, name, length);
+    data->mDebugName[length] = '\0';
+    PlatformSetThreadName(name, data->mThreadId);
+}
 #endif
 
 
@@ -219,6 +242,7 @@ const char* Thread::GetDebugName() const
 {
     return mData ? mData->mDebugName : "";
 }
+
 void Thread::SetDebugName(const char* name)
 {
     if (!mData)
@@ -226,16 +250,7 @@ void Thread::SetDebugName(const char* name)
         return;
     }
 
-    if (mData->mDebugName)
-    {
-        LFFree(mData->mDebugName);
-        mData->mDebugName = nullptr;
-    }
-    SizeT length = StrLen(name);
-    mData->mDebugName = reinterpret_cast<char*>(LFAlloc(length + 1, 16));
-    memcpy(mData->mDebugName, name, length);
-    mData->mDebugName[length] = '\0';
-    PlatformSetThreadName(name, mData->mThreadId);
+    SetThreadDebugName(mData, name);
 }
 #endif
 
@@ -299,6 +314,71 @@ void Thread::JoinAll(Thread* threadArray, const size_t numThreads)
     LF_STATIC_CRASH("Missing platform implementation.");
 #endif
 }
+
+void Thread::Sleep(SizeT milliseconds)
+{
+#if defined(LF_OS_WINDOWS)
+    ::Sleep(static_cast<DWORD>(milliseconds));
+#else
+    LF_STATIC_CRASH("Missing platform implementation.");
+#endif
+}
+
+void Thread::SleepPrecise(SizeT microseconds)
+{
+#if defined(LF_OS_WINDOWS)
+    HANDLE timer;
+    LARGE_INTEGER li;
+    LONGLONG us = static_cast<LONGLONG>(microseconds);
+
+    timer = CreateWaitableTimerA(nullptr, TRUE, nullptr);
+    if (!timer)
+    {
+        return;
+    }
+
+    li.QuadPart = -us;
+    if (!SetWaitableTimer(timer, &li, 0, nullptr, nullptr, FALSE))
+    {
+        CloseHandle(timer);
+        return;
+    }
+
+    WaitForSingleObject(timer, INFINITE);
+    CloseHandle(timer);
+#else
+
+
+    LF_STATIC_CRASH("Missing platform implementation.");
+#endif
+}
+
+void Thread::Yield()
+{
+#if defined(LF_OS_WINDOWS)
+    SwitchToThread();
+#else
+    LF_STATIC_CRASH("Missing platform implementation.");
+#endif
+}
+
+SizeT Thread::GetId()
+{
+#if defined(LF_OS_WINDOWS)
+    return static_cast<SizeT>(GetCurrentThreadId());
+#else
+    LF_STATIC_CRASH("Missing platform implementation.");
+#endif
+}
+SizeT Thread::GetExecutingCore()
+{
+#if defined(LF_OS_WINDOWS)
+    return static_cast<SizeT>(GetCurrentProcessorNumber());
+#else
+    LF_STATIC_CRASH("Missing platform implementation.");
+#endif
+}
+
 void Thread::AddRef()
 {
     if (mData)
@@ -375,6 +455,27 @@ const char* GetThreadName()
     }
 #endif
     return "Unknown";
+}
+
+SizeT GetActiveThreadCount()
+{
+    return static_cast<SizeT>(AtomicLoad(&gActiveThreads));
+}
+
+void SetThreadName(const char* name)
+{
+#if defined(LF_DEBUG) || defined(LF_TEST)
+    if (gCurrentThread != nullptr)
+    {
+        SetThreadDebugName(gCurrentThread, name);
+    }
+    else
+    {
+        PlatformSetThreadName(name, GetCurrentThreadId());
+    }
+#else
+    (name);
+#endif
 }
 
 } // namespace lf

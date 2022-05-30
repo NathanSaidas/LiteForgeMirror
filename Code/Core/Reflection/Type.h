@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -18,8 +18,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
-#ifndef LF_CORE_TYPE_H
-#define LF_CORE_TYPE_H
+#pragma once
 
 #include "Core/Reflection/AccessSpecifier.h"
 #include "Core/Reflection/MemberInfo.h"
@@ -30,9 +29,9 @@ namespace lf {
 
 class Type;
 
-using MemberInfoArray = TArray<MemberInfo>;
-using MethodInfoArray = TArray<MethodInfo>;
-using FunctionInfoArray = TArray<FunctionInfo>;
+using MemberInfoArray = TVector<MemberInfo>;
+using MethodInfoArray = TVector<MethodInfo>;
+using FunctionInfoArray = TVector<FunctionInfo>;
 
 class LF_CORE_API Type
 {
@@ -50,15 +49,29 @@ public:
     Type();
 
     bool IsA(const Type* other) const;
-    LF_INLINE bool operator==(const Type& other) const { return mTypeID == other.mTypeID; }
-    LF_INLINE bool operator!=(const Type& other) const { return mTypeID != other.mTypeID; }
+    // ********************************************************************
+    // Returns the inheritence distance between two types.
+    // 
+    // class A;
+    // class B : A;
+    // class C : B;
+    // class D : A;
+    //
+    // A.Distance(A) == 0
+    // A.Distance(B) == INVALID (A is not B)
+    // B.Distance(A) == 1
+    // C.Distance(A) == 2
+    // D.Distance(B) == INVALID (D is not B)
+    // ********************************************************************
+    SizeT Distance(const Type* other) const;
+    LF_INLINE bool operator==(const Type& other) const { return mFullName == other.mFullName; }
+    LF_INLINE bool operator!=(const Type& other) const { return mFullName != other.mFullName; }
 
     LF_INLINE const Token& GetName() const { return mName; }
     LF_INLINE const Token& GetFullName() const { return mFullName; }
     LF_INLINE const Type*  GetSuper() const { return mSuper; }
     LF_INLINE SizeT GetSize() const { return mSize; }
     LF_INLINE SizeT GetAlignment() const { return mAlignment; }
-    LF_INLINE SizeT GetTypeID() const { return mTypeID; }
     LF_INLINE UInt8 GetFlags() const { return mFlags; }
     LF_INLINE Constructor GetConstructor() const { return mConstructor; }
     LF_INLINE Destructor  GetDestructor() const { return mDestructor; }
@@ -74,7 +87,6 @@ private:
     const Type*         mSuper;
     SizeT               mSize;
     SizeT               mAlignment;
-    SizeT               mTypeID;
     UInt8               mFlags;
     Constructor         mConstructor;
     Destructor          mDestructor;
@@ -84,5 +96,3 @@ private:
 };
 
 } // namespace lf
-
-#endif // LF_CORE_TYPE_H

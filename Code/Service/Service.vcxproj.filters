@@ -1,13 +1,30 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Config">
-      <UniqueIdentifier>{851d2c50-883e-427f-95ec-9ebac0623b6d}</UniqueIdentifier>
+    <Filter Include="Profiler">
+      <UniqueIdentifier>{8c85fad1-0a3b-4221-ad7b-ad055af280f0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="RestService">
+      <UniqueIdentifier>{ca5285b7-dbf2-4c89-aab6-6e4049fcdbb8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="FileServer">
+      <UniqueIdentifier>{31f24317-59f7-4335-8bf7-354113c3d278}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Config.cpp">
-      <Filter>Config</Filter>
+    <ClCompile Include="Profiler\Profiler.cpp">
+      <Filter>Profiler</Filter>
     </ClCompile>
+    <ClCompile Include="RestService\RestServiceImpl.cpp">
+      <Filter>RestService</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Profiler\Profiler.h">
+      <Filter>Profiler</Filter>
+    </ClInclude>
+    <ClInclude Include="RestService\RestServiceImpl.h">
+      <Filter>RestService</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

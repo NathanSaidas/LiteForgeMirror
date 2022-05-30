@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -18,6 +18,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
+#include "Runtime/PCH.h"
 #include "Promise.h"
 #include "Async.h"
 
@@ -31,6 +32,7 @@ Promise::Promise()
 , mAsync(&GetAsync())
 , mStateSignaller()
 , mState(PROMISE_NULL)
+, mExecuteOnDestroy(true)
 {
     mStateSignaller.Initialize();
 }
@@ -42,8 +44,10 @@ Promise::Promise(const PromiseCallback& executor, Async* async)
 , mAsync(async ? async : &GetAsync())
 , mStateSignaller()
 , mState(PROMISE_NULL)
+, mExecuteOnDestroy(true)
 {
     mStateSignaller.Initialize();
+    mStateSignaller.Set(true);
 }
 Promise::~Promise()
 {
@@ -54,7 +58,9 @@ Promise::~Promise()
 
 void Promise::Run()
 {
-    if (AtomicLoad(&mState) == PROMISE_NULL)
+    mExecuteOnDestroy = false;
+
+    if (AtomicLoad(&mState) == PROMISE_NULL || AtomicLoad(&mState) == PROMISE_QUEUED)
     {
         SetState(PROMISE_PENDING);
     }
@@ -105,7 +111,7 @@ bool Promise::SetState(PromiseState state)
                 ReportBugMsgEx("Invalid promise state transition NOT PROMISE_PENDING -> PROMISE_RESOLVED", LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
                 return false;
             }
-            mStateSignaller.Signal();
+            mStateSignaller.Set(false);
         } break;
 
         case PROMISE_REJECTED:
@@ -115,7 +121,7 @@ bool Promise::SetState(PromiseState state)
                 ReportBugMsgEx("Invalid promise state transition NOT PROMISE_PENDING -> PROMISE_REJECTED", LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
                 return false;
             }
-            mStateSignaller.Signal();
+            mStateSignaller.Set(false);
         } break;
         default:
             CriticalAssertMsgEx("Invalid promise state!", LF_ERROR_INVALID_ARGUMENT, ERROR_API_CORE);

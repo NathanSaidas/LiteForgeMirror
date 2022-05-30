@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -18,6 +18,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
+#include "Core/PCH.h"
 #include "String.h"
 #include "Core/Common/Assert.h"
 #include "Core/Memory/Memory.h"
@@ -39,6 +40,12 @@ mStorage()
 {
     ZeroBuffer();
     Assign(other);
+}
+String::String(const String& other, CopyOnWriteTag) 
+: mStorage()
+{
+    ZeroBuffer();
+    Assign(other, COPY_ON_WRITE);
 }
 String::String(String&& other) : 
 mStorage()
@@ -221,6 +228,36 @@ void String::Reserve(SizeT size)
     }
 }
 
+String& String::Assign(const String& other, CopyOnWriteTag)
+{
+    if (!other.CopyOnWrite())
+    {
+        return Assign(other);
+    }
+    return Assign(other.CStr(), COPY_ON_WRITE);
+}
+
+String& String::Assign(const value_type* other, CopyOnWriteTag)
+{
+    if (!other)
+    {
+        return *this;
+    }
+
+    if (Empty() && *other == '\0')
+    {
+        return *this;
+    }
+
+    Clear();
+    const SizeT otherSize = StrLen(other);
+    mStorage.heap.first = const_cast<value_type*>(other);
+    mStorage.heap.last = mStorage.heap.first + otherSize;
+    mStorage.heap.end = mStorage.heap.last;
+    SetFlag(LF_STRING_COPY_ON_WRITE_FLAG);
+    return *this;
+}
+
 String& String::Assign(const String& other)
 {
     if (this == &other)
@@ -236,12 +273,12 @@ String& String::Assign(const String& other)
     // Cases: (cow = COPY ON WRITE )
     // this == local | other == local  | Simply copy LOCAL_STORAGE
     // this == heap  | other == heap   | Simply grow to fit and copy 'buffers'
-    // this == cow   | other == cow    | Just assign the heap pointers and keep the flags
+    // this == cow   | other == cow    | Explicit Copy
     // this == cow   | other == local  | Copy LOCAL_STORAGE and unmark the COW flag
     // this == cow   | other == heap   | Allocate a buffer and copy other 'buffer' and unmark the COW flag
     // this == heap  | other == local  | Copy other LOCAL_STORAGE to this 'buffer'
     // this == local | other == heap   | Grow to fit and copy 'buffers'
-    // this == heap  | other == cow    | Free memory and assume COW state?
+    // this == heap  | other == cow    | Explicit Copy
 
     const bool useHeap = UseHeap();
     const bool copyOnWrite = CopyOnWrite();
@@ -273,6 +310,7 @@ String& String::Assign(const String& other)
         mStorage.heap.first = other.mStorage.heap.first;
         mStorage.heap.last = other.mStorage.heap.last;
         mStorage.heap.end = other.mStorage.heap.end;
+        MakeUnique();
     }
     else if ((copyOnWrite && otherIsHeap) || (isLocal && otherIsHeap))
     {
@@ -303,6 +341,7 @@ String& String::Assign(const String& other)
         mStorage.heap.last = mStorage.heap.first + otherSize;
         mStorage.heap.end = mStorage.heap.last;
         SetFlag(LF_STRING_COPY_ON_WRITE_FLAG);
+        MakeUnique();
     }
     else if (isHeap && otherCopyOnWrite)
     {
@@ -313,6 +352,7 @@ String& String::Assign(const String& other)
         mStorage.heap.end = mStorage.heap.last;
         SetFlag(LF_STRING_COPY_ON_WRITE_FLAG);
         UnsetFlag(LF_STRING_STORAGE_FLAG);
+        MakeUnique();
     }
     else
     {
@@ -775,9 +815,35 @@ void String::MakeLocal()
     value_type* first = mStorage.heap.first;
     value_type* last = mStorage.heap.last;
     const SizeT size = last - first;
-    memcpy(mStorage.local.buffer, first, size);
+    memcpy(mStorage.local.buffer, first, size + 1); // +1 for null terminator
     SetLocalSize(size);
     UnsetFlag(LF_STRING_COPY_ON_WRITE_FLAG);
+}
+
+void String::MakeHeap()
+{
+    AssertEx(CopyOnWrite(), LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+
+    value_type* first = mStorage.heap.first;
+    value_type* last = mStorage.heap.last;
+    const SizeT size = last - first;
+
+    ZeroBuffer();
+    Grow(size);
+    memcpy(mStorage.heap.first, first, size + 1); // +1 for null terminator
+    mStorage.heap.last = mStorage.heap.first + size;
+
+}
+void String::MakeUnique()
+{
+    if (Size() >= (LF_STRING_STORAGE_SUB_1-1))
+    {
+        MakeHeap();
+    }
+    else
+    {
+        MakeLocal();
+    }
 }
 
 } // namespace lf

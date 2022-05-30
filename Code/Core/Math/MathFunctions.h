@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -18,8 +18,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
-#ifndef LF_CORE_MATH_FUNCTIONS_H
-#define LF_CORE_MATH_FUNCTIONS_H
+#pragma once
 
 #include "Core/Common/Types.h"
 #include "Core/Utility/Utility.h"
@@ -32,7 +31,7 @@ const Float64 EULER_CONST = 2.71828182845904523536;
 const Float32 FLT_PI = 3.1415926535897932384626433832795028841971693993f;
 
 template<typename T>
-LF_FORCE_INLINE T Abs(T value) { return value < T(0) ? -value : value; }
+LF_FORCE_INLINE constexpr T Abs(const T value) { return value < T(0) ? -value : value; }
 
 template<typename T>
 LF_FORCE_INLINE T Sqr(T value) { return value * value; }
@@ -150,4 +149,3 @@ LF_FORCE_INLINE Float32 InverseSqrt(Float32 value)
     return y;
 }
 } // namespace lf
-#endif // LF_CORE_MATH_FUNCTIONS_H

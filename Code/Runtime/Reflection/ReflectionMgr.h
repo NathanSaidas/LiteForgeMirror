@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -21,8 +21,10 @@
 #ifndef LF_RUNTIME_REFLECTION_MGR_H
 #define LF_RUNTIME_REFLECTION_MGR_H
 
+#include "Core/Memory/AtomicSmartPointer.h"
 #include "Core/Reflection/Type.h"
 #include "Core/Reflection/Object.h"
+#include "Core/Utility/StdVector.h"
 #include "Runtime/Reflection/ReflectionTypes.h"
 
 namespace lf {
@@ -32,7 +34,7 @@ class MemberInfo;
 class MethodInfo;
 using FunctionInfo = MethodInfo;
 
-using TypeIterator = TArray<Type>::const_iterator; // todo; Is Enumerator a better idea for this..?
+using TypeIterator = TVector<Type>::const_iterator; // todo; Is Enumerator a better idea for this..?
 
 class LF_RUNTIME_API ReflectionMgr
 {
@@ -68,7 +70,7 @@ public:
     //
     // @param base -- The type to search for
     // **********************************
-    TArray<const Type*> FindAll(const Type* base) const;
+    TVector<const Type*> FindAll(const Type* base, bool includeAbstract = true) const;
 
     // **********************************
     // Allocates memory for the specified type and initializes using reflection
@@ -77,10 +79,9 @@ public:
     // note: Native types cannot be allocated via this interface
     //
     // @param type   -- The type you wish to construct
-    // @param markUp -- Optional markup tag you can use for tracking memory water marks
     // @returns      -- The fully constructed object wrapped in a smart pointer.
     // **********************************
-    ObjectPtr CreateObject(const Type* type, MemoryMarkupTag markUp = MMT_GENERAL) const;
+    ObjectPtr CreateObject(const Type* type) const;
     // **********************************
     // Allocates memory for the specified type and initializes using reflection
     // to invoke the constructor.
@@ -91,10 +92,9 @@ public:
     //       the object to complete the link.
     //
     // @param type   -- The type you wish to construct
-    // @param markUp -- Optional markup tag you can use for tracking memory water marks
     // @returns      -- The fully constructed object (don't forget to release the memory)
     // **********************************
-    Object* CreateObjectUnsafe(const Type* type, MemoryMarkupTag markUp = MMT_GENERAL) const;
+    Object* CreateObjectUnsafe(const Type* type) const;
 
     // **********************************
     // Allocates memory for the specified type and initializes using reflection
@@ -103,21 +103,46 @@ public:
     // note: Native types cannot be allocated via this interface
     //
     // @param type -- The type you wish to construct
-    // @param markUp -- Optional markup tag you can use for tracking memory water marks
     // @returns    -- The fully constructed object wrapped in a smart pointer. 
     // **********************************
     template<typename T>
-    TStrongPointer<T> Create(const Type* type = nullptr, MemoryMarkupTag markUp = MMT_GENERAL) const
+    TStrongPointer<T> Create(const Type* type = nullptr) const
     {
         if (!type)
         {
             type = typeof(T);
         }
-        if (!type->IsA(typeof(T)))
+        if (type->IsAbstract() || !type->IsA(typeof(T)))
         {
             return NULL_PTR;
         }
-        return StaticCast<TStrongPointer<T>>(CreateObject(type, markUp));
+        TStrongPointer<T> object = StaticCast<TStrongPointer<T>>(CreateObject(type));
+        InitializeConvertible(object, typename T::PointerConvertible());
+        return object;
+    }
+    // **********************************
+    // Allocates memory for the specified type and initializes using reflection
+    // to invoke the constructor.
+    //
+    // note: Native types cannot be allocated via this interface
+    //
+    // @param type -- The type you wish to construct
+    // @returns    -- The fully constructed object wrapped in a smart pointer. 
+    // **********************************
+    template<typename T>
+    TAtomicStrongPointer<T> CreateAtomic(const Type* type = nullptr) const
+    {
+        if (!type)
+        {
+            type = typeof(T);
+        }
+        if (type->IsAbstract() || !type->IsA(typeof(T)))
+        {
+            return NULL_PTR;
+        }
+        TAtomicStrongPointer<T> object = StaticCast<TAtomicStrongPointer<T>>(CreateObject(type));
+        InitializeConvertible(object, typename T::PointerConvertible());
+        return object;
     }
 
     // **********************************
@@ -130,22 +155,21 @@ public:
     //       the object to complete the link.
     //
     // @param type -- The type you wish to construct
-    // @param markUp -- Optional markup tag you can use for tracking memory water marks
     // @returns    -- The fully constructed object (don't forget to release the memory)
     // **********************************
     template<typename T>
-    T* CreateUnsafe(const Type* type = nullptr, MemoryMarkupTag markUp = MMT_GENERAL) const
+    T* CreateUnsafe(const Type* type = nullptr) const
     {
         if (!type)
         {
             type = typeof(T);
         }
 
-        if (!type->IsA(typeof(T)))
+        if (type->IsAbstract() || !type->IsA(typeof(T)))
         {
             return nullptr;
         }
-        return static_cast<T*>(CreateObjectUnsafe(type, markUp));
+        return static_cast<T*>(CreateObjectUnsafe(type));
     }
 
     TypeIterator GetTypesBegin() const { return mTypes.begin(); }
@@ -154,7 +178,29 @@ public:
 private:
     void Inherit(Type* target, Type* source);
 
-    TArray<Type> mTypes;
+    template<typename T>
+    void InitializeConvertible(TAtomicStrongPointer<T>& object, PointerConvertibleType) const
+    {
+        object->GetWeakPointer() = object;
+    }
+
+    template<typename T>
+    void InitializeConvertible(TAtomicStrongPointer<T>& , void*) const
+    {
+    }
+
+    template<typename T>
+    void InitializeConvertible(TStrongPointer<T>& object, PointerConvertibleType) const
+    {
+        object->GetWeakPointer() = object;
+    }
+
+    template<typename T>
+    void InitializeConvertible(TStrongPointer<T>&, void*) const
+    {
+    }
+
+    TVector<Type> mTypes;
 
     // Native types:
     const Type* mTypeUInt8;

@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -18,7 +18,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
-
+#include "Core/PCH.h"
 #include "NetFramework.h"
 #include "Core/Common/Assert.h"
 #include "Core/String/StringCommon.h"
@@ -132,6 +132,7 @@ const char* GetNetworkErrorString(Int32 errorCode)
         LF_WSA_ERROR_STRING(WSAEOPNOTSUPP);
         LF_WSA_ERROR_STRING(WSAEMSGSIZE);
         LF_WSA_ERROR_STRING(WSAEINTR);
+        LF_WSA_ERROR_STRING(WSAECONNRESET);
         default:
             return "Unknown socket error.";
     }
@@ -141,7 +142,7 @@ const char* GetNetworkErrorString(Int32 errorCode)
 void LogSocketOperationFailure(const char* operation)
 {
     int code = GetNetworkErrorCode();
-    auto msg = (LogMessage("WSA socket operation \"") << operation << "\" failed. Error=" << GetNetworkErrorString(code) << "(0x" << ToHexString(code) << ")");
+    auto msg = (LogMessage("WSA socket operation \"") << operation << "\" failed. Error=" << GetNetworkErrorString(code) << "(0x" << ToString(code) << ")");
 
     ScopedStackTrace trace;
     CaptureStackTrace(trace, 45);
@@ -298,7 +299,7 @@ String IPToString(const IPEndPointAny& endPoint)
             {
                 return String();
             }
-            return String(buffer) + ":" + ToString(endPoint.mPort);
+            return String(buffer) + ":" + ToString(IPEndPointGetPort(endPoint));
         } break;
         case NetAddressFamily::NET_ADDRESS_FAMILY_IPV6:
         {
@@ -312,10 +313,54 @@ String IPToString(const IPEndPointAny& endPoint)
             {
                 return String();
             }
-            return String(buffer) + ":" + ToString(endPoint.mPort);
+            return String(buffer) + ":" + ToString(IPEndPointGetPort(endPoint));
         } break;
     }
     return String();
+}
+
+UInt16 IPEndPointGetPort(const IPEndPointAny& endPoint)
+{
+    return ntohs(endPoint.mPort);
+}
+UInt16 IPEndPointGetPort(const IPv4EndPoint& endPoint)
+{
+    return ntohs(endPoint.mPort);
+}
+UInt16 IPEndPointGetPort(const IPv6EndPoint& endPoint)
+{
+    return ntohs(endPoint.mPort);
+}
+
+bool IPIsLocal(const IPEndPointAny& endPoint)
+{
+    if (endPoint.mAddressFamily == NetAddressFamily::NET_ADDRESS_FAMILY_IPV6)
+    {
+        IPv6EndPoint ipv6;
+        IPCast(endPoint, ipv6);
+        return IPIsLocal(ipv6);
+    }
+    else
+    {
+        IPv4EndPoint ipv4;
+        IPCast(endPoint, ipv4);
+        return IPIsLocal(ipv4);
+    }
+}
+bool IPIsLocal(const IPv4EndPoint& endPoint)
+{
+    return endPoint.mAddress.mWord == 0x0100007fUL;
+}
+bool IPIsLocal(const IPv6EndPoint& endPoint)
+{
+    return endPoint.mAddress.mWord[0] == 0x0000
+        && endPoint.mAddress.mWord[1] == 0x0000
+        && endPoint.mAddress.mWord[2] == 0x0000
+        && endPoint.mAddress.mWord[3] == 0x0000
+        && endPoint.mAddress.mWord[4] == 0x0000
+        && endPoint.mAddress.mWord[5] == 0x0000
+        && endPoint.mAddress.mWord[6] == 0x0000
+        && endPoint.mAddress.mWord[7] == 0x0100;
 }
 
 } // namespace lf

@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -24,6 +24,8 @@
 #include "Core/Utility/Log.h"
 #include "Core/Utility/Utility.h"
 
+#include "Game/Test/TestUtils.h"
+
 namespace lf {
 
 
@@ -43,56 +45,7 @@ void TestStrCmp(const String& a, const String& b)
     }
 }
 
-struct DummyInnerStruct
-{
-    void Serialize(Stream& s)
-    {
-        SERIALIZE(s, mSimpleValue, "");
-    }
-    bool operator==(const DummyInnerStruct& other) const
-    {
-        return mSimpleValue == other.mSimpleValue;
-    }
-    bool operator!=(const DummyInnerStruct& other) const
-    {
-        return mSimpleValue != other.mSimpleValue;
-    }
-    Int32 mSimpleValue;
-};
-Stream& operator<<(Stream& s, DummyInnerStruct& self)
-{
-    self.Serialize(s);
-    return s;
-}
-
-
-struct DummyStruct
-{
-    void Serialize(Stream& s)
-    {
-        SERIALIZE_STRUCT(s, mStruct, "");
-        SERIALIZE_STRUCT_ARRAY(s, mStructArray, "");
-        SERIALIZE_ARRAY(s, mValueArray, "");
-        SERIALIZE(s, mValue, "");
-    }
-
-    bool operator==(const DummyStruct& other) const
-    {
-        return mStruct == other.mStruct && mStructArray == other.mStructArray && mValueArray == other.mValueArray && mValue == other.mValue;
-    }
-
-    DummyInnerStruct            mStruct;
-    TArray<DummyInnerStruct>    mStructArray;
-    TArray<Int32>               mValueArray;
-    Int32                       mValue;
-};
-Stream& operator<<(Stream& s, DummyStruct& self)
-{
-    self.Serialize(s);
-    return s;
-}
-
-REGISTER_TEST(TextStream_EmptyObjectTest)
+REGISTER_TEST(TextStream_EmptyObjectTest, "Core.IO")
 {
     String expected = "$TestName=TestSuper\n{\n}\n";
     String output;
@@ -104,7 +57,7 @@ REGISTER_TEST(TextStream_EmptyObjectTest)
     ts.Close();
     TEST(output == expected);
 }
-REGISTER_TEST(TextStream_MultiEmptyObjectTest)
+REGISTER_TEST(TextStream_MultiEmptyObjectTest, "Core.IO")
 {
     String expected = "$TestName=TestSuper\n{\n}\n$TestObject=TestSuper\n{\n}\n";
     String output;
@@ -119,7 +72,7 @@ REGISTER_TEST(TextStream_MultiEmptyObjectTest)
     TEST(output == expected);
 }
 
-REGISTER_TEST(TextStream_PropertyWriteTest)
+REGISTER_TEST(TextStream_PropertyWriteTest, "Core.IO")
 {
     String expected("$TestName=TestSuper\n");
     expected +=
@@ -161,7 +114,7 @@ REGISTER_TEST(TextStream_PropertyWriteTest)
     TEST(output == expected);
 }
 
-REGISTER_TEST(TextStream_PropertyReadTest)
+REGISTER_TEST(TextStream_PropertyReadTest, "Core.IO")
 {
     String expected("$TestName=TestSuper\n");
     expected +=
@@ -210,7 +163,7 @@ REGISTER_TEST(TextStream_PropertyReadTest)
 
 }
 
-REGISTER_TEST(TextStream_ComplexWriteTest)
+REGISTER_TEST(TextStream_ComplexWriteTest, "Core.IO")
 {
     String expected = String("$DummyStruct=native_struct\n") +
         "{\n" +
@@ -237,11 +190,11 @@ REGISTER_TEST(TextStream_ComplexWriteTest)
     DummyStruct data;
     data.mValue = 1337;
     data.mStruct.mSimpleValue = 173829;
-    data.mValueArray.Add(28131);
-    data.mValueArray.Add(-1828);
-    data.mValueArray.Add(1992921);
-    data.mStructArray.Add({ 1292 });
-    data.mStructArray.Add({ -1292});
+    data.mValueArray.push_back(28131);
+    data.mValueArray.push_back(-1828);
+    data.mValueArray.push_back(1992921);
+    data.mStructArray.push_back({ 1292 });
+    data.mStructArray.push_back({ -1292});
 
     String output;
     TextStream ts;
@@ -254,7 +207,7 @@ REGISTER_TEST(TextStream_ComplexWriteTest)
     TEST(output == expected);
 }
 
-REGISTER_TEST(TextStream_ComplexReadTest)
+REGISTER_TEST(TextStream_ComplexReadTest, "Core.IO")
 {
     String expected = String("$DummyStruct=native_struct\n") +
         "{\n" +
@@ -280,11 +233,11 @@ REGISTER_TEST(TextStream_ComplexReadTest)
     DummyStruct data;
     data.mValue = 1337;
     data.mStruct.mSimpleValue = 173829;
-    data.mValueArray.Add(28131);
-    data.mValueArray.Add(-1828);
-    data.mValueArray.Add(1992921);
-    data.mStructArray.Add({ 1292 });
-    data.mStructArray.Add({ -1292 });
+    data.mValueArray.push_back(28131);
+    data.mValueArray.push_back(-1828);
+    data.mValueArray.push_back(1992921);
+    data.mStructArray.push_back({ 1292 });
+    data.mStructArray.push_back({ -1292 });
 
     DummyStruct output;
     TextStream ts;
@@ -297,7 +250,48 @@ REGISTER_TEST(TextStream_ComplexReadTest)
     TEST(output == data);
 }
 
-REGISTER_TEST(TextStream_SerializeString)
+REGISTER_TEST(TextStream_ComplexReadMissingProperty_Test, "Core.IO")
+{
+    String expected = String("$DummyStruct=native_struct\n") +
+        "{\n" +
+        "    StructArray=[\n" +
+        "        {\n" +
+        "            SimpleValue=1292\n" +
+        "        }\n" +
+        "        {\n" +
+        "            SimpleValue=-1292\n" +
+        "        }\n" +
+        "    ]\n" +
+        "    ValueArray=[\n" +
+        "        28131\n" +
+        "        -1828\n" +
+        "        1992921\n" +
+        "    ]\n" +
+        "    Value=1337\n" +
+        "}\n";
+
+    DummyStruct data;
+    data.mValue = 1337;
+    data.mStruct.mSimpleValue = 300;
+    data.mValueArray.push_back(28131);
+    data.mValueArray.push_back(-1828);
+    data.mValueArray.push_back(1992921);
+    data.mStructArray.push_back({ 1292 });
+    data.mStructArray.push_back({ -1292 });
+
+    DummyStruct output;
+    output.mStruct.mSimpleValue = 300;
+    TextStream ts;
+    ts.Open(Stream::TEXT, &expected, Stream::SM_READ);
+    ts.BeginObject("DummyStruct", "native_struct");
+    ts << output;
+    ts.EndObject();
+    ts.Close();
+
+    TEST(output == data);
+}
+
+REGISTER_TEST(TextStream_SerializeString, "Core.IO")
 {
     String mTag = "Character";
     String mBundle = "GameBase";
@@ -321,17 +315,35 @@ REGISTER_TEST(TextStream_SerializeString)
     ts.Close();
 }
 
-REGISTER_TEST(TextStreamTest)
+REGISTER_TEST(TextStream_SpecialStreamCharacterTest, "Core.IO")
 {
-    TestConfig config = TestFramework::GetConfig();
-    TestFramework::ExecuteTest("TextStream_EmptyObjectTest", config);
-    TestFramework::ExecuteTest("TextStream_MultiEmptyObjectTest", config);
-    TestFramework::ExecuteTest("TextStream_PropertyWriteTest", config);
-    TestFramework::ExecuteTest("TextStream_PropertyReadTest", config);
-    TestFramework::ExecuteTest("TextStream_ComplexWriteTest", config);
-    TestFramework::ExecuteTest("TextStream_ComplexReadTest", config);
-    TestFramework::ExecuteTest("TextStream_SerializeString", config);
-    TestFramework::TestReset();
+    const String EMAIL = "game.base@email.com";
+    const String BCRYPT = "$6$ab$1235423";
+
+    String mEmail = EMAIL;
+    String mBCrypt = BCRYPT;
+
+    String output;
+    TextStream ts;
+    ts.Open(Stream::TEXT, &output, Stream::SM_WRITE);
+    ts.BeginObject("0", "0");
+    SERIALIZE(ts, mEmail, "");
+    SERIALIZE(ts, mBCrypt, "");
+    ts.EndObject();
+    ts.Close();
+
+    mEmail.Clear();
+    mBCrypt.Clear();
+    ts.Open(Stream::TEXT, &output, Stream::SM_READ);
+    ts.BeginObject("0", "0");
+    SERIALIZE(ts, mEmail, "");
+    SERIALIZE(ts, mBCrypt, "");
+    ts.EndObject();
+    ts.Close();
+
+    TEST(EMAIL == mEmail);
+    TEST(BCRYPT == mBCrypt);
+
 }
 
 }

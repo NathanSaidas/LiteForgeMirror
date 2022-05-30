@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -18,6 +18,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
+#include "Core/PCH.h"
 #include "CmdLine.h"
 
 #include "Core/String/StringCommon.h"
@@ -87,7 +88,7 @@ void CmdLine::Release()
 void CmdLine::InternalParseCmdLine(const String& argString)
 {
     mCmdString = argString;
-    mArgs.Clear();
+    mArgs.clear();
 
     const Int32 PARSE_DEFAULT = 0;
     const Int32 PARSE_ARG = 1;
@@ -137,8 +138,8 @@ void CmdLine::InternalParseCmdLine(const String& argString)
                 argString.SubString(breakIndex, i - breakIndex, sub);
                 sub = StrStripWhitespace(sub);
                 op.option = sub;
-                arg.subOptions.Add(op);
-                mArgs.Add(arg);
+                arg.subOptions.push_back(op);
+                mArgs.push_back(arg);
                 arg = CmdArg();
                 op = CmdSubOption();
             }
@@ -162,8 +163,8 @@ void CmdLine::InternalParseCmdLine(const String& argString)
                     op.value.SubString(1, op.value.Size() - 2, sub);
                     op.value = std::move(sub);
                 }
-                arg.subOptions.Add(op);
-                mArgs.Add(arg);
+                arg.subOptions.push_back(op);
+                mArgs.push_back(arg);
                 arg = CmdArg();
                 op = CmdSubOption();
             }
@@ -172,7 +173,7 @@ void CmdLine::InternalParseCmdLine(const String& argString)
                 String sub;
                 argString.SubString(breakIndex, i - breakIndex, sub);
                 arg.name = StrStripWhitespace(sub);
-                mArgs.Add(arg);
+                mArgs.push_back(arg);
             }
             breakIndex = i + 1;
             mode = PARSE_ARG;
@@ -201,7 +202,7 @@ void CmdLine::InternalParseCmdLine(const String& argString)
                 {
                     op.value = StrTrimRight(sub);
                 }
-                arg.subOptions.Add(op);
+                arg.subOptions.push_back(op);
                 op = CmdSubOption();
             }
             else if (mode == PARSE_SUBOPTION)
@@ -209,7 +210,7 @@ void CmdLine::InternalParseCmdLine(const String& argString)
                 op.option = StrStripWhitespace(sub);
                 if (!op.option.Empty() || !op.value.Empty())
                 {
-                    arg.subOptions.Add(op);
+                    arg.subOptions.push_back(op);
                 }
                 op = CmdSubOption();
             }
@@ -233,7 +234,7 @@ void CmdLine::InternalParseCmdLine(const String& argString)
             breakIndex = i + 1;
             if (!op.value.Empty() || !op.option.Empty())
             {
-                arg.subOptions.Add(op);
+                arg.subOptions.push_back(op);
             }
         }
         else if (i == argString.Size() - 1)
@@ -262,9 +263,9 @@ void CmdLine::InternalParseCmdLine(const String& argString)
             }
             if (!op.value.Empty() || !op.option.Empty())
             {
-                arg.subOptions.Add(op);
+                arg.subOptions.push_back(op);
             }
-            mArgs.Add(arg);
+            mArgs.push_back(arg);
         }
     }
 }
@@ -462,7 +463,7 @@ bool CmdLine::InternalGetArgOption(const String& arg, const String& option, Stri
 
 void CmdLine::InternalRelease()
 {
-    mArgs.Clear();
+    mArgs.clear();
     mCmdString.Clear();
 }
 

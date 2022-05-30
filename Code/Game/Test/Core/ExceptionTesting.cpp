@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -41,7 +41,7 @@ void ExceptionTestingFailFunction()
 }
 
 
-REGISTER_TEST(ExceptionTesting)
+REGISTER_TEST(ExceptionTesting, "Core")
 {
 #if defined(LF_USE_EXCEPTIONS)
     auto flags = gAssertFlags;

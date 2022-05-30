@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -18,8 +18,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
-#ifndef LF_CORE_TOKEN_H
-#define LF_CORE_TOKEN_H
+#pragma once
 
 #include "Core/Common/Types.h"
 #include "Core/Common/API.h"
@@ -30,7 +29,7 @@ namespace lf {
 
 #define STATIC_TOKEN(ArgName, Text) \
     static const ::lf::Token ArgName; \
-    STATIC_INIT(LF_CONCAT(ArgName, _StaticConstructor), ::lf::SCP_PRE_INIT_CORE + 100) { const_cast<::lf::Token&>(ArgName) = ::lf::Token(Text); } \
+    STATIC_INIT(LF_CONCAT(ArgName, _StaticConstructor), ::lf::SCP_PRE_INIT_CORE + 100) { const_cast<::lf::Token&>(ArgName) = ::lf::Token(Text, COPY_ON_WRITE); } \
     STATIC_DESTROY(LF_CONCAT(ArgName, _StaticDestructor), ::lf::SCP_PRE_INIT_CORE + 100) { const_cast<::lf::Token&>(ArgName).Clear(); }\
 
 class String;
@@ -125,6 +124,8 @@ private:
     UInt16 mSize;
 };
 
+LF_CORE_API extern const Token EMPTY_TOKEN;
+
 Token::Token() :
 mString(gNullString),
 mKey(INVALID16),
@@ -177,6 +178,9 @@ mSize(0)
     LookUp(string);
 }
 Token::Token(const String& string, AcquireTag)
+: mString(gNullString)
+, mKey(INVALID16)
+, mSize(0)
 {
     LookUp(string, ACQUIRE);
 }
@@ -186,5 +190,3 @@ Token::~Token()
 }
 
 } // namespace lf
-
-#endif // LF_CORE_TOKEN_H

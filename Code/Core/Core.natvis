@@ -2,7 +2,7 @@
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
   <!--!
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -92,6 +92,13 @@
     </Expand>
   </Type>
 
+  <Type Name="lf::HeapContainer&lt;*&gt;">
+      <DisplayString>{mContainer}</DisplayString>
+      <Expand>
+          <Item Name="Container">mContainer</Item>
+      </Expand>
+  </Type>
+
   <Type Name="lf::Token">
     <DisplayString Condition="mSize==0">Empty</DisplayString>
     <DisplayString>"{mString,sb}"</DisplayString>
@@ -106,4 +113,41 @@
       </ArrayItems>
     </Expand>
   </Type>
+
+    <Type Name="lf::TAtomicStrongPointer&lt;*&gt;">
+        <SmartPointer Usage="Minimal">mNode->mPointer</SmartPointer>
+        <Expand>
+            <Item Name="[Strong Refs]">mNode->mStrong</Item>
+            <Item Name="[Weak Refs]">mNode->mWeak</Item>
+            <ExpandedItem>mNode->mPointer</ExpandedItem>
+        </Expand>
+    </Type>
+
+    <Type Name="lf::TAtomicWeakPointer&lt;*&gt;">
+        <SmartPointer Usage="Minimal">mNode->mPointer</SmartPointer>
+        <Expand>
+            <Item Name="[Strong Refs]">mNode->mStrong</Item>
+            <Item Name="[Weak Refs]">mNode->mWeak</Item>
+            <ExpandedItem>mNode->mPointer</ExpandedItem>
+        </Expand>
+    </Type>
+
+    <Type Name="lf::TStrongPointer&lt;*&gt;">
+        <SmartPointer Usage="Minimal">mNode->mPointer</SmartPointer>
+        <Expand>
+            <Item Name="[Strong Refs]">mNode->mStrong</Item>
+            <Item Name="[Weak Refs]">mNode->mWeak</Item>
+            <ExpandedItem>mNode->mPointer</ExpandedItem>
+        </Expand>
+    </Type>
+
+    <Type Name="lf::TWeakPointer&lt;*&gt;">
+        <SmartPointer Usage="Minimal">mNode->mPointer</SmartPointer>
+        <Expand>
+            <Item Name="[Strong Refs]">mNode->mStrong</Item>
+            <Item Name="[Weak Refs]">mNode->mWeak</Item>
+            <ExpandedItem>mNode->mPointer</ExpandedItem>
+        </Expand>
+    </Type>
+    
 </AutoVisualizer>

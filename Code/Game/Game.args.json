@@ -3,24 +3,92 @@
   "Id": "fcd33a39-9982-4e52-aaf2-06dbb5185320",
   "Items": [
     {
-      "Id": "302d62b2-a3e9-4291-bb39-51598c2e8c83",
-      "Command": ""
+      "Id": "d809937b-4869-4cc4-aab4-5aad741e4c55",
+      "Command": "Artherion",
+      "Items": [
+        {
+          "Id": "481c9066-a73d-4708-b509-927e68a973b9",
+          "Command": "-app /type=ArtherionApp"
+        }
+      ]
     },
     {
-      "Id": "d8e41830-6961-4b28-8ee1-388721c03f86",
-      "Command": ""
-    },
-    {
-      "Id": "8dcf04f9-0eb8-4b5d-838c-06b1cd49a1f7",
-      "Command": ""
+      "Id": "50b74fc8-879a-4e75-8732-a7950abd61ea",
+      "Command": "-log /name=Client"
     },
     {
       "Id": "5aaa2b76-8447-4ff6-a1ae-e304f8a5de12",
       "Command": "-log /name=Server"
     },
     {
-      "Id": "50b74fc8-879a-4e75-8732-a7950abd61ea",
-      "Command": "-log /name=Client"
+      "Id": "978144f6-15d8-4cc8-ab42-6599aa73428c",
+      "Command": "Graphics",
+      "Items": [
+        {
+          "Id": "6690e710-427b-4f1f-a588-232d1e16731d",
+          "Command": "-app /type=GraphicsAppBase /tutorial=windowcreation"
+        },
+        {
+          "Id": "9791469c-f302-4ad7-86f2-63d4ec6fe297",
+          "Command": "-app /type=GraphicsAppBase /tutorial=basictriangle"
+        },
+        {
+          "Id": "08858aca-83fa-4f29-9ad0-7213dfc1da8f",
+          "Command": "-app /type=GraphicsAppBase /tutorial=texturing"
+        }
+      ]
+    },
+    {
+      "Id": "2b8e07fa-d582-427b-80c6-5248838c9627",
+      "Command": "Client",
+      "Items": [
+        {
+          "Id": "7643ae37-0ed9-4efc-9cd6-9f6cee5acfa3",
+          "Command": "-app /type=BasicNetApp -log /name=Client -net /execution=BasicClient /client_IPV4=\"127.0.0.1\""
+        },
+        {
+          "Id": "1293e01b-34d8-4278-8e10-7fbf6933114f",
+          "Command": "-app /type=BasicNetApp -log /name=Client -net /execution=BasicClient /client_IPV6=\"2607:fea8:2ce0:12f:bdee:2674:38ff:5d66\""
+        },
+        {
+          "Id": "7885db71-b4ae-4c0b-8658-a8f30fa94ada",
+          "Command": "-app /type=TestRunner -log /name=Client-test /single=BasicClientTest /net_port=8080 /net_address=::FFFF:192.168.1.2 /net_protocol=ipv6"
+        },
+        {
+          "Id": "01d05f71-889c-4a65-9854-796054176e78",
+          "Command": "-app /type=TestRunner -log /name=Client-test /single=BasicClientTest /net_port=25565 /net_address=3.15.166.75 /net_protocol=ipv4"
+        },
+        {
+          "Id": "1b65d1e0-fcaa-4e7b-8bad-4c086e20a77e",
+          "Command": "-app /type=TestRunner -log /name=Client-test /single=BasicUDPClientTest /net_port=25565 /net_address=127.0.0.1 /net_protocol=ipv4"
+        }
+      ]
+    },
+    {
+      "Id": "474b3115-d469-4187-9604-b6cccb8c60fd",
+      "Command": "Server",
+      "Items": [
+        {
+          "Id": "422d558f-b665-4bcc-91b2-e01f77e209fa",
+          "Command": "-app /type=BasicNetApp -log /name=Server -net /execution=BasicServer /server_IPV4 /server_WaitTime=1000"
+        },
+        {
+          "Id": "26262cf7-8792-475a-ac33-86864e11bc4e",
+          "Command": "-app /type=BasicNetApp -log /name=Server -net /execution=BasicServer /server_IPV6"
+        },
+        {
+          "Id": "9625e446-0848-4648-8869-e47236b3f79f",
+          "Command": "-app /type=BasicNetApp -log /name=Server -net /execution=BasicServer /server_WaitTime=1000"
+        },
+        {
+          "Id": "129860e5-7714-4f44-b3cf-f50cb732c272",
+          "Command": "-app /type=TestRunner -log /name=Server -test /single=BasicServerTest /net_port=25565 /net_protocol=any"
+        },
+        {
+          "Id": "c4ab7c9f-598c-40cb-b3ae-7a70f107affa",
+          "Command": "-app /type=TestRunner -log /name=Server -test /single=AdvancedUDPServerTest/net_port=25565 /net_protocol=any"
+        }
+      ]
     },
     {
       "Id": "ad639d73-bf7f-4bce-af74-830e02b5770d",
@@ -40,7 +108,7 @@
         },
         {
           "Id": "c902f7b5-afcc-4d60-8935-7dbad31a698f",
-          "Command": "-app /type=AtomicIncTestApp"
+          "Command": "-app /type=FundManagerApp"
         },
         {
           "Id": "44d18249-11de-43f5-9d6d-bf55c0931d1f",
@@ -60,23 +128,23 @@
         },
         {
           "Id": "3cc69173-0ad2-4f3b-aceb-5e3101aee24f",
-          "Command": "-app /type=BasicNetApp -log /name=Server -net /execution=Server /server_WaitTime=1000.0"
+          "Command": "-app /type=BasicNetApp -log /name=Server -net /execution=Server /server_WaitTime=2.0"
         },
         {
           "Id": "aecc28db-183e-4150-b1ad-5eaa08789a95",
-          "Command": "-app /type=BasicNetApp -log /name=Client -net /execution=Client /client_IPV6=\"::1\""
+          "Command": "-app /type=BasicNetApp -log /name=ClientIPV6 -net /execution=Client /client_IPV6=\"::1\""
         },
         {
           "Id": "20d77c1a-4126-4480-8f71-a990ff81cea2",
-          "Command": "-app /type=BasicNetApp -log /name=Client3 -net /execution=BasicClient /client_IPV6=\"fe80::a848:150:1e81:746d\""
+          "Command": "-app /type=BasicNetApp -log /name=ClientIPV4 -net /execution=Client /client_IPV4=\"127.0.0.1\""
         },
         {
           "Id": "6bdb5fe1-b266-4316-af72-ce4fb9a4f276",
-          "Command": "-app /type=BasicNetApp -log /name=Client3 -net /execution=BasicClient /client_IPV4=\"127.0.0.1\""
+          "Command": "-app /type=BasicNetApp -log /name=ClientIPV4 -net /execution=Client /client_IPV4=\"192.168.1.9\""
         },
         {
           "Id": "8ef70aaa-c9f2-44e4-9aee-b6910e84bc96",
-          "Command": "-app /type=BasicNetApp -log /name=Server -net /execution=BasicServer /server_WaitTime=60"
+          "Command": "-app /type=BasicNetApp -log /name=Server -net /execution=BasicServer /server_IPV4"
         }
       ]
     },
@@ -89,32 +157,48 @@
           "Command": "-app /type=TestRunner"
         },
         {
+          "Id": "00c6995c-010b-4710-abfa-376ad6f6db76",
+          "Command": "-test /single=StructTest"
+        },
+        {
+          "Id": "d4911ae7-83e9-4006-aaa2-9055b64779e1",
+          "Command": "-test /single=World_EntityFlag_Tests"
+        },
+        {
+          "Id": "26bf3ab4-c827-481e-802e-b5e3fb0d064f",
+          "Command": "-test /group=AbstractEngine.World"
+        },
+        {
+          "Id": "d4b31c4f-2c93-4f83-955c-daffeb3e7d4c",
+          "Command": "-test /group=Runtime.Asset,Runtime.AssetOp"
+        },
+        {
+          "Id": "f4d86b48-eb82-4fb2-8cf4-4e27cf82dea8",
+          "Command": "-test /list"
+        },
+        {
+          "Id": "6758d7bc-ba17-4389-a7ce-14a0aee72f77",
+          "Command": "-test /batch=JsonStream_ComplexReadTest"
+        },
+        {
           "Id": "60925e3e-2f65-4c4a-b156-c57f7681f792",
           "Command": "-test /batch=TextStreamTest,BinaryStreamTest,AssetTest,CacheStreamTest /opt_no_break "
         },
         {
-          "Id": "d4911ae7-83e9-4006-aaa2-9055b64779e1",
-          "Command": "-test /single=AssetBundleControllerTest"
-        },
-        {
-          "Id": "00c6995c-010b-4710-abfa-376ad6f6db76",
-          "Command": "-test /single=CacheWriter_WriteAsyncTest"
-        },
-        {
           "Id": "db158b84-d89b-4723-9ffb-36b667ff05bb",
-          "Command": "-test /single=NetClientServerConnectionTest"
-        },
-        {
-          "Id": "f4d86b48-eb82-4fb2-8cf4-4e27cf82dea8",
-          "Command": "-test /single=PromiseTest"
+          "Command": "-test /all /setup /clean /ignored_groups=Core.Net.MessageTests,Core.Net.ConnectionTests"
         },
         {
           "Id": "f94a88ca-a61f-406b-bf6b-cb554692a32c",
-          "Command": "-test /single=RSATestStatic /static"
+          "Command": "-test /group=Core.Net.MessageTests,Core.Net.ConnectionTests"
+        },
+        {
+          "Id": "584f2eb8-4ba3-4b70-bfad-e3e6851451cb",
+          "Command": "-test /group=Service.FileServer"
         },
         {
           "Id": "0e1a0fca-d6c8-48e7-91c7-8f4c735dffa2",
-          "Command": "-test /all"
+          "Command": "-test /all /setup"
         }
       ]
     },
@@ -147,6 +231,10 @@
     {
       "Id": "c2eae452-3e03-40eb-9bc0-94521a94b06c",
       "Command": "-AnalyzeProject /OBJ=\\\"../Builds/x64Debug\\\" /SOURCE=\\\"../Code\\\""
+    },
+    {
+      "Id": "e7af4c09-4421-45e3-a379-77f9c309c782",
+      "Command": "-app /type=AnalyzeProjectApp -AnalyzeProject /nopause /OBJ=\"../Builds/x64Debug\" /SOURCE=\"../Code\""
     }
   ]
 }

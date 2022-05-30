@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -22,6 +22,11 @@
 #define LF_CORE_CACHE_TYPES_H
 
 #include "Core/Common/Types.h"
+#include "Core/Common/API.h"
+#include "Core/Crypto/MD5.h"
+#include "Core/IO/MemDB.h"
+#include "Core/Utility/DateTime.h"
+#include "Core/Utility/FNVHash.h"
 
 namespace lf {
 
@@ -43,10 +48,71 @@ class CacheBlob;
 class CacheBlock;
 class CacheWriter;
 class CacheReader;
+class CacheDBHandle;
+class CacheDB;
+class Stream;
+
+namespace CacheTypes
+{
+// DB Types: We must ensure their sizes remain constant
+using DatabaseID        = MemDB::EntryID;
+using TableID           = MemDB::TableID;
+// ** AssetPath *
+using DBAssetPathType   = MemDBChar<140>;
+// ** Token *
+using DBTypePathType    = MemDBChar<100>;
+using DBStringHashType  = FNV::HashT; LF_STATIC_ASSERT(sizeof(FNV::HashT) == 8);
+using DBTypeUIDType     = UInt32;
+using DBFullTypeUIDType = UInt64;
+using DBDateType        = DateTimeEncoded; LF_STATIC_ASSERT(sizeof(DateTimeEncoded) == 8);
+using DBMD5HashType     = Crypto::MD5Hash; LF_STATIC_ASSERT(sizeof(Crypto::MD5Hash) == 16);
+} // namespace CacheTypes
+
+struct CacheDBEntry : public MemDBTypes::Entry
+{
+    CacheTypes::DBTypeUIDType    mUID;
+    CacheTypes::DBStringHashType mPathHash;
+    CacheTypes::DBTypeUIDType    mParentUID;
+    CacheTypes::DBStringHashType mConcreteTypeHash;
+    CacheTypes::DBAssetPathType  mPath;
+    CacheTypes::DBAssetPathType  mParent;
+    CacheTypes::DBTypePathType   mConcreteType;
+};
+
+struct CacheInfoDBEntry : public MemDBTypes::Entry
+{
+    CacheTypes::DBTypeUIDType     mUID;
+    UInt32                        mBlobID;
+    UInt32                        mObjectID;
+    CacheTypes::DBDateType        mDate;
+    CacheTypes::DBMD5HashType     mHash;
+};
+
+struct CacheReferenceCountDBEntry : public MemDBTypes::Entry
+{
+    CacheTypes::DBTypeUIDType    mUID;
+    UInt32                       mWeak;
+    UInt32                       mStrong;
+};
+
+struct CacheDependencyListDBEntry : public MemDBTypes::Entry
+{
+    CacheTypes::DBTypeUIDType    mUID;
+    UInt32                       mIndex;
+    CacheTypes::DBTypeUIDType    mType;
+};
+
+
 
 struct LF_RUNTIME_API CacheObject
 {
     LF_FORCE_INLINE CacheObject() : mUID(INVALID32), mLocation(0), mSize(0), mCapacity(0) {}
+    LF_FORCE_INLINE CacheObject(UInt32 uid, UInt32 location, UInt32 size, UInt32 capacity) 
+        : mUID(uid)
+        , mLocation(location)
+        , mSize(size > capacity ? capacity : size)
+        , mCapacity(capacity)
+    {}
 
     // ** Unique ID of the cache object across all blobs/blocks
     UInt32 mUID;
@@ -69,6 +135,18 @@ struct LF_RUNTIME_API CacheIndex
     // ** Index of the blob, local to a block
     UInt32 mBlobID;
     // ** Index of the cache object, local to a blob
+    UInt32 mObjectID;
+};
+
+struct LF_RUNTIME_API CacheFullIndex
+{
+    LF_FORCE_INLINE CacheFullIndex() : mDomainID(INVALID32), mUID(INVALID32), mBlobID(INVALID32), mObjectID(INVALID32) {}
+    LF_FORCE_INLINE CacheFullIndex(UInt32 domainID, UInt32 uid, UInt32 blobID, UInt32 objectID) : mDomainID(domainID), mUID(uid), mBlobID(blobID), mObjectID(objectID) {}
+    LF_FORCE_INLINE operator bool() const { return Valid(mDomainID) && Valid(mUID) && Valid(mBlobID) && Valid(mObjectID); }
+
+    UInt32 mDomainID;
+    UInt32 mUID;
+    UInt32 mBlobID;
     UInt32 mObjectID;
 };
 
@@ -113,6 +191,9 @@ struct CacheDefragStep
     UInt32 mDestBlobID;
     UInt32 mDestObjectID;
 };
+
+LF_RUNTIME_API Stream& operator<<(Stream& s, CacheIndex& index);
+LF_RUNTIME_API Stream& operator<<(Stream& s, CacheObject& obj);
 
 }
 

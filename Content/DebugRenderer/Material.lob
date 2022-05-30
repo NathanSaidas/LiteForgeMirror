@@ -1,0 +1,18 @@
+$Material.lob=Engine//Types/lf/GfxMaterial
+{
+    VertexShader="engine//DebugRenderer/Shader.shader"
+    PixelShader="engine//DebugRenderer/Shader.shader"
+    Defines=[
+    ]
+    Properties=[
+    ]
+    RasterCullFace=BACK
+    VertexMultiBufferCompile=0
+    DepthEnabled=0
+    DepthWrite=1
+    DepthFunc=LESS
+}
+$TypeFlags=NativeType
+{
+	RootContainer=1
+}

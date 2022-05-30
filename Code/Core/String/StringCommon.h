@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -18,15 +18,14 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
-#ifndef LF_CORE_STRING_COMMON_H
-#define LF_CORE_STRING_COMMON_H
+#pragma once
 
 #include "Core/Common/Types.h"
 #include "Core/Common/API.h"
 #include "Core/String/String.h"
 #include "Core/String/WString.h"
-#include "Core/Utility/Array.h"
-
+#include "Core/Utility/StdVector.h"
+#include <limits>
 #include <cctype>
 
 
@@ -49,7 +48,7 @@ const SizeT STR_HEX_32_MAX_LENGTH = 10;
 const SizeT STR_HEX_64_MAX_LENGTH = 18;
 
 LF_CORE_API String  StrStripWhitespace(const String& string, bool ignoreQuotes = false);
-LF_CORE_API SizeT   StrSplit(const String& s, Char8 token, TArray<String>& output);
+LF_CORE_API SizeT   StrSplit(const String& s, Char8 token, TVector<String>& output);
 LF_CORE_API SizeT   StrSplit(const String& s, Char8 token, String* inOutArray, SizeT arraySize);
 LF_CORE_API void    StrParseExtension(const String& str, String& outExtension);
 LF_CORE_API WString StrConvert(const String& str);
@@ -60,6 +59,7 @@ LF_CORE_API bool    StrIsNumber(const Char8* string);
 LF_INLINE   bool    StrIsNumber(const String& string);
 LF_CORE_API String  StrToLower(const String& string);
 LF_CORE_API String  StrToUpper(const String& string);
+LF_CORE_API bool    StrCompareAgnostic(const String& a, const String& b);
 // Trim trailing whitespace
 LF_CORE_API String  StrTrimRight(const String& string);
 
@@ -449,5 +449,3 @@ Float64 ToFloat64(const String& str)
 
 
 } // namespace lf
-
-#endif // LF_CORE_STRING_COMMON_H

@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -18,6 +18,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
+#include "Core/PCH.h"
 #include "StackTrace.h"
 #include "Core/Memory/Memory.h"
 
@@ -449,8 +450,8 @@ namespace lf
             if (sf.AddrPC.Offset != 0)
             {
                 StackFrame& outFrame = trace.frames[trace.frameCount++];
-                outFrame.filename = nullptr;
-                outFrame.function = nullptr;
+                outFrame.filename = "";
+                outFrame.function = "";
                 outFrame.line = INVALID;
 
                 DWORD64 symOffset;
@@ -495,11 +496,11 @@ namespace lf
     {
         for (size_t i = 0; i < trace.frameCount; ++i)
         {
-            if (trace.frames[i].filename)
+            if (trace.frames[i].filename[0] != 0)
             {
                 LFFree(const_cast<char*>(trace.frames[i].filename));
             }
-            if (trace.frames[i].function)
+            if (trace.frames[i].function[0] != 0)
             {
                 LFFree(const_cast<char*>(trace.frames[i].function));
             }
@@ -512,4 +513,67 @@ namespace lf
         trace.frameCount = 0;
         trace.frames = nullptr;
     }
+
+    void CaptureStackTrace(UnresolvedStackTrace& trace, size_t maxFrames)
+    {
+        const SizeT MAX_FRAMES = LF_ARRAY_SIZE(trace.frames);
+        const SizeT numFrames = MAX_FRAMES < maxFrames ? MAX_FRAMES : maxFrames;
+        memset(trace.frames, 0, sizeof(trace.frames));
+        EnterCriticalSection(&gCriticalSection);
+        RtlCaptureStackBackTrace(1, static_cast<DWORD>(numFrames), trace.frames, nullptr);
+        LeaveCriticalSection(&gCriticalSection);
+    }
+
+    void ResolveStackTrace(UnresolvedStackTrace& trace, StackTrace& outTrace)
+    {
+        outTrace.frameCount = 0;
+        while (trace.frames[outTrace.frameCount] && outTrace.frameCount < LF_ARRAY_SIZE(trace.frames))
+        {
+            ++outTrace.frameCount;
+        }
+
+        HANDLE process = GetCurrentProcess();
+
+        outTrace.frames = reinterpret_cast<StackFrame*>(LFAlloc(sizeof(StackFrame) * outTrace.frameCount, alignof(StackFrame)));
+        EnterCriticalSection(&gCriticalSection);
+        for (size_t i = 0; i < outTrace.frameCount; ++i)
+        {
+            DWORD64 symOffset;
+            char symBuffer[sizeof(SYMBOL_INFO) + MAX_SYM_NAME + 1];
+            SYMBOL_INFO* symInfo = (SYMBOL_INFO*)symBuffer;
+            symInfo->SizeOfStruct = sizeof(SYMBOL_INFO);
+            symInfo->MaxNameLen = MAX_SYM_NAME;
+            BOOL symResult = gSymFromAddr(process, reinterpret_cast<DWORD64>(trace.frames[i]), &symOffset, symInfo);
+
+            DWORD lineOffset;
+            char lineBuffer[sizeof(IMAGEHLP_LINE64) + MAX_SYM_NAME + 1];
+            IMAGEHLP_LINE64* lineInfo = (IMAGEHLP_LINE64*)lineBuffer;
+            lineInfo->SizeOfStruct = sizeof(SYMBOL_INFO);
+            BOOL lineResult = gSymGetLineFromAddr64(process, reinterpret_cast<DWORD64>(trace.frames[i]), &lineOffset, lineInfo);
+
+            StackFrame& outFrame = outTrace.frames[i];
+            outFrame.filename = "";
+            outFrame.function = "";
+            outFrame.line = INVALID;
+
+            if (symResult == TRUE && symInfo->NameLen > 0)
+            {
+                outFrame.function = static_cast<const char*>(LFAlloc(1 + sizeof(char) * symInfo->NameLen, 1));
+                memcpy(const_cast<char*>(outFrame.function), symInfo->Name, symInfo->NameLen);
+                const_cast<char*>(outFrame.function)[symInfo->NameLen] = '\0';
+            }
+
+            if (lineResult == TRUE)
+            {
+                outFrame.line = lineInfo->LineNumber;
+
+                size_t filenameLength = strlen(lineInfo->FileName);
+                outFrame.filename = static_cast<const char*>(LFAlloc(1 + sizeof(char) * filenameLength, 1));
+                memcpy(const_cast<char*>(outFrame.filename), lineInfo->FileName, filenameLength);
+                const_cast<char*>(outFrame.filename)[filenameLength] = '\0';
+            }
+        }
+        LeaveCriticalSection(&gCriticalSection);
+    }
+
 }

@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -18,8 +18,10 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
+#include "Runtime/PCH.h"
 #include "CacheWriter.h"
 #include "Core/Platform/File.h"
+#include "Core/Platform/FileSystem.h"
 #include "Core/String/String.h"
 #include "Core/String/StringCommon.h"
 #include "Core/Utility/Utility.h"
@@ -40,7 +42,8 @@ mOutputBufferSize(0),
 mSourceMemory(nullptr),
 mSourceMemorySize(0),
 mObject(),
-mOutputFile()
+mOutputFile(),
+mReserveSize(0)
 {}
 CacheWriter::CacheWriter(const CacheWriter& other) : 
 mOutputBuffer(other.mOutputBuffer),
@@ -48,7 +51,8 @@ mOutputBufferSize(other.mOutputBufferSize),
 mSourceMemory(other.mSourceMemory),
 mSourceMemorySize(other.mSourceMemorySize),
 mObject(other.mObject),
-mOutputFile(other.mOutputFile)
+mOutputFile(other.mOutputFile),
+mReserveSize(other.mReserveSize)
 {}
 
 CacheWriter::CacheWriter(CacheWriter&& other) :
@@ -57,13 +61,15 @@ mOutputBufferSize(other.mOutputBufferSize),
 mSourceMemory(other.mSourceMemory),
 mSourceMemorySize(other.mSourceMemorySize),
 mObject(other.mObject),
-mOutputFile(std::forward<Token&&>(other.mOutputFile))
+mOutputFile(std::forward<Token&&>(other.mOutputFile)),
+mReserveSize(other.mReserveSize)
 {
     other.mOutputBuffer = nullptr;
     other.mOutputBufferSize = 0;
     other.mSourceMemory = nullptr;
     other.mSourceMemorySize = 0;
     other.mObject = CacheObject();
+    other.mReserveSize = 0;
 }
 
 CacheWriter::~CacheWriter()
@@ -100,14 +106,15 @@ CacheWritePromise CacheWriter::WriteAsync()
     CacheWriterAtomicPtr safe(new(memory)CacheWriter(*this));
     return CacheWritePromise([safe](Promise* self)
     {
+        auto promise = static_cast<CacheWritePromise*>(self);
         const char* error = safe->WriteCommon();
         if (error == nullptr)
         {
-            self->Resolve();
+            promise->Resolve();
         }
         else
         {
-            self->Reject(error);
+            promise->Reject(error);
         }
     });
 }
@@ -126,6 +133,7 @@ bool CacheWriter::Open(const CacheBlock& block, CacheIndex index, const void* so
         mOutputFile = Token(blockTitle + blockExtension);
         mSourceMemory = sourceMemory;
         mSourceMemorySize = sourceMemorySize;
+        mReserveSize = block.GetDefaultCapacity();
         return true;
     }
     return false;
@@ -194,6 +202,13 @@ const char* CacheWriter::WriteFile()
 {
     String filename(mOutputFile.CStr(), COPY_ON_WRITE);
 
+    FileSystem::PathCreate(filename);
+
+    if (!FileSystem::FileExists(filename))
+    {
+        FileSystem::FileReserve(filename, mReserveSize);
+    }
+
     File file;
     if (!file.Open(filename, FF_WRITE, FILE_OPEN_EXISTING))
     {
@@ -207,7 +222,7 @@ const char* CacheWriter::WriteFile()
         return ERROR_MSG_INDEX_OUT_OF_BOUNDS;
     }
 
-    SizeT writeSize = Min(static_cast<SizeT>(mObject.mSize), mSourceMemorySize);
+    SizeT writeSize = Min(static_cast<SizeT>(mObject.mCapacity), mSourceMemorySize);
     SizeT writeEnd = writePos + writeSize;
     if (writeEnd < writePos || writeEnd > static_cast<SizeT>(file.GetSize()))
     {
@@ -245,6 +260,13 @@ const char* CacheWriter::WriteZeroFile()
 {
     String filename(mOutputFile.CStr(), COPY_ON_WRITE);
 
+    FileSystem::PathCreate(filename);
+
+    if (!FileSystem::FileExists(filename))
+    {
+        FileSystem::FileReserve(filename, mReserveSize);
+    }
+
     File file;
     if (!file.Open(filename, FF_WRITE, FILE_OPEN_EXISTING))
     {
@@ -258,7 +280,7 @@ const char* CacheWriter::WriteZeroFile()
         return ERROR_MSG_INDEX_OUT_OF_BOUNDS;
     }
 
-    SizeT writeSize = Min(static_cast<SizeT>(mObject.mSize), mSourceMemorySize);
+    SizeT writeSize = Min(static_cast<SizeT>(mObject.mCapacity), mSourceMemorySize);
     SizeT writeEnd = writePos + writeSize;
     if (writeEnd < writePos || writeEnd > static_cast<SizeT>(file.GetSize()))
     {
@@ -276,7 +298,7 @@ const char* CacheWriter::WriteZeroFile()
     while (bytesRemaining > 0)
     {
         SizeT written = Min(bytesRemaining, sizeof(buffer));
-        file.Write(mSourceMemory, written);
+        file.Write(buffer, written);
         if (written > bytesRemaining)
         {
             bytesRemaining = 0;

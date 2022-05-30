@@ -1,0 +1,173 @@
+AssetMgr:
+
+AssetPath
+{
+    Domain
+    Scope
+    Name
+}
+// Example: lite_forge_game//example/path/to/asset.png
+//          ^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^ ^^^^^^^^^
+//               domain          scope         name
+
+
+
+AssetTypeInfo
+{
+    AssetPath           mPath;
+    AssetTypeInfo*      mParentType;
+    Type*               mConcreteType;
+
+    AssetCategory       mCategory;
+    AssetFlags          mFlags;
+
+    UInt64              mDomainRuntimeID;
+}
+
+AssetBase
+{
+    // ** Called to serialize the properties of the asset object.
+    function Serialize();
+    // ** Called to provide the asset raw data.
+    function OnLoadBuffer(MemoryBuffer& buffer);
+    // ** Called when the asset is unloading.
+    function OnUnload();
+    // ** Called before the asset is reloaded, save any state in 's'
+    function EditorOnPreReload(Stream& s);
+    // ** Called after the asset is reloaded, restore any state in 's'
+    function EditorOnPostReload(Stream& s);
+}
+
+AssetSourceLocator
+{
+    using BufferPromise = PromiseImpl<TCallback<void, MemoryBuffer&>, TCallback<void, const String&>>;
+    using WriterPromise = PromiseImpl<TCallback<void>, TCallback<void, const String&>>;
+
+    // ** Locate the specific asset on disk and read all of its data into a MemoryBuffer and invoke the promise.
+    BufferPromise Read(AssetPath);
+    // ** Locate the specific asset on disk and commit the data 
+    WriterPromise Write(AssetPath, const MemoryBuffer& buffer);
+}
+
+AssetManifest
+{
+    Item { 
+        AssetPath,
+        CacheIndex
+        ConcreteType
+        Flags
+    }
+
+    Map<AssetPath, Item> mAssets;
+}
+
+AssetCacheLocator
+{
+    using BufferPromise = PromiseImpl<TCallback<void, MemoryBuffer&>, TCallback<void, const String&>>;
+    using WriterPromise = PromiseImpl<TCallback<void>, TCallback<void, const String&>>;
+
+    AssetManifest* mManifest;
+
+    // ** Lookup the asset path in the dictionary AssetPath => AssetIndex
+    //    
+    BufferPromise Read(AssetPath);
+    // ** Lookup the asset path in the dictionary AssetPath => AssetIndex
+    //
+    WriterPromise Write(AssetPath, const MemoryBuffer& buffer);
+}
+
+concept PathToCacheBlock( Path )
+{
+    CacheBlockTypes {
+        { Object, { "lob" } },
+        { Level, { "level" } },
+        { TextureData, { "png", "jpeg" } },
+        { ShaderData, { "shader", "hlsl" } },
+        { ScriptData, { "lua" } },
+        { FontData, { "ttf" } },
+        { AudioData, { "wav", "ogg" } },
+        { MeshData, { "fbx", "obj" } },
+        { JsonData, { "json"} },
+        { TextData, { "lftext" } },
+        { BinaryData, { "lfbin" } },
+        { RawData } },
+    };
+
+    blockType = ExtensionToBlockType(Path.GetExtension(), CacheBlockTypes, RawData);
+    return GetBlock(blockType, Path.GetDomain());
+}
+
+concept RebuildManifest()
+{
+    ContentFile {
+        Path,
+        Size,
+    }
+
+    DeleteCache();
+    files = QueryAllContentFiles();
+    foreach(file : files)
+    {
+        index = AllocateCacheObject(file);
+        WriteAsset(file.Path, index);
+    }
+}
+
+concept BuildManifest()
+{
+    ContentFile { 
+        Path,
+        Size
+    }
+    files = QueryAllContentFiles();
+    foreach(file : files)
+    {
+        if(Find(file.Path))
+        {
+            continue;
+        }
+        index = AllocateCacheObject(file);
+        WriteAsset(file.Path, index);
+    }
+}
+
+
+
+Questions to answer:
+
+Q: How do I know if my asset source still exists?
+Q: How do I know if my asset is cached or not?
+Q: How do I know if my asset within the cache is up to date with the source?
+Q: How do I know what dynamic types to load with the project?
+Q: Is there a way I can quick load the editor without loading all types?
+Q: Why would I not want content on disk imported to a project?
+
+
+TAssetType<T>
+TAssetReference<T>
+
+LoadFlags {
+    ACQUIRE
+
+    ASYNC
+
+    IMMEDIATE_PROPS,
+    RECURSIVE_PROPS,
+    RUNTIME
+
+    LOW_PRIORITY,
+    NORMAL_PRIORITY,
+    HIGH_PRIORITY
+};
+
+AsyncFullLoad = ASYNC | RUNTIME
+AsyncFullProps = ASYNC | RECURSIVE_PROPS
+AcquireFullLoad = ACQUIRE | RUNTIME
+AcquireFullProps = ACQUIRE | RECURSIVE_PROPS
+
+TAssetType<Character> ("engine//scope/to/asset.lob", flags);
+
+s.SetLoadFlags(AcquireFullProps);
+s.SetLoadFlags(IMMEDIATE_PROPS); // When loading the asset the stream will only load immediate props.
+
+Obj.Serialize(s);

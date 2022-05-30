@@ -1,14 +1,8 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Config">
-      <UniqueIdentifier>{2bbe09f8-357b-4da2-a715-902b134650e4}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Test">
       <UniqueIdentifier>{bd28f61e-e479-4caa-9f86-811387264cf3}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Test\Core">
-      <UniqueIdentifier>{07637d12-9cb4-44ae-86a1-2f08b91584b3}</UniqueIdentifier>
     </Filter>
     <Filter Include="AnalyzeProjectApp">
       <UniqueIdentifier>{9da5daf5-9faa-4169-a6c8-490d4e17af7e}</UniqueIdentifier>
@@ -16,11 +10,56 @@
     <Filter Include="Test\Runtime">
       <UniqueIdentifier>{35d7a297-6582-4c00-835b-df79c1d32c74}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Test\Service">
+      <UniqueIdentifier>{ce9616da-5622-4341-97ad-b32d5caec44a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Test\Service\FileServer">
+      <UniqueIdentifier>{4ead8813-bf04-4bb7-a8b2-b6e4e6ef70e4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GraphicsApp">
+      <UniqueIdentifier>{b5bb5587-98ee-4ceb-a266-9bb7fa672767}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Artherion">
+      <UniqueIdentifier>{ac67897e-7078-4640-ad06-cce7469107d0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Artherion\App">
+      <UniqueIdentifier>{339df5ba-1340-409e-a5f8-7dfa41c47d4b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Artherion\ComponentTypes">
+      <UniqueIdentifier>{df3a9a2b-59f7-4e5f-abd1-99a0febda25b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Artherion\ComponentSystems">
+      <UniqueIdentifier>{0fccf90b-3045-4cfd-b488-17136f5d57f5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Test\AbstractEngine">
+      <UniqueIdentifier>{6d475085-9c9b-48ea-b03f-37beb68019d8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Artherion\ComponentTypes\Units">
+      <UniqueIdentifier>{40ef8ef2-65cc-4563-a0e0-eaef7385f61a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Artherion\GameTypes">
+      <UniqueIdentifier>{4e6183ad-2e52-4368-9215-d89f2a14612a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Artherion\GameUtils">
+      <UniqueIdentifier>{666f3880-e08c-407b-a76c-b95907d176ed}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Test\Game">
+      <UniqueIdentifier>{3c0930c2-50de-46b0-8fa9-66450c1bf956}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Test\Core">
+      <UniqueIdentifier>{07637d12-9cb4-44ae-86a1-2f08b91584b3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Test\Core\Net">
+      <UniqueIdentifier>{a6088d37-dad9-4854-aadc-022af931fb22}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Test\Core\Crypto">
+      <UniqueIdentifier>{5a8430e4-5cd0-4aa1-90a2-2ac9550b79ba}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Test\Core\IO">
+      <UniqueIdentifier>{c0b48c2e-a14c-4a49-b1e2-5c75ae31b3f1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Config.cpp">
-      <Filter>Config</Filter>
-    </ClCompile>
     <ClCompile Include="MyApp.cpp" />
     <ClCompile Include="PromiseApp.cpp" />
     <ClCompile Include="Test\Core\ArrayTest.cpp">
@@ -44,19 +83,10 @@
     <ClCompile Include="AnalyzeProjectApp\DumpbinProcess.cpp">
       <Filter>AnalyzeProjectApp</Filter>
     </ClCompile>
-    <ClCompile Include="Test\Core\CryptoTests.cpp">
-      <Filter>Test\Core</Filter>
-    </ClCompile>
     <ClCompile Include="Test\Core\ExceptionTesting.cpp">
       <Filter>Test\Core</Filter>
     </ClCompile>
     <ClCompile Include="DeployBuild.cpp" />
-    <ClCompile Include="Test\Core\RSATest.cpp">
-      <Filter>Test\Core</Filter>
-    </ClCompile>
-    <ClCompile Include="Test\Core\AESTest.cpp">
-      <Filter>Test\Core</Filter>
-    </ClCompile>
     <ClCompile Include="CryptoApp.cpp" />
     <ClCompile Include="Test\Core\MemoryTests.cpp">
       <Filter>Test\Core</Filter>
@@ -68,6 +98,148 @@
     <ClCompile Include="Test\Runtime\AsyncTests.cpp">
       <Filter>Test\Runtime</Filter>
     </ClCompile>
+    <ClCompile Include="Test\Core\Net\BasicNetTests.cpp">
+      <Filter>Test\Core\Net</Filter>
+    </ClCompile>
+    <ClCompile Include="Test\Core\Crypto\AESTest.cpp">
+      <Filter>Test\Core\Crypto</Filter>
+    </ClCompile>
+    <ClCompile Include="Test\Core\Crypto\CryptoTests.cpp">
+      <Filter>Test\Core\Crypto</Filter>
+    </ClCompile>
+    <ClCompile Include="Test\Core\Crypto\RSATest.cpp">
+      <Filter>Test\Core\Crypto</Filter>
+    </ClCompile>
+    <ClCompile Include="Test\Core\Net\NetSocketTest.cpp">
+      <Filter>Test\Core\Net</Filter>
+    </ClCompile>
+    <ClCompile Include="Test\Core\FileTests.cpp">
+      <Filter>Test\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Test\Core\PointerTest.cpp">
+      <Filter>Test\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Test\Core\SStreamTest.cpp">
+      <Filter>Test\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Test\Core\StringTest.cpp">
+      <Filter>Test\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Test\Core\ThreadTest.cpp">
+      <Filter>Test\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Test\Core\WStringTest.cpp">
+      <Filter>Test\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Test\Core\Net\RequestPacketTest.cpp">
+      <Filter>Test\Core\Net</Filter>
+    </ClCompile>
+    <ClCompile Include="Test\Core\Net\NetTestUtils.cpp">
+      <Filter>Test\Core\Net</Filter>
+    </ClCompile>
+    <ClCompile Include="Test\Runtime\NetDriverConnectionTests.cpp">
+      <Filter>Test\Runtime</Filter>
+    </ClCompile>
+    <ClCompile Include="Test\Runtime\NetDriverTestUtils.cpp">
+      <Filter>Test\Runtime</Filter>
+    </ClCompile>
+    <ClCompile Include="Test\Runtime\NetDriverMessageTests.cpp">
+      <Filter>Test\Runtime</Filter>
+    </ClCompile>
+    <ClCompile Include="Test\Core\JsonStreamTest.cpp">
+      <Filter>Test\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Test\Service\FileServer\FileServerDataTests.cpp">
+      <Filter>Test\Service\FileServer</Filter>
+    </ClCompile>
+    <ClCompile Include="Test\Service\FileServer\FileResourceTests.cpp">
+      <Filter>Test\Service\FileServer</Filter>
+    </ClCompile>
+    <ClCompile Include="Test\Runtime\FileTransferMessageControllerTests.cpp">
+      <Filter>Test\Runtime</Filter>
+    </ClCompile>
+    <ClCompile Include="GraphicsApp\Tutorial_1_WindowCreation.cpp">
+      <Filter>GraphicsApp</Filter>
+    </ClCompile>
+    <ClCompile Include="Test\Runtime\AssetPathTests.cpp">
+      <Filter>Test\Runtime</Filter>
+    </ClCompile>
+    <ClCompile Include="Test\Runtime\CacheBlockTypeTests.cpp">
+      <Filter>Test\Runtime</Filter>
+    </ClCompile>
+    <ClCompile Include="Test\Runtime\AssetMgrTests.cpp">
+      <Filter>Test\Runtime</Filter>
+    </ClCompile>
+    <ClCompile Include="Test\Runtime\AssetOpTests.cpp">
+      <Filter>Test\Runtime</Filter>
+    </ClCompile>
+    <ClCompile Include="Test\Core\TestConsole.cpp">
+      <Filter>Test\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Test\StressDataAsset.cpp">
+      <Filter>Test</Filter>
+    </ClCompile>
+    <ClCompile Include="Test\TestUtils.cpp">
+      <Filter>Test</Filter>
+    </ClCompile>
+    <ClCompile Include="GraphicsApp\GraphicsAppBase.cpp">
+      <Filter>GraphicsApp</Filter>
+    </ClCompile>
+    <ClCompile Include="Test\Core\IO\MemDBTest.cpp">
+      <Filter>Test\Core\IO</Filter>
+    </ClCompile>
+    <ClCompile Include="Test\Runtime\InputTests.cpp">
+      <Filter>Test\Runtime</Filter>
+    </ClCompile>
+    <ClCompile Include="Artherion\App\Artherion.cpp">
+      <Filter>Artherion\App</Filter>
+    </ClCompile>
+    <ClCompile Include="Test\Core\CallbackTests.cpp">
+      <Filter>Test\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Artherion\ComponentTypes\TransformComponent.cpp">
+      <Filter>Artherion\ComponentTypes</Filter>
+    </ClCompile>
+    <ClCompile Include="Artherion\ComponentTypes\BoundsComponent.cpp">
+      <Filter>Artherion\ComponentTypes</Filter>
+    </ClCompile>
+    <ClCompile Include="Artherion\ComponentTypes\ModelComponent.cpp">
+      <Filter>Artherion\ComponentTypes</Filter>
+    </ClCompile>
+    <ClCompile Include="Artherion\ComponentSystems\RenderSubmitComponentSystem.cpp">
+      <Filter>Artherion\ComponentSystems</Filter>
+    </ClCompile>
+    <ClCompile Include="Test\AbstractEngine\WorldTests.cpp">
+      <Filter>Test\AbstractEngine</Filter>
+    </ClCompile>
+    <ClCompile Include="Test\AbstractEngine\ECSTestGame.cpp">
+      <Filter>Test\AbstractEngine</Filter>
+    </ClCompile>
+    <ClCompile Include="Artherion\ComponentTypes\Units\UnitProperties.cpp">
+      <Filter>Artherion\ComponentTypes\Units</Filter>
+    </ClCompile>
+    <ClCompile Include="Artherion\GameUtils\DamageUtil.cpp">
+      <Filter>Artherion\GameUtils</Filter>
+    </ClCompile>
+    <ClCompile Include="Test\AbstractEngine\GfxShaderTextTest.cpp">
+      <Filter>Test\AbstractEngine</Filter>
+    </ClCompile>
+    <ClCompile Include="Test\AbstractEngine\GfxShaderBinaryTest.cpp">
+      <Filter>Test\AbstractEngine</Filter>
+    </ClCompile>
+    <ClCompile Include="Test\AbstractEngine\GfxShaderFileTest.cpp">
+      <Filter>Test\AbstractEngine</Filter>
+    </ClCompile>
+    <ClCompile Include="GraphicsApp\GraphicsServiceBase.cpp">
+      <Filter>GraphicsApp</Filter>
+    </ClCompile>
+    <ClCompile Include="GraphicsApp\Tutorial_2_BasicTriangle.cpp">
+      <Filter>GraphicsApp</Filter>
+    </ClCompile>
+    <ClCompile Include="GraphicsApp\Tutorial_3_Texturing.cpp">
+      <Filter>GraphicsApp</Filter>
+    </ClCompile>
+    <ClCompile Include="Test\Core\Utility\EventBusTest.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AnalyzeProjectApp\AnalyzeProjectApp.h">
@@ -75,6 +247,69 @@
     </ClInclude>
     <ClInclude Include="AnalyzeProjectApp\DumpbinProcess.h">
       <Filter>AnalyzeProjectApp</Filter>
+    </ClInclude>
+    <ClInclude Include="Test\Core\Net\NetTestUtils.h">
+      <Filter>Test\Core\Net</Filter>
+    </ClInclude>
+    <ClInclude Include="Test\Runtime\NetDriverTestUtils.h">
+      <Filter>Test\Runtime</Filter>
+    </ClInclude>
+    <ClInclude Include="Test\TestUtils.h">
+      <Filter>Test</Filter>
+    </ClInclude>
+    <ClInclude Include="GraphicsApp\Tutorial_1_WindowCreation.h">
+      <Filter>GraphicsApp</Filter>
+    </ClInclude>
+    <ClInclude Include="Test\StressDataAsset.h">
+      <Filter>Test</Filter>
+    </ClInclude>
+    <ClInclude Include="GraphicsApp\GraphicsAppBase.h">
+      <Filter>GraphicsApp</Filter>
+    </ClInclude>
+    <ClInclude Include="Artherion\ComponentTypes\TransformComponent.h">
+      <Filter>Artherion\ComponentTypes</Filter>
+    </ClInclude>
+    <ClInclude Include="Artherion\ComponentTypes\BoundsComponent.h">
+      <Filter>Artherion\ComponentTypes</Filter>
+    </ClInclude>
+    <ClInclude Include="Artherion\ComponentTypes\ModelComponent.h">
+      <Filter>Artherion\ComponentTypes</Filter>
+    </ClInclude>
+    <ClInclude Include="Artherion\ComponentSystems\RenderSubmitComponentSystem.h">
+      <Filter>Artherion\ComponentSystems</Filter>
+    </ClInclude>
+    <ClInclude Include="Artherion\ComponentTypes\Units\UnitProperties.h">
+      <Filter>Artherion\ComponentTypes\Units</Filter>
+    </ClInclude>
+    <ClInclude Include="Artherion\GameTypes\SeasonType.h">
+      <Filter>Artherion\GameTypes</Filter>
+    </ClInclude>
+    <ClInclude Include="Artherion\GameTypes\AgeType.h">
+      <Filter>Artherion\GameTypes</Filter>
+    </ClInclude>
+    <ClInclude Include="Artherion\GameTypes\ArmorClass.h">
+      <Filter>Artherion\GameTypes</Filter>
+    </ClInclude>
+    <ClInclude Include="Artherion\GameTypes\MagicSchool.h">
+      <Filter>Artherion\GameTypes</Filter>
+    </ClInclude>
+    <ClInclude Include="Artherion\GameTypes\DamageType.h">
+      <Filter>Artherion\GameTypes</Filter>
+    </ClInclude>
+    <ClInclude Include="Artherion\GameUtils\DamageUtil.h">
+      <Filter>Artherion\GameUtils</Filter>
+    </ClInclude>
+    <ClInclude Include="Artherion\GameTypes\TypeDefs.h">
+      <Filter>Artherion\GameTypes</Filter>
+    </ClInclude>
+    <ClInclude Include="GraphicsApp\GraphicsServiceBase.h">
+      <Filter>GraphicsApp</Filter>
+    </ClInclude>
+    <ClInclude Include="GraphicsApp\Tutorial_2_BasicTriangle.h">
+      <Filter>GraphicsApp</Filter>
+    </ClInclude>
+    <ClInclude Include="GraphicsApp\Tutorial_3_Texturing.h">
+      <Filter>GraphicsApp</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

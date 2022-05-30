@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -27,6 +27,8 @@ namespace lf {
 
 class Async;
 extern LF_RUNTIME_API Async* gAsync;
+class EventMgr;
+extern LF_RUNTIME_API EventMgr* gEventMgr;
 }
 
 #endif // LF_RUNTIME_RUNTIME_GLOBALS_H

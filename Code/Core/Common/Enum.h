@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -18,14 +18,13 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
-#ifndef LF_CORE_ENUM_H
-#define LF_CORE_ENUM_H
-
+#pragma once
 
 #include "Core/Common/Types.h"
 #include "Core/Common/API.h"
+#include "Core/Common/Assert.h"
 #include "Core/IO/Stream.h"
-#include "Core/Utility/Array.h"
+#include "Core/Utility/StdVector.h"
 
 namespace lf {
 
@@ -40,6 +39,58 @@ namespace lf {
 
 #define ENUM_SIZE(enumName) static_cast<SizeT>(enumName::MAX_VALUE)
 
+#define ENUM_SIZE_EX(enumName) static_cast<SizeT>(enumName::enumName##_MAX_VALUE)
+
+// ********************************************************************
+// Casts enum to it's underlying type.
+// ********************************************************************
+template<typename TEnumType>
+constexpr std::underlying_type_t<TEnumType> EnumValue(const TEnumType value)
+{
+    return static_cast<std::underlying_type_t<TEnumType>>(value);
+}
+
+template<typename TEnumType>
+constexpr TEnumType ToEnum(const std::underlying_type_t<TEnumType> value)
+{
+    return static_cast<TEnumType>(value);
+}
+
+#define ENUM_BITWISE_OPERATORS_NESTED(TEnumType)                           \
+constexpr friend inline TEnumType operator |(TEnumType a, TEnumType b)               \
+{                                                                   \
+    return ToEnum<TEnumType>(EnumValue(a) | EnumValue(b));          \
+}                                                                   \
+constexpr friend inline TEnumType operator &(TEnumType a, TEnumType b)               \
+{                                                                   \
+    return ToEnum<TEnumType>(EnumValue(a) & EnumValue(b));          \
+}                                                                   \
+constexpr friend inline TEnumType& operator |=(TEnumType& a, TEnumType b)            \
+{                                                                   \
+    return a = a | b;                                               \
+}                                                                   \
+constexpr friend inline TEnumType& operator &=(TEnumType& a, TEnumType b)            \
+{                                                                   \
+    return a = a & b;                                               \
+}                                                                   
+
+#define ENUM_BITWISE_OPERATORS(TEnumType)                           \
+constexpr inline TEnumType operator |(TEnumType a, TEnumType b)               \
+{                                                                   \
+    return ToEnum<TEnumType>(EnumValue(a) | EnumValue(b));          \
+}                                                                   \
+constexpr inline TEnumType operator &(TEnumType a, TEnumType b)               \
+{                                                                   \
+    return ToEnum<TEnumType>(EnumValue(a) & EnumValue(b));          \
+}                                                                   \
+constexpr inline TEnumType& operator |=(TEnumType& a, TEnumType b)            \
+{                                                                   \
+    return a = a | b;                                               \
+}                                                                   \
+constexpr inline TEnumType& operator &=(TEnumType& a, TEnumType b)            \
+{                                                                   \
+    return a = a & b;                                               \
+}   
 
 // **********************************
 // Data about enums are stored in this data structure.
@@ -368,10 +419,10 @@ public:
 struct LF_CORE_API EnumRegistry
 {
 public:
-    typedef TArray<EnumData*> EnumDatas;
+    typedef TVector<EnumData*> EnumDatas;
     EnumRegistry() : mEnumDatas() {}
 
-    void Add(EnumData* data) { mEnumDatas.Add(data); }
+    void Add(EnumData* data) { mEnumDatas.push_back(data); }
     void Clear();
 
     EnumDatas& GetData() { return mEnumDatas; }
@@ -503,6 +554,96 @@ template class TEnum<Name>;                                                     
 #define USING_ENUM(Name) using namespace Name;
     //SH_CORE_API StaticCall sInternalRegister##Name(RegisterEnumData<T##Name>, #Name, #__VA_ARGS__ ## ",\nMAX_VALUE,\nINVALID_ENUM=MAX_VALUE")  \
 
+
+template<typename ValueT>
+struct TEnumPair
+{
+    ValueT      mValue;
+    const char* mString;
+
+};
+
+// Potential new enum implementation.
+// 
+// Usage:
+//
+// enum Foo 
+// {
+//      FOO_A,
+//      FOO_B,
+//      FOO_C,
+//      FOO_INVALID
+// };
+// 
+// auto TABLE_NAME = CreateEnumTable<Foo, FOO_INVALID>(
+//  { FOO_A, "FOO_A" }
+//  { FOO_B, "FOO_B" }
+//  { FOO_C, "FOO_C" }
+// );
+// 
+// TODO: Stream support
+// TODO: Optimize Value=Index type
+// TODO: Streamline Enum Declaration ( DEFINE_ENUM(<x>) => { <x>, #<x> } )
+template<typename ValueT, const ValueT CInvalidValue, const SizeT CArrayLength>
+struct TEnumTable
+{
+    using ValueType = ValueT;
+    using EnumPairType = TEnumPair<ValueT>;
+
+    TEnumTable(const EnumPairType(&items)[CArrayLength])
+        : mItems{ 0 }
+    {
+        memcpy(mItems, &items, sizeof(items));
+    }
+
+    const char* ToString(ValueT value)
+    {
+        for (SizeT i = 0; i < CArrayLength; ++i)
+        {
+            if (mItems[i].mValue == value)
+            {
+                return mItems[i].mString;
+            }
+        }
+        return "";
+    }
+
+    ValueT ToValue(const char* string)
+    {
+        for (SizeT i = 0; i < CArrayLength; ++i)
+        {
+            if (mItems[i].mString == string || strcmp(string, mItems[i].mString) == 0)
+            {
+                return mItems[i].mValue;
+            }
+        }
+        return CInvalidValue;
+    }
+
+    SizeT ToIndex(ValueT value)
+    {
+        for (SizeT i = 0; i < CArrayLength; ++i)
+        {
+            if (mItems[i].mValue == value)
+            {
+                return i;
+            }
+        }
+        return INVALID;
+    }
+
+    constexpr static SizeT Size() { return CArrayLength; }
+    constexpr static ValueT Invalid() { return CInvalidValue; }
+private:
+    EnumPairType mItems[CArrayLength];
+};
+
+template<typename ValueT, const ValueT CInvalidValue, const SizeT CArrayLength>
+TEnumTable<ValueT, CInvalidValue, CArrayLength> CreateEnumTable(const TEnumPair<ValueT>(&items)[CArrayLength])
+{
+    return TEnumTable<ValueT, CInvalidValue, CArrayLength>(items);
 }
 
-#endif // SHIELD_HEART_CORE_ENUM_H
+
+
+}

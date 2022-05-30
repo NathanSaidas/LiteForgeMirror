@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -18,6 +18,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
+#include "Core/PCH.h"
 #include "AsyncIODevice.h"
 #include "Core/Common/Assert.h"
 #include "Core/Utility/ErrorCore.h"
@@ -96,12 +97,12 @@ bool AsyncIODevice::Create(SizeT numThreads)
         return false;
     }
     _InterlockedExchange(&mRunning, 1);
-    mThreads.Reserve(numThreads);
+    mThreads.reserve(numThreads);
     for (SizeT i = 0; i < numThreads; ++i)
     {
         HANDLE thread = CreateThread(0, 0, AsyncIOCompletionCallback, this, 0, NULL);
         AssertEx(thread != NULL, LF_ERROR_INTERNAL, ERROR_API_CORE);
-        mThreads.Add(thread);
+        mThreads.push_back(thread);
     }
     mHandle = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, static_cast<DWORD>(numThreads));
     AssertEx(mHandle != NULL, LF_ERROR_INTERNAL, ERROR_API_CORE);
@@ -117,12 +118,12 @@ bool AsyncIODevice::Close()
     }
 
     _InterlockedExchange(&mRunning, 0);
-    WaitForMultipleObjects(static_cast<DWORD>(mThreads.Size()), mThreads.GetData(), TRUE, INFINITE);
-    for (SizeT i = 0; i < mThreads.Size(); ++i)
+    WaitForMultipleObjects(static_cast<DWORD>(mThreads.size()), mThreads.data(), TRUE, INFINITE);
+    for (SizeT i = 0; i < mThreads.size(); ++i)
     {
         AssertEx(CloseHandle(mThreads[i]), LF_ERROR_INTERNAL, ERROR_API_CORE);
     }
-    mThreads.Clear();
+    mThreads.clear();
     AssertEx(CloseHandle(mHandle), LF_ERROR_INTERNAL, ERROR_API_CORE);
     mHandle = NULL;
 #endif

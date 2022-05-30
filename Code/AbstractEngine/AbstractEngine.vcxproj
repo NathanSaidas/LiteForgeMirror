@@ -21,32 +21,32 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{6AD81C44-040D-458D-9B94-31D47377A6C7}</ProjectGuid>
     <RootNamespace>AbstractEngine</RootNamespace>
-    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Final|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
@@ -97,13 +97,14 @@
       <TreatWarningAsError>true</TreatWarningAsError>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <ExceptionHandling>Sync</ExceptionHandling>
-      <PreprocessorDefinitions>_ALLOW_RTCc_IN_STL;LF_INTERNAL_DEBUG;LF_INTERNAL_IMPORT_CORE;LF_INTERNAL_IMPORT_RUNTIME;LF_INTERNAL_IMPORT_SERIVCE;LF_INTERNAL_EXPORT_ABSTRACT_ENGINE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_ALLOW_RTCc_IN_STL;LF_INTERNAL_DEBUG;LF_INTERNAL_IMPORT_CORE;LF_INTERNAL_IMPORT_RUNTIME;LF_INTERNAL_EXPORT_ABSTRACT_ENGINE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <SmallerTypeCheck>true</SmallerTypeCheck>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <MinimalRebuild>false</MinimalRebuild>
-      <ProgramDataBaseFileName>$(IntDir)%(Filename).pdb</ProgramDataBaseFileName>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>AbstractEngine/PCH.h</PrecompiledHeaderFile>
     </ClCompile>
     <Lib>
       <AdditionalDependencies>$(SolutionDir)Code\Runtime_x64Debug.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -122,11 +123,14 @@
       <TreatWarningAsError>true</TreatWarningAsError>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <ExceptionHandling>Sync</ExceptionHandling>
-      <PreprocessorDefinitions>_ALLOW_RTCc_IN_STL;LF_INTERNAL_TEST;LF_INTERNAL_IMPORT_CORE;LF_INTERNAL_IMPORT_RUNTIME;LF_INTERNAL_IMPORT_SERIVCE;LF_INTERNAL_EXPORT_ABSTRACT_ENGINE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_ALLOW_RTCc_IN_STL;LF_INTERNAL_TEST;LF_INTERNAL_IMPORT_CORE;LF_INTERNAL_IMPORT_RUNTIME;LF_INTERNAL_EXPORT_ABSTRACT_ENGINE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
-      <ProgramDataBaseFileName>$(IntDir)%(Filename).pdb</ProgramDataBaseFileName>
       <SmallerTypeCheck>true</SmallerTypeCheck>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <MinimalRebuild>false</MinimalRebuild>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>AbstractEngine/PCH.h</PrecompiledHeaderFile>
     </ClCompile>
     <Lib>
       <AdditionalDependencies>$(SolutionDir)Code\Runtime_x64Debug.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -145,11 +149,13 @@
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>$(SolutionDir)Code\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <ProgramDataBaseFileName>$(IntDir)%(Filename).pdb</ProgramDataBaseFileName>
       <StringPooling>true</StringPooling>
       <ExceptionHandling>false</ExceptionHandling>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <PreprocessorDefinitions>_HAS_EXCEPTIONS=0;_ALLOW_RTCc_IN_STL;LF_INTERNAL_RELEASE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>AbstractEngine/PCH.h</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -168,11 +174,13 @@
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>$(SolutionDir)Code\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <ProgramDataBaseFileName>$(IntDir)%(Filename).pdb</ProgramDataBaseFileName>
       <StringPooling>true</StringPooling>
       <ExceptionHandling>false</ExceptionHandling>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <PreprocessorDefinitions>_HAS_EXCEPTIONS=0;_ALLOW_RTCc_IN_STL;LF_INTERNAL_FINAL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>AbstractEngine/PCH.h</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -183,11 +191,124 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="App\AppConfig.cpp" />
     <ClCompile Include="App\ApplicationBase.cpp" />
-    <ClCompile Include="Config.cpp" />
+    <ClCompile Include="App\AppService.cpp" />
+    <ClCompile Include="App\AppWindow.cpp" />
+    <ClCompile Include="App\Win32Window.cpp" />
+    <ClCompile Include="Geometry\Cube.cpp" />
+    <ClCompile Include="Geometry\Plane.cpp" />
+    <ClCompile Include="Gfx\GfxBase.cpp" />
+    <ClCompile Include="Gfx\GfxCommandContext.cpp" />
+    <ClCompile Include="Gfx\GfxCommandQueue.cpp" />
+    <ClCompile Include="Gfx\GfxDevice.cpp" />
+    <ClCompile Include="Gfx\GfxFence.cpp" />
+    <ClCompile Include="Gfx\GfxIndexBuffer.cpp" />
+    <ClCompile Include="Gfx\GfxInputLayout.cpp" />
+    <ClCompile Include="Gfx\GfxMaterial.cpp" />
+    <ClCompile Include="Gfx\GfxMaterialProcessor.cpp" />
+    <ClCompile Include="Gfx\GfxMaterialProperty.cpp" />
+    <ClCompile Include="Gfx\GfxPipelineState.cpp" />
+    <ClCompile Include="Gfx\GfxRenderer.cpp" />
+    <ClCompile Include="Gfx\GfxRendererDependencyContext.cpp" />
+    <ClCompile Include="Gfx\GfxRenderTexture.cpp" />
+    <ClCompile Include="Gfx\GfxResourceCommandList.cpp" />
+    <ClCompile Include="Gfx\GfxResourceObject.cpp" />
+    <ClCompile Include="Gfx\GfxModelRenderer.cpp" />
+    <ClCompile Include="Gfx\GfxShader.cpp" />
+    <ClCompile Include="Gfx\GfxShaderBinary.cpp" />
+    <ClCompile Include="Gfx\GfxShaderBinaryProcessor.cpp" />
+    <ClCompile Include="Gfx\GfxShaderManager.cpp" />
+    <ClCompile Include="Gfx\GfxShaderText.cpp" />
+    <ClCompile Include="Gfx\GfxShaderTextProcessor.cpp" />
+    <ClCompile Include="Gfx\GfxShaderUtil.cpp" />
+    <ClCompile Include="Gfx\GfxSwapChain.cpp" />
+    <ClCompile Include="Gfx\GfxTaskScheduler.cpp" />
+    <ClCompile Include="Gfx\GfxTexture.cpp" />
+    <ClCompile Include="Gfx\GfxTextureBinary.cpp" />
+    <ClCompile Include="Gfx\GfxTextureBinaryProcessor.cpp" />
+    <ClCompile Include="Gfx\GfxTypeFactory.cpp" />
+    <ClCompile Include="Gfx\GfxTypes.cpp" />
+    <ClCompile Include="Gfx\GfxUploadBuffer.cpp" />
+    <ClCompile Include="Gfx\GfxVertexBuffer.cpp" />
+    <ClCompile Include="Gfx\GfxVertexInputFormat.cpp" />
+    <ClCompile Include="Input\InputDevice.cpp" />
+    <ClCompile Include="Input\InputMgr.cpp" />
+    <ClCompile Include="Input\KeyboardDevice.cpp" />
+    <ClCompile Include="Input\MouseDevice.cpp" />
+    <ClCompile Include="PCH.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Final|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Service\RestService.cpp" />
+    <ClCompile Include="World\Component.cpp" />
+    <ClCompile Include="World\ComponentSystem.cpp" />
+    <ClCompile Include="World\Entity.cpp" />
+    <ClCompile Include="World\EntityCollection.cpp" />
+    <ClCompile Include="World\World.cpp" />
+    <ClCompile Include="World\WorldContainer.cpp" />
+    <ClCompile Include="World\WorldScene.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="App\AppConfig.h" />
     <ClInclude Include="App\ApplicationBase.h" />
+    <ClInclude Include="App\AppService.h" />
+    <ClInclude Include="App\AppWindow.h" />
+    <ClInclude Include="App\Win32Window.h" />
+    <ClInclude Include="Geometry\GeometryTypes.h" />
+    <ClInclude Include="Gfx\GfxBase.h" />
+    <ClInclude Include="Gfx\GfxCommandContext.h" />
+    <ClInclude Include="Gfx\GfxCommandQueue.h" />
+    <ClInclude Include="Gfx\GfxDevice.h" />
+    <ClInclude Include="Gfx\GfxFence.h" />
+    <ClInclude Include="Gfx\GfxIndexBuffer.h" />
+    <ClInclude Include="Gfx\GfxMaterial.h" />
+    <ClInclude Include="Gfx\GfxMaterialProcessor.h" />
+    <ClInclude Include="Gfx\GfxMaterialProperty.h" />
+    <ClInclude Include="Gfx\GfxPipelineState.h" />
+    <ClInclude Include="Gfx\GfxRenderer.h" />
+    <ClInclude Include="Gfx\GfxRendererDependencyContext.h" />
+    <ClInclude Include="Gfx\GfxRenderTexture.h" />
+    <ClInclude Include="Gfx\GfxResourceCommandList.h" />
+    <ClInclude Include="Gfx\GfxResourceObject.h" />
+    <ClInclude Include="Gfx\GfxModelRenderer.h" />
+    <ClInclude Include="Gfx\GfxShader.h" />
+    <ClInclude Include="Gfx\GfxShaderBinary.h" />
+    <ClInclude Include="Gfx\GfxShaderBinaryProcessor.h" />
+    <ClInclude Include="Gfx\GfxShaderManager.h" />
+    <ClInclude Include="Gfx\GfxShaderText.h" />
+    <ClInclude Include="Gfx\GfxShaderTextProcessor.h" />
+    <ClInclude Include="Gfx\GfxShaderUtil.h" />
+    <ClInclude Include="Gfx\GfxSwapChain.h" />
+    <ClInclude Include="Gfx\GfxTaskScheduler.h" />
+    <ClInclude Include="Gfx\GfxTexture.h" />
+    <ClInclude Include="Gfx\GfxTextureBinary.h" />
+    <ClInclude Include="Gfx\GfxTextureBinaryProcessor.h" />
+    <ClInclude Include="Gfx\GfxTypeFactory.h" />
+    <ClInclude Include="Gfx\GfxTypes.h" />
+    <ClInclude Include="Gfx\GfxUploadBuffer.h" />
+    <ClInclude Include="Gfx\GfxVertexBuffer.h" />
+    <ClInclude Include="Gfx\GfxVertexInputFormat.h" />
+    <ClInclude Include="Gfx\GfxInputLayout.h" />
+    <ClInclude Include="Input\InputDevice.h" />
+    <ClInclude Include="Input\InputMgr.h" />
+    <ClInclude Include="Input\KeyboardDevice.h" />
+    <ClInclude Include="Input\MouseDevice.h" />
+    <ClInclude Include="PCH.h" />
+    <ClInclude Include="Service\RestService.h" />
+    <ClInclude Include="World\Component.h" />
+    <ClInclude Include="World\ComponentFactory.h" />
+    <ClInclude Include="World\ComponentList.h" />
+    <ClInclude Include="World\ComponentSystem.h" />
+    <ClInclude Include="World\ECSCommon.h" />
+    <ClInclude Include="World\Entity.h" />
+    <ClInclude Include="World\EntityCollection.h" />
+    <ClInclude Include="World\World.h" />
+    <ClInclude Include="World\WorldContainer.h" />
+    <ClInclude Include="World\WorldScene.h" />
+    <ClInclude Include="World\WorldTypes.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

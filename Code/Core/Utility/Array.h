@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -18,8 +18,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
-#ifndef LF_CORE_ARRAY_H
-#define LF_CORE_ARRAY_H
+#pragma once
 
 // #include "core/system/Assert.h"
 // #include "core/system/GenericHeap.h"
@@ -38,7 +37,7 @@
 #define LF_ITERATOR_RANGE_CHECK
 // Check that iterators belong to the same container when compared.
 #define LF_ITERATOR_CONTAINER_CHECK
-#define LF_ITERATOR_STL_CHECK
+#define LF_ITERATOR_STL_CHECK 0 
 
 #define LF_COLLECTION_RANGE_CHECK
 
@@ -114,7 +113,7 @@ namespace lf
             while (it != last)
             {
                 it = new(it)value_type();
-                *it = *oldIt;
+                *it = std::move(*oldIt);
                 oldIt->~value_type();
                 ++it;
                 ++oldIt;
@@ -454,7 +453,11 @@ namespace lf
         inline checked_type GetUnchecked() { return mPtr; }
         inline ArrayConstIterator& GetRechecked(ArrayConstIterator&, checked_type data) { mPtr = data; return *this; }
 #endif
-
+        // todo: MSVC 20
+        const value_type* _Unwrapped() const
+        {
+            return mPtr;
+        }
         ArrayConstIterator() :
             mPtr(nullptr),
             mContainer(nullptr)
@@ -527,14 +530,16 @@ namespace lf
         ArrayConstIterator operator++(int)
         {
             ArrayConstIterator tmp(*this);
-            ++tmp;
+            // TODO: VERIFY
+            ++this;
             return tmp;
         }
         // post-decrement
         ArrayConstIterator operator--(int)
         {
             ArrayConstIterator tmp(*this);
-            --tmp;
+            // TODO: VERIFY 
+            ++this;
             return tmp;
         }
         ArrayConstIterator&  operator+=(difference_type n)
@@ -588,6 +593,9 @@ namespace lf
             return mContainer;
         }
 #endif
+
+        
+
         pointer GetItem()
         {
             return mPtr;
@@ -618,6 +626,11 @@ namespace lf
         inline checked_type GetUnchecked() { return mPtr; }
         inline ArrayIterator& GetRechecked(ArrayIterator&, checked_type data) { mPtr = data; return *this; }
 #endif
+        value_type* _Unwrapped() const
+        {
+            return mPtr;
+        }
+
         ArrayIterator() : super()
         {}
         ArrayIterator(const ArrayIterator& other) : super(other)
@@ -641,6 +654,17 @@ namespace lf
         {
             return mPtr;
         }
+
+        const_reference operator*() const
+        {
+            return *mPtr;
+        }
+
+        const_pointer operator->() const
+        {
+            return mPtr;
+        }
+
         reference operator[](difference_type n)
         {
             return mPtr[n];
@@ -786,14 +810,16 @@ namespace lf
         ArrayConstReverseIterator operator++(int)
         {
             ArrayConstReverseIterator tmp(*this);
-            --tmp;
+            // TODO: Verify
+            --this;
             return tmp;
         }
         // post-decrement
         ArrayConstReverseIterator operator--(int)
         {
             ArrayConstReverseIterator tmp(*this);
-            ++tmp;
+            // TODO: Verify
+            ++this;
             return tmp;
         }
         ArrayConstReverseIterator&  operator+=(SizeT n)
@@ -1429,6 +1455,11 @@ namespace lf
             return !(*this == other);
         }
 
+        bool operator<(const TArray& other) const
+        {
+            return std::lexicographical_compare(begin(), end(), other.begin(), other.end());
+        }
+
         pointer GetData()
         {
             return mData.mFirst;
@@ -1489,5 +1520,3 @@ namespace std
     }
 }
 #endif
-
-#endif // LF_CORE_ARRAY_H

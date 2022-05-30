@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -19,8 +19,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
 
-#ifndef LF_CORE_AES_H
-#define LF_CORE_AES_H
+#pragma once
 
 #include "Core/Common/Types.h"
 #include "Core/Common/API.h"
@@ -58,9 +57,19 @@ public:
     SizeT GetKeySizeBytes() const { return mKeySize == AES_KEY_256 ? (256 / 8) : (mKeySize == AES_KEY_128 ? (128 / 8) : 0); }
 
     const ByteT* GetKey() const { return mKey; }
+
+    SizeT Size() const { return GetKeySizeBytes(); }
+    ByteT* Bytes() { return mKey; }
+    const ByteT* Bytes() const { return mKey; }
 private:
     AESKeySize mKeySize;
     ByteT mKey[256 / 8];
+};
+
+class AESIV
+{
+public:
+    ByteT mBytes[AES_IV_SIZE];
 };
 
 LF_CORE_API bool AESEncrypt(const AESKey* key, const ByteT iv[16], const ByteT* inBytes, SizeT inBytesLength, ByteT* outBytes, SizeT& outBytesCapacity);
@@ -71,5 +80,3 @@ LF_CORE_API SizeT AESCipherTextLength(const AESKey* key, SizeT plainTextLength);
 
 } // namespace Crypto
 } // namespace lf
-
-#endif // LF_CORE_AES_H

@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -42,11 +42,13 @@ struct DeployCopyOp
     String mDestination;
 };
 
+DECLARE_HASHED_CALLBACK(FileCopyPromiseVoid, void);
+
 class DeployBuild : public Application
 {
     DECLARE_CLASS(DeployBuild, Application);
 private:
-    using FileCopyPromise = PromiseImpl<TCallback<void>, TCallback<void>>;
+    using FileCopyPromise = PromiseImpl<FileCopyPromiseVoid, FileCopyPromiseVoid>;
     void CopyFile(String source, String destination);
     void WaitCopy();
 
@@ -62,14 +64,14 @@ private:
 
     String m_CodeInputDirectory;
 
-    TArray<PromiseWrapper> m_CopyOperations;
-    TArray<LoggerMessage> m_Failures;
+    TVector<PromiseWrapper> m_CopyOperations;
+    TVector<LoggerMessage> m_Failures;
     SpinLock m_FailureLock;
 public:
     void WriteFailure(const LoggerMessage& message)
     {
         ScopeLock lock(m_FailureLock);
-        m_Failures.Add(message);
+        m_Failures.push_back(message);
     }
 
     void OnStart() override
@@ -96,7 +98,7 @@ public:
         m_Projects[4] = "Engine";
 
         // Build .dll strings
-        TArray<String> dllTargets;
+        TVector<String> dllTargets;
         for (SizeT c = 0; c < LF_ARRAY_SIZE(m_ConfigurationNames); ++c)
         {
             if (!m_ConfigurationDLL[c])
@@ -108,15 +110,15 @@ public:
             {
                 for (SizeT platform = 0; platform < LF_ARRAY_SIZE(m_Platforms); ++platform)
                 {
-                    dllTargets.Add(m_Projects[p] + "_" + m_Platforms[platform] + m_ConfigurationNames[c] + ".dll");
-                    gTestLog.Debug(LogMessage("Targeting DLL ") << dllTargets.GetLast());
+                    dllTargets.push_back(m_Projects[p] + "_" + m_Platforms[platform] + m_ConfigurationNames[c] + ".dll");
+                    gTestLog.Debug(LogMessage("Targeting DLL ") << dllTargets.back());
                 }
             }
         }
 
         // OpenSSL DLLs that must be purged.
-        dllTargets.Add("libcrypto-3.dll");
-        dllTargets.Add("libssl-3.dll");
+        dllTargets.push_back("libcrypto-3.dll");
+        dllTargets.push_back("libssl-3.dll");
 
         // [optional] -deploy /Code="..."
         // [optional] -deploy /Lib="..."
@@ -237,7 +239,7 @@ public:
 
             // We need to identify all 'include' files in the project
             // We need to identify all 'lib'/'.dll' files to copy over
-            TArray<String> codeFiles;
+            TVector<String> codeFiles;
             FileSystem::GetAllFiles(m_CodeInputDirectory, codeFiles);
 
             String workingPath = m_CodeInputDirectory;
@@ -271,7 +273,7 @@ public:
         }
         
 
-        if (!m_Failures.Empty())
+        if (!m_Failures.empty())
         {
             gTestLog.Error(LogMessage("Deploy Failed!"));
             ScopeLock lock(m_FailureLock);
@@ -301,6 +303,7 @@ void DeployBuild::CopyFile(String source, String destination)
 
     PromiseWrapper promise = FileCopyPromise([op](Promise* self)
     {
+        auto promise = static_cast<FileCopyPromise*>(self);
         // open source
         // open destination
         // write source -> destination
@@ -313,7 +316,7 @@ void DeployBuild::CopyFile(String source, String destination)
         if (!sourceFile.Open(source, FF_READ | FF_SHARE_READ | FF_SHARE_WRITE, FILE_OPEN_EXISTING))
         {
             op->WriteFailure(LogMessage("Failed to open 'source' file ") << source);
-            self->Reject();
+            promise->Reject();
             return;
         }
 
@@ -324,7 +327,7 @@ void DeployBuild::CopyFile(String source, String destination)
             if (!FileSystem::PathExists(destPath))
             {
                 op->WriteFailure(LogMessage("Failed to create 'destination' directory ") << destPath);
-                self->Reject();
+                promise->Reject();
                 return;
             }
         }
@@ -333,7 +336,7 @@ void DeployBuild::CopyFile(String source, String destination)
         if (!destFile.Open(destination, FF_WRITE | FF_READ, FILE_OPEN_ALWAYS))
         {
             op->WriteFailure(LogMessage("Failed to open 'destination' file ") << destination);
-            self->Reject();
+            promise->Reject();
             return;
         }
 
@@ -344,7 +347,7 @@ void DeployBuild::CopyFile(String source, String destination)
         if (bytesRead != buffer.GetSize())
         {
             op->WriteFailure(LogMessage("Failed to read 'source' file. Bytes Read=") << bytesRead << " but file size is " << buffer.GetSize() << " bytes large");
-            self->Reject();
+            promise->Reject();
             return;
         }
 
@@ -352,7 +355,7 @@ void DeployBuild::CopyFile(String source, String destination)
         if (bytesWritten != buffer.GetSize())
         {
             op->WriteFailure(LogMessage("Failed to write 'destination' file. Bytes Written=") << bytesWritten << " but file size is " << buffer.GetSize() << " bytes large");
-            self->Reject();
+            promise->Reject();
             return;
         }
 
@@ -360,10 +363,10 @@ void DeployBuild::CopyFile(String source, String destination)
         sourceFile.Close();
         destFile.Close();
         buffer.Free();
-        self->Resolve();
+        promise->Resolve();
     })
     .Execute();
-    m_CopyOperations.Add(promise);
+    m_CopyOperations.push_back(promise);
 }
 
 void DeployBuild::WaitCopy()

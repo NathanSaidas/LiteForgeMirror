@@ -1,0 +1,6 @@
+Branching:
+
+Creating a branch:
+
+    git branch <name>
+    git checkout <name>

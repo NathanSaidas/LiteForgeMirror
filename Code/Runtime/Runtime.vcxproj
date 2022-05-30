@@ -21,32 +21,32 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{2DBBA66D-F5FA-46D4-AB99-8704CE462948}</ProjectGuid>
     <RootNamespace>Runtime</RootNamespace>
-    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Final|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
@@ -103,7 +103,8 @@
       <SmallerTypeCheck>true</SmallerTypeCheck>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <MinimalRebuild>false</MinimalRebuild>
-      <ProgramDataBaseFileName>$(IntDir)%(Filename).pdb</ProgramDataBaseFileName>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>Runtime/PCH.h</PrecompiledHeaderFile>
     </ClCompile>
     <Lib>
       <AdditionalDependencies>$(SolutionDir)Code\Core_x64Debug.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -125,8 +126,11 @@
       <PreprocessorDefinitions>_ALLOW_RTCc_IN_STL;LF_INTERNAL_TEST;LF_INTERNAL_IMPORT_CORE;LF_INTERNAL_EXPORT_RUNTIME;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
-      <ProgramDataBaseFileName>$(IntDir)%(Filename).pdb</ProgramDataBaseFileName>
       <SmallerTypeCheck>true</SmallerTypeCheck>
+      <MinimalRebuild>false</MinimalRebuild>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>Runtime/PCH.h</PrecompiledHeaderFile>
     </ClCompile>
     <Lib>
       <AdditionalDependencies>$(SolutionDir)Code\Core_x64Debug.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -145,9 +149,11 @@
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>$(SolutionDir)Code\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <ProgramDataBaseFileName>$(IntDir)%(Filename).pdb</ProgramDataBaseFileName>
       <PreprocessorDefinitions>_HAS_EXCEPTIONS=0;_ALLOW_RTCc_IN_STL;LF_INTERNAL_RELEASE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ExceptionHandling>false</ExceptionHandling>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>Runtime/PCH.h</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -166,9 +172,11 @@
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>$(SolutionDir)Code\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <ProgramDataBaseFileName>$(IntDir)%(Filename).pdb</ProgramDataBaseFileName>
       <PreprocessorDefinitions>_HAS_EXCEPTIONS=0;_ALLOW_RTCc_IN_STL;LF_INTERNAL_FINAL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ExceptionHandling>false</ExceptionHandling>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>Runtime/PCH.h</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -179,45 +187,162 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Asset\AssetCacheController.cpp" />
     <ClCompile Include="Asset\AssetCommon.cpp" />
-    <ClCompile Include="Asset\AssetDataController.cpp" />
+    <ClCompile Include="Asset\AssetMgr.cpp" />
     <ClCompile Include="Asset\AssetObject.cpp" />
+    <ClCompile Include="Asset\AssetOp.cpp" />
+    <ClCompile Include="Asset\AssetPath.cpp" />
+    <ClCompile Include="Asset\AssetProcessor.cpp" />
+    <ClCompile Include="Asset\AssetReferenceTypes.cpp" />
+    <ClCompile Include="Asset\AssetTypeInfo.cpp" />
+    <ClCompile Include="Asset\AssetTypeMap.cpp" />
     <ClCompile Include="Asset\AssetTypes.cpp" />
+    <ClCompile Include="Asset\BinaryAssetProcessor.cpp" />
     <ClCompile Include="Asset\CacheBlob.cpp" />
     <ClCompile Include="Asset\CacheBlock.cpp" />
+    <ClCompile Include="Asset\CacheBlockType.cpp" />
+    <ClCompile Include="Asset\CacheDB.cpp" />
     <ClCompile Include="Asset\CacheReader.cpp" />
     <ClCompile Include="Asset\CacheStream.cpp" />
+    <ClCompile Include="Asset\CacheTypes.cpp" />
     <ClCompile Include="Asset\CacheWriter.cpp" />
+    <ClCompile Include="Asset\Controllers\AssetCacheController.cpp" />
+    <ClCompile Include="Asset\Controllers\AssetDataController.cpp" />
+    <ClCompile Include="Asset\Controllers\AssetOpController.cpp" />
+    <ClCompile Include="Asset\Controllers\AssetSourceController.cpp" />
+    <ClCompile Include="Asset\DefaultAssetProcessor.cpp" />
+    <ClCompile Include="Asset\GenericBinaryAsset.cpp" />
+    <ClCompile Include="Asset\Ops\AssetCreateOp.cpp" />
+    <ClCompile Include="Asset\Ops\AssetDeleteOp.cpp" />
+    <ClCompile Include="Asset\Ops\AssetImportOp.cpp" />
+    <ClCompile Include="Asset\Ops\AssetLoadOp.cpp" />
+    <ClCompile Include="Asset\Ops\AssetRemoveOp.cpp" />
+    <ClCompile Include="Asset\Ops\AssetUpdateOp.cpp" />
+    <ClCompile Include="Asset\Ops\CreateDomainOp.cpp" />
+    <ClCompile Include="Asset\Ops\SaveDomainOp.cpp" />
+    <ClCompile Include="Asset\Ops\UpdateCacheOp.cpp" />
+    <ClCompile Include="Asset\TextAssetProcessor.cpp" />
+    <ClCompile Include="Async\AppThread.cpp" />
     <ClCompile Include="Async\Async.cpp" />
     <ClCompile Include="Async\AsyncImpl.cpp" />
     <ClCompile Include="Async\Promise.cpp" />
+    <ClCompile Include="Async\ThreadDispatcher.cpp" />
     <ClCompile Include="Common\RuntimeGlobals.cpp" />
-    <ClCompile Include="Config.cpp" />
+    <ClCompile Include="Event\Event.cpp" />
+    <ClCompile Include="Event\EventMgr.cpp" />
+    <ClCompile Include="Event\EventMgrImpl.cpp" />
+    <ClCompile Include="Net\Client\NetSecureClientDriver.cpp" />
+    <ClCompile Include="Net\Client\NetSecureLocalClientConnection.cpp" />
+    <ClCompile Include="Net\Controllers\NetEventController.cpp" />
+    <ClCompile Include="Net\Controllers\NetRequestController.cpp" />
+    <ClCompile Include="Net\Controllers\NetRouteController.cpp" />
+    <ClCompile Include="Net\Controllers\NullMessageController.cpp" />
+    <ClCompile Include="Net\FileTransfer\FileResourceLocator.cpp" />
+    <ClCompile Include="Net\FileTransfer\FileResourceTypes.cpp" />
+    <ClCompile Include="Net\FileTransfer\FileTransferMessageController.cpp" />
+    <ClCompile Include="Net\FileTransfer\FileTransferTypes.cpp" />
+    <ClCompile Include="Net\FileTransfer\MemoryResourceLocator.cpp" />
+    <ClCompile Include="Net\NetEvent.cpp" />
+    <ClCompile Include="Net\NetMessage.cpp" />
+    <ClCompile Include="Net\NetRequest.cpp" />
+    <ClCompile Include="Net\NetRequestArgs.cpp" />
+    <ClCompile Include="Net\NetRequestHandler.cpp" />
+    <ClCompile Include="Net\NetResponseArgs.cpp" />
+    <ClCompile Include="Net\NetSerialization.cpp" />
+    <ClCompile Include="Net\NetUtil.cpp" />
+    <ClCompile Include="Net\PacketSerializer.cpp" />
+    <ClCompile Include="Net\Server\NetSecureServerConnection.cpp" />
+    <ClCompile Include="Net\Server\NetSecureServerDriver.cpp" />
+    <ClCompile Include="PCH.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Final|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="Reflection\ReflectionMgr.cpp" />
     <ClCompile Include="Reflection\ReflectionTypes.cpp" />
+    <ClCompile Include="Service\Service.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Asset\AssetCacheController.h" />
     <ClInclude Include="Asset\AssetCommon.h" />
-    <ClInclude Include="Asset\AssetDataController.h" />
     <ClInclude Include="Asset\AssetIndex.h" />
+    <ClInclude Include="Asset\AssetMgr.h" />
     <ClInclude Include="Asset\AssetObject.h" />
+    <ClInclude Include="Asset\AssetOp.h" />
+    <ClInclude Include="Asset\AssetPath.h" />
+    <ClInclude Include="Asset\AssetProcessor.h" />
+    <ClInclude Include="Asset\AssetReferenceTypes.h" />
+    <ClInclude Include="Asset\AssetTypeInfo.h" />
+    <ClInclude Include="Asset\AssetTypeMap.h" />
     <ClInclude Include="Asset\AssetTypes.h" />
+    <ClInclude Include="Asset\BinaryAssetProcessor.h" />
     <ClInclude Include="Asset\CacheBlob.h" />
     <ClInclude Include="Asset\CacheBlock.h" />
+    <ClInclude Include="Asset\CacheBlockType.h" />
+    <ClInclude Include="Asset\CacheDB.h" />
     <ClInclude Include="Asset\CacheReader.h" />
     <ClInclude Include="Asset\CacheStream.h" />
     <ClInclude Include="Asset\CacheTypes.h" />
     <ClInclude Include="Asset\CacheWriter.h" />
+    <ClInclude Include="Asset\Controllers\AssetCacheController.h" />
+    <ClInclude Include="Asset\Controllers\AssetDataController.h" />
+    <ClInclude Include="Asset\Controllers\AssetOpController.h" />
+    <ClInclude Include="Asset\Controllers\AssetSourceController.h" />
+    <ClInclude Include="Asset\DefaultAssetProcessor.h" />
+    <ClInclude Include="Asset\GenericBinaryAsset.h" />
+    <ClInclude Include="Asset\Ops\AssetCreateOp.h" />
+    <ClInclude Include="Asset\Ops\AssetDeleteOp.h" />
+    <ClInclude Include="Asset\Ops\AssetImportOp.h" />
+    <ClInclude Include="Asset\Ops\AssetLoadOp.h" />
+    <ClInclude Include="Asset\Ops\AssetRemoveOp.h" />
+    <ClInclude Include="Asset\Ops\AssetUpdateOp.h" />
+    <ClInclude Include="Asset\Ops\CreateDomainOp.h" />
+    <ClInclude Include="Asset\Ops\SaveDomainOp.h" />
+    <ClInclude Include="Asset\Ops\UpdateCacheOp.h" />
+    <ClInclude Include="Asset\TextAssetProcessor.h" />
+    <ClInclude Include="Async\AppThread.h" />
     <ClInclude Include="Async\Async.h" />
     <ClInclude Include="Async\AsyncImpl.h" />
     <ClInclude Include="Async\Promise.h" />
     <ClInclude Include="Async\PromiseImpl.h" />
+    <ClInclude Include="Async\ThreadDispatcher.h" />
     <ClInclude Include="Common\RuntimeGlobals.h" />
-    <ClInclude Include="Config.h" />
+    <ClInclude Include="Event\Event.h" />
+    <ClInclude Include="Event\EventMgr.h" />
+    <ClInclude Include="Event\EventMgrImpl.h" />
+    <ClInclude Include="Net\Client\NetSecureClientDriver.h" />
+    <ClInclude Include="Net\Client\NetSecureLocalClientConnection.h" />
+    <ClInclude Include="Net\Controllers\NetEventController.h" />
+    <ClInclude Include="Net\Controllers\NetMessageController.h" />
+    <ClInclude Include="Net\Controllers\NetRequestController.h" />
+    <ClInclude Include="Net\Controllers\NetRouteController.h" />
+    <ClInclude Include="Net\Controllers\NullMessageController.h" />
+    <ClInclude Include="Net\FileTransfer\FileResourceLocator.h" />
+    <ClInclude Include="Net\FileTransfer\FileResourceTypes.h" />
+    <ClInclude Include="Net\FileTransfer\FileTransferConstants.h" />
+    <ClInclude Include="Net\FileTransfer\FileTransferMessageController.h" />
+    <ClInclude Include="Net\FileTransfer\FileTransferTypes.h" />
+    <ClInclude Include="Net\FileTransfer\MemoryResourceLocator.h" />
+    <ClInclude Include="Net\NetConnection.h" />
+    <ClInclude Include="Net\NetDriver.h" />
+    <ClInclude Include="Net\NetEvent.h" />
+    <ClInclude Include="Net\NetMessage.h" />
+    <ClInclude Include="Net\NetRequest.h" />
+    <ClInclude Include="Net\NetRequestArgs.h" />
+    <ClInclude Include="Net\NetRequestHandler.h" />
+    <ClInclude Include="Net\NetResponseArgs.h" />
+    <ClInclude Include="Net\NetResponseStatus.h" />
+    <ClInclude Include="Net\NetSerialization.h" />
+    <ClInclude Include="Net\NetTransmit.h" />
+    <ClInclude Include="Net\NetUtil.h" />
+    <ClInclude Include="Net\PacketAllocator.h" />
+    <ClInclude Include="Net\PacketSerializer.h" />
+    <ClInclude Include="Net\Server\NetSecureServerConnection.h" />
+    <ClInclude Include="Net\Server\NetSecureServerDriver.h" />
+    <ClInclude Include="PCH.h" />
     <ClInclude Include="Reflection\ReflectionMgr.h" />
     <ClInclude Include="Reflection\ReflectionTypes.h" />
+    <ClInclude Include="Service\Service.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

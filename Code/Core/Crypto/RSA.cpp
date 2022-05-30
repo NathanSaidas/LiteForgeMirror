@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -18,6 +18,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
+#include "Core/PCH.h"
 #include "RSA.h"
 #include "Core/Common/Assert.h"
 #include "Core/Common/Types.h"
@@ -31,7 +32,7 @@
 #include <openssl/pem.h>
 #include <openssl/bio.h>
 #include <openssl/sha.h>
-#include <utility>
+#include <cstring>
 
 namespace lf {
 
@@ -155,8 +156,8 @@ String RSAKey::GetPublicKey() const
 
     if (PEM_write_bio_RSAPublicKey(bio, reinterpret_cast<RSA*>(mContext)) == 0)
     {
-    BIO_free_all(bio);
-    return String();
+        BIO_free_all(bio);
+        return String();
     }
 
     BUF_MEM* memory = nullptr;

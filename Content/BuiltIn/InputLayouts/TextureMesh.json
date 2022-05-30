@@ -1,0 +1,36 @@
+{
+    "TextureMesh.json": {
+        "__super": "Engine//Types/lf/GfxInputLayout",
+        "__data": {
+            "Elements": [
+                {
+                    "SemanticName": "SV_POSITION",
+                    "SemanticIndex": 0,
+                    "Format": "R32G32B32A32_FLOAT",
+                    "InputSlot": 0,
+                    "AlignedByteOffset": 0,
+                    "InstanceDataStepRate": 0,
+                    "PerVertexData": 1
+                },
+                {
+                    "SemanticName": "COLOR",
+                    "SemanticIndex": 0,
+                    "Format": "R32G32B32A32_FLOAT",
+                    "InputSlot": 0,
+                    "AlignedByteOffset": 16,
+                    "InstanceDataStepRate": 0,
+                    "PerVertexData": 1
+                },
+                {
+                    "SemanticName": "TEXCOORD",
+                    "SemanticIndex": 0,
+                    "Format": "R32G32_FLOAT",
+                    "InputSlot": 0,
+                    "AlignedByteOffset": 32,
+                    "InstanceDataStepRate": 0,
+                    "PerVertexData": 1
+                }
+            ]
+        }
+    }
+}

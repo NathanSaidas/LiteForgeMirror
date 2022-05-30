@@ -1,9 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Config">
-      <UniqueIdentifier>{220e9086-39eb-4418-abaa-a880d11211c4}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Reflection">
       <UniqueIdentifier>{745ec050-588f-4233-9383-90b71ef81c6b}</UniqueIdentifier>
     </Filter>
@@ -16,11 +13,35 @@
     <Filter Include="Asset">
       <UniqueIdentifier>{e84398db-86d4-4f68-aefa-4449a0a2b8f9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Net">
+      <UniqueIdentifier>{405ab042-67b9-4033-9d8a-4de54a91710f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Net\Controllers">
+      <UniqueIdentifier>{421f58e2-f755-4b62-b007-293cdd4ee1e4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Net\Server">
+      <UniqueIdentifier>{3e2f62f2-9ad4-4473-961a-1630f2d12271}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Net\Client">
+      <UniqueIdentifier>{0af59a65-3f3e-447c-808c-e194f0e2b0cd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Service">
+      <UniqueIdentifier>{786cff9b-9e12-4e11-a25c-5ffc63842618}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Net\FileTransfer">
+      <UniqueIdentifier>{6cfb14ef-4e70-43d0-a568-00d55e88572e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Asset\Controllers">
+      <UniqueIdentifier>{941ee217-1e20-4b53-b3b7-a6ef49748390}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Asset\Ops">
+      <UniqueIdentifier>{49ca29f6-2345-4b1a-8bf3-26952c36c52d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Event">
+      <UniqueIdentifier>{7f62b4c1-6a82-4bdf-9a9d-1b35b29ce8b1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Config.cpp">
-      <Filter>Config</Filter>
-    </ClCompile>
     <ClCompile Include="Reflection\ReflectionMgr.cpp">
       <Filter>Reflection</Filter>
     </ClCompile>
@@ -42,9 +63,6 @@
     <ClCompile Include="Asset\AssetTypes.cpp">
       <Filter>Asset</Filter>
     </ClCompile>
-    <ClCompile Include="Asset\AssetDataController.cpp">
-      <Filter>Asset</Filter>
-    </ClCompile>
     <ClCompile Include="Asset\AssetCommon.cpp">
       <Filter>Asset</Filter>
     </ClCompile>
@@ -60,20 +78,178 @@
     <ClCompile Include="Asset\CacheBlock.cpp">
       <Filter>Asset</Filter>
     </ClCompile>
-    <ClCompile Include="Asset\AssetCacheController.cpp">
-      <Filter>Asset</Filter>
-    </ClCompile>
     <ClCompile Include="Asset\CacheWriter.cpp">
       <Filter>Asset</Filter>
     </ClCompile>
     <ClCompile Include="Asset\CacheReader.cpp">
       <Filter>Asset</Filter>
     </ClCompile>
+    <ClCompile Include="Net\Controllers\NetEventController.cpp">
+      <Filter>Net\Controllers</Filter>
+    </ClCompile>
+    <ClCompile Include="Net\Controllers\NetRequestController.cpp">
+      <Filter>Net\Controllers</Filter>
+    </ClCompile>
+    <ClCompile Include="Net\NetEvent.cpp">
+      <Filter>Net</Filter>
+    </ClCompile>
+    <ClCompile Include="Net\NetRequest.cpp">
+      <Filter>Net</Filter>
+    </ClCompile>
+    <ClCompile Include="Net\NetRequestArgs.cpp">
+      <Filter>Net</Filter>
+    </ClCompile>
+    <ClCompile Include="Net\NetRequestHandler.cpp">
+      <Filter>Net</Filter>
+    </ClCompile>
+    <ClCompile Include="Net\NetResponseArgs.cpp">
+      <Filter>Net</Filter>
+    </ClCompile>
+    <ClCompile Include="Net\NetUtil.cpp">
+      <Filter>Net</Filter>
+    </ClCompile>
+    <ClCompile Include="Net\Controllers\NetRouteController.cpp">
+      <Filter>Net\Controllers</Filter>
+    </ClCompile>
+    <ClCompile Include="Net\PacketSerializer.cpp">
+      <Filter>Net</Filter>
+    </ClCompile>
+    <ClCompile Include="Net\NetSerialization.cpp">
+      <Filter>Net</Filter>
+    </ClCompile>
+    <ClCompile Include="Net\Server\NetSecureServerConnection.cpp">
+      <Filter>Net\Server</Filter>
+    </ClCompile>
+    <ClCompile Include="Net\Server\NetSecureServerDriver.cpp">
+      <Filter>Net\Server</Filter>
+    </ClCompile>
+    <ClCompile Include="Net\Client\NetSecureClientDriver.cpp">
+      <Filter>Net\Client</Filter>
+    </ClCompile>
+    <ClCompile Include="Net\Controllers\NullMessageController.cpp">
+      <Filter>Net\Controllers</Filter>
+    </ClCompile>
+    <ClCompile Include="Net\NetMessage.cpp">
+      <Filter>Net</Filter>
+    </ClCompile>
+    <ClCompile Include="Net\Client\NetSecureLocalClientConnection.cpp">
+      <Filter>Net\Client</Filter>
+    </ClCompile>
+    <ClCompile Include="Service\Service.cpp">
+      <Filter>Service</Filter>
+    </ClCompile>
+    <ClCompile Include="Net\FileTransfer\FileTransferMessageController.cpp">
+      <Filter>Net\FileTransfer</Filter>
+    </ClCompile>
+    <ClCompile Include="Net\FileTransfer\FileResourceLocator.cpp">
+      <Filter>Net\FileTransfer</Filter>
+    </ClCompile>
+    <ClCompile Include="Net\FileTransfer\FileResourceTypes.cpp">
+      <Filter>Net\FileTransfer</Filter>
+    </ClCompile>
+    <ClCompile Include="Net\FileTransfer\FileTransferTypes.cpp">
+      <Filter>Net\FileTransfer</Filter>
+    </ClCompile>
+    <ClCompile Include="Net\FileTransfer\MemoryResourceLocator.cpp">
+      <Filter>Net\FileTransfer</Filter>
+    </ClCompile>
+    <ClCompile Include="Asset\AssetMgr.cpp">
+      <Filter>Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="Asset\AssetPath.cpp">
+      <Filter>Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="Asset\AssetTypeInfo.cpp">
+      <Filter>Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="Asset\CacheBlockType.cpp">
+      <Filter>Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="Asset\AssetTypeMap.cpp">
+      <Filter>Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="Asset\AssetOp.cpp">
+      <Filter>Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="Asset\Ops\AssetCreateOp.cpp">
+      <Filter>Asset\Ops</Filter>
+    </ClCompile>
+    <ClCompile Include="Asset\Ops\AssetDeleteOp.cpp">
+      <Filter>Asset\Ops</Filter>
+    </ClCompile>
+    <ClCompile Include="Asset\Ops\AssetImportOp.cpp">
+      <Filter>Asset\Ops</Filter>
+    </ClCompile>
+    <ClCompile Include="Asset\Ops\AssetLoadOp.cpp">
+      <Filter>Asset\Ops</Filter>
+    </ClCompile>
+    <ClCompile Include="Asset\Ops\AssetRemoveOp.cpp">
+      <Filter>Asset\Ops</Filter>
+    </ClCompile>
+    <ClCompile Include="Asset\Ops\AssetUpdateOp.cpp">
+      <Filter>Asset\Ops</Filter>
+    </ClCompile>
+    <ClCompile Include="Asset\Controllers\AssetSourceController.cpp">
+      <Filter>Asset\Controllers</Filter>
+    </ClCompile>
+    <ClCompile Include="Asset\Controllers\AssetCacheController.cpp">
+      <Filter>Asset\Controllers</Filter>
+    </ClCompile>
+    <ClCompile Include="Asset\Controllers\AssetDataController.cpp">
+      <Filter>Asset\Controllers</Filter>
+    </ClCompile>
+    <ClCompile Include="Asset\CacheTypes.cpp">
+      <Filter>Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="Asset\Controllers\AssetOpController.cpp">
+      <Filter>Asset\Controllers</Filter>
+    </ClCompile>
+    <ClCompile Include="Asset\Ops\SaveDomainOp.cpp">
+      <Filter>Asset\Ops</Filter>
+    </ClCompile>
+    <ClCompile Include="Asset\AssetReferenceTypes.cpp">
+      <Filter>Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="Asset\AssetProcessor.cpp">
+      <Filter>Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="Asset\DefaultAssetProcessor.cpp">
+      <Filter>Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="Asset\Ops\UpdateCacheOp.cpp">
+      <Filter>Asset\Ops</Filter>
+    </ClCompile>
+    <ClCompile Include="PCH.cpp" />
+    <ClCompile Include="Async\ThreadDispatcher.cpp">
+      <Filter>Async</Filter>
+    </ClCompile>
+    <ClCompile Include="Async\AppThread.cpp">
+      <Filter>Async</Filter>
+    </ClCompile>
+    <ClCompile Include="Event\Event.cpp">
+      <Filter>Event</Filter>
+    </ClCompile>
+    <ClCompile Include="Event\EventMgr.cpp">
+      <Filter>Event</Filter>
+    </ClCompile>
+    <ClCompile Include="Event\EventMgrImpl.cpp">
+      <Filter>Event</Filter>
+    </ClCompile>
+    <ClCompile Include="Asset\CacheDB.cpp">
+      <Filter>Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="Asset\Ops\CreateDomainOp.cpp">
+      <Filter>Asset\Ops</Filter>
+    </ClCompile>
+    <ClCompile Include="Asset\TextAssetProcessor.cpp">
+      <Filter>Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="Asset\BinaryAssetProcessor.cpp">
+      <Filter>Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="Asset\GenericBinaryAsset.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Config.h">
-      <Filter>Config</Filter>
-    </ClInclude>
     <ClInclude Include="Reflection\ReflectionMgr.h">
       <Filter>Reflection</Filter>
     </ClInclude>
@@ -98,9 +274,6 @@
     <ClInclude Include="Asset\AssetTypes.h">
       <Filter>Asset</Filter>
     </ClInclude>
-    <ClInclude Include="Asset\AssetDataController.h">
-      <Filter>Asset</Filter>
-    </ClInclude>
     <ClInclude Include="Asset\AssetCommon.h">
       <Filter>Asset</Filter>
     </ClInclude>
@@ -122,14 +295,193 @@
     <ClInclude Include="Asset\CacheTypes.h">
       <Filter>Asset</Filter>
     </ClInclude>
-    <ClInclude Include="Asset\AssetCacheController.h">
-      <Filter>Asset</Filter>
-    </ClInclude>
     <ClInclude Include="Asset\CacheWriter.h">
       <Filter>Asset</Filter>
     </ClInclude>
     <ClInclude Include="Asset\CacheReader.h">
       <Filter>Asset</Filter>
     </ClInclude>
+    <ClInclude Include="Net\Controllers\NetEventController.h">
+      <Filter>Net\Controllers</Filter>
+    </ClInclude>
+    <ClInclude Include="Net\Controllers\NetRequestController.h">
+      <Filter>Net\Controllers</Filter>
+    </ClInclude>
+    <ClInclude Include="Net\NetConnection.h">
+      <Filter>Net</Filter>
+    </ClInclude>
+    <ClInclude Include="Net\NetDriver.h">
+      <Filter>Net</Filter>
+    </ClInclude>
+    <ClInclude Include="Net\NetEvent.h">
+      <Filter>Net</Filter>
+    </ClInclude>
+    <ClInclude Include="Net\NetRequest.h">
+      <Filter>Net</Filter>
+    </ClInclude>
+    <ClInclude Include="Net\NetRequestArgs.h">
+      <Filter>Net</Filter>
+    </ClInclude>
+    <ClInclude Include="Net\NetRequestHandler.h">
+      <Filter>Net</Filter>
+    </ClInclude>
+    <ClInclude Include="Net\NetResponseArgs.h">
+      <Filter>Net</Filter>
+    </ClInclude>
+    <ClInclude Include="Net\NetResponseStatus.h">
+      <Filter>Net</Filter>
+    </ClInclude>
+    <ClInclude Include="Net\NetTransmit.h">
+      <Filter>Net</Filter>
+    </ClInclude>
+    <ClInclude Include="Net\NetUtil.h">
+      <Filter>Net</Filter>
+    </ClInclude>
+    <ClInclude Include="Net\PacketAllocator.h">
+      <Filter>Net</Filter>
+    </ClInclude>
+    <ClInclude Include="Net\Controllers\NetRouteController.h">
+      <Filter>Net\Controllers</Filter>
+    </ClInclude>
+    <ClInclude Include="Net\PacketSerializer.h">
+      <Filter>Net</Filter>
+    </ClInclude>
+    <ClInclude Include="Net\NetSerialization.h">
+      <Filter>Net</Filter>
+    </ClInclude>
+    <ClInclude Include="Net\Controllers\NetMessageController.h">
+      <Filter>Net\Controllers</Filter>
+    </ClInclude>
+    <ClInclude Include="Net\Server\NetSecureServerConnection.h">
+      <Filter>Net\Server</Filter>
+    </ClInclude>
+    <ClInclude Include="Net\Server\NetSecureServerDriver.h">
+      <Filter>Net\Server</Filter>
+    </ClInclude>
+    <ClInclude Include="Net\Client\NetSecureClientDriver.h">
+      <Filter>Net\Client</Filter>
+    </ClInclude>
+    <ClInclude Include="Net\Controllers\NullMessageController.h">
+      <Filter>Net\Controllers</Filter>
+    </ClInclude>
+    <ClInclude Include="Net\NetMessage.h">
+      <Filter>Net</Filter>
+    </ClInclude>
+    <ClInclude Include="Net\Client\NetSecureLocalClientConnection.h">
+      <Filter>Net\Client</Filter>
+    </ClInclude>
+    <ClInclude Include="Service\Service.h">
+      <Filter>Service</Filter>
+    </ClInclude>
+    <ClInclude Include="Net\FileTransfer\FileTransferMessageController.h">
+      <Filter>Net\FileTransfer</Filter>
+    </ClInclude>
+    <ClInclude Include="Net\FileTransfer\FileResourceLocator.h">
+      <Filter>Net\FileTransfer</Filter>
+    </ClInclude>
+    <ClInclude Include="Net\FileTransfer\FileResourceTypes.h">
+      <Filter>Net\FileTransfer</Filter>
+    </ClInclude>
+    <ClInclude Include="Net\FileTransfer\FileTransferConstants.h">
+      <Filter>Net\FileTransfer</Filter>
+    </ClInclude>
+    <ClInclude Include="Net\FileTransfer\FileTransferTypes.h">
+      <Filter>Net\FileTransfer</Filter>
+    </ClInclude>
+    <ClInclude Include="Net\FileTransfer\MemoryResourceLocator.h">
+      <Filter>Net\FileTransfer</Filter>
+    </ClInclude>
+    <ClInclude Include="Asset\AssetMgr.h">
+      <Filter>Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="Asset\AssetPath.h">
+      <Filter>Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="Asset\AssetTypeInfo.h">
+      <Filter>Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="Asset\CacheBlockType.h">
+      <Filter>Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="Asset\AssetTypeMap.h">
+      <Filter>Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="Asset\AssetOp.h">
+      <Filter>Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="Asset\Ops\AssetCreateOp.h">
+      <Filter>Asset\Ops</Filter>
+    </ClInclude>
+    <ClInclude Include="Asset\Ops\AssetDeleteOp.h">
+      <Filter>Asset\Ops</Filter>
+    </ClInclude>
+    <ClInclude Include="Asset\Ops\AssetImportOp.h">
+      <Filter>Asset\Ops</Filter>
+    </ClInclude>
+    <ClInclude Include="Asset\Ops\AssetLoadOp.h">
+      <Filter>Asset\Ops</Filter>
+    </ClInclude>
+    <ClInclude Include="Asset\Ops\AssetRemoveOp.h">
+      <Filter>Asset\Ops</Filter>
+    </ClInclude>
+    <ClInclude Include="Asset\Ops\AssetUpdateOp.h">
+      <Filter>Asset\Ops</Filter>
+    </ClInclude>
+    <ClInclude Include="Asset\Controllers\AssetSourceController.h">
+      <Filter>Asset\Controllers</Filter>
+    </ClInclude>
+    <ClInclude Include="Asset\Controllers\AssetCacheController.h">
+      <Filter>Asset\Controllers</Filter>
+    </ClInclude>
+    <ClInclude Include="Asset\Controllers\AssetDataController.h">
+      <Filter>Asset\Controllers</Filter>
+    </ClInclude>
+    <ClInclude Include="Asset\Controllers\AssetOpController.h">
+      <Filter>Asset\Controllers</Filter>
+    </ClInclude>
+    <ClInclude Include="Asset\Ops\SaveDomainOp.h">
+      <Filter>Asset\Ops</Filter>
+    </ClInclude>
+    <ClInclude Include="Asset\AssetReferenceTypes.h">
+      <Filter>Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="Asset\AssetProcessor.h">
+      <Filter>Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="Asset\DefaultAssetProcessor.h">
+      <Filter>Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="Asset\Ops\UpdateCacheOp.h">
+      <Filter>Asset\Ops</Filter>
+    </ClInclude>
+    <ClInclude Include="PCH.h" />
+    <ClInclude Include="Async\ThreadDispatcher.h">
+      <Filter>Async</Filter>
+    </ClInclude>
+    <ClInclude Include="Async\AppThread.h">
+      <Filter>Async</Filter>
+    </ClInclude>
+    <ClInclude Include="Event\Event.h">
+      <Filter>Event</Filter>
+    </ClInclude>
+    <ClInclude Include="Event\EventMgr.h">
+      <Filter>Event</Filter>
+    </ClInclude>
+    <ClInclude Include="Event\EventMgrImpl.h">
+      <Filter>Event</Filter>
+    </ClInclude>
+    <ClInclude Include="Asset\CacheDB.h">
+      <Filter>Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="Asset\Ops\CreateDomainOp.h">
+      <Filter>Asset\Ops</Filter>
+    </ClInclude>
+    <ClInclude Include="Asset\TextAssetProcessor.h">
+      <Filter>Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="Asset\BinaryAssetProcessor.h">
+      <Filter>Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="Asset\GenericBinaryAsset.h" />
   </ItemGroup>
 </Project>

@@ -1,0 +1,30 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LocalDebuggerWorkingDirectory>$(TargetDir)</LocalDebuggerWorkingDirectory>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+    <LocalDebuggerCommandArguments>-app /type=AnalyzeProjectApp -AnalyzeProject /nopause /OBJ="../Builds/x64Debug" /SOURCE="../Code"</LocalDebuggerCommandArguments>
+    <RemoteDebuggerCommandArguments>-app /type=AnalyzeProjectApp -AnalyzeProject /nopause /OBJ="../Builds/x64Debug" /SOURCE="../Code"</RemoteDebuggerCommandArguments>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test|x64'">
+    <LocalDebuggerWorkingDirectory>$(TargetDir)</LocalDebuggerWorkingDirectory>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+    <LocalDebuggerCommandArguments>-app /type=TestRunner -test /all /setup /clean /ignored_groups=Core.Net.MessageTests,Core.Net.ConnectionTests</LocalDebuggerCommandArguments>
+    <RemoteDebuggerCommandArguments>-app /type=TestRunner -test /all /setup /clean /ignored_groups=Core.Net.MessageTests,Core.Net.ConnectionTests</RemoteDebuggerCommandArguments>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LocalDebuggerWorkingDirectory>$(TargetDir)</LocalDebuggerWorkingDirectory>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+    <LocalDebuggerCommandArguments>-app /type=AnalyzeProjectApp -AnalyzeProject /nopause /OBJ="../Builds/x64Debug" /SOURCE="../Code"</LocalDebuggerCommandArguments>
+    <RemoteDebuggerCommandArguments>-app /type=AnalyzeProjectApp -AnalyzeProject /nopause /OBJ="../Builds/x64Debug" /SOURCE="../Code"</RemoteDebuggerCommandArguments>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Final|x64'">
+    <LocalDebuggerWorkingDirectory>$(TargetDir)</LocalDebuggerWorkingDirectory>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+    <LocalDebuggerCommandArguments>-app /type=GraphicsAppBase /tutorial=texturing</LocalDebuggerCommandArguments>
+    <RemoteDebuggerCommandArguments>-app /type=GraphicsAppBase /tutorial=texturing</RemoteDebuggerCommandArguments>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ShowAllFiles>true</ShowAllFiles>
+  </PropertyGroup>
+</Project>

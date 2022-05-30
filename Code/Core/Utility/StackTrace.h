@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -18,8 +18,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
-#ifndef LF_CORE_STACK_TRACE_H
-#define LF_CORE_STACK_TRACE_H
+#pragma once
 
 #include "Core/Common/Types.h"
 #include "Core/Common/API.h"
@@ -28,6 +27,7 @@ namespace lf
 {
     struct StackTrace;
     struct StackFrame;
+    struct UnresolvedStackTrace;
 
     // **********************************
     // Initialize the stack trace library. (Loads DLL)
@@ -47,6 +47,10 @@ namespace lf
     // **********************************
     LF_CORE_API void ReleaseStackTrace(StackTrace& trace);
 
+    LF_CORE_API void CaptureStackTrace(UnresolvedStackTrace& trace, size_t maxFrames);
+
+    LF_CORE_API void ResolveStackTrace(UnresolvedStackTrace& trace, StackTrace& outTrace);
+
     struct StackFrame
     {
         size_t line;          //** Line of the source file
@@ -63,11 +67,14 @@ namespace lf
         StackFrame* frames;   //** Information about each frame.
     };
 
+    struct UnresolvedStackTrace
+    {
+        void*  frames[128];
+    };
+
     struct ScopedStackTrace : public StackTrace
     {
         ~ScopedStackTrace() { ReleaseStackTrace(*this); }
 
     };
 }
-
-#endif // SHIELD_HEART_CORE_STACK_TRACE_H

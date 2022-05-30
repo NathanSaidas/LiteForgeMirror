@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -18,8 +18,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
-#ifndef LF_CORE_FNV_HASH_H
-#define LF_CORE_FNV_HASH_H
+#pragma once
 
 #include "Core/Common/Types.h"
 
@@ -63,6 +62,39 @@ LF_INLINE HashT Hash(const SByteT* data, SizeT numBytes)
     return hash;
 }
 
+LF_INLINE HashT HashString(const SByteT* data, SizeT& outSize)
+{
+    HashT hash = FNV_OFFSET_BASIS;
+    outSize = 0;
+    const SByteT* first = data;
+    while (*data)
+    {
+        hash = hash * FNV_PRIME;
+        hash = hash ^ static_cast<ByteT>(*data);
+        ++data;
+    }
+    outSize = data - first;
+    return hash;
+}
+
+LF_INLINE HashT HashStreamedString(HashT hash, const SByteT* data, SizeT& outSize)
+{
+    if (hash == 0)
+    {
+        hash = FNV_OFFSET_BASIS;
+        outSize = 0;
+    }
+    const SByteT* first = data;
+    while (*data)
+    {
+        hash = hash * FNV_PRIME;
+        hash = hash ^ static_cast<ByteT>(*data);
+        ++data;
+    }
+    outSize = data - first;
+    return hash;
+}
+
 LF_INLINE HashT Hash1A(const ByteT* data, SizeT numBytes)
 {
     HashT hash = FNV_OFFSET_BASIS;
@@ -93,5 +125,3 @@ LF_INLINE HashT Hash1A(const SByteT* data, SizeT numBytes)
 
 
 } // namespace lf
-
-#endif // LF_CORE_FNV_HASH_H

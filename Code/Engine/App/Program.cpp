@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -18,28 +18,34 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
+#include "Engine/PCH.h"
 #include "Program.h"
 #include "Core/Common/Enum.h"
 #include "Core/Common/Assert.h"
 #include "Core/String/TokenTable.h"
 #include "Core/IO/EngineConfig.h"
 #include "Core/Platform/Thread.h"
-#include "Core/Utility/Utility.h"
+#include "Core/Utility/APIResult.h"
 #include "Core/Utility/Array.h"
 #include "Core/Utility/CmdLine.h"
 #include "Core/Utility/Log.h"
 #include "Core/Utility/StaticCallback.h"
 #include "Core/Utility/StackTrace.h"
 #include "Core/Utility/Time.h"
+#include "Core/Utility/Utility.h"
 
 #include "Core/Memory/SmartPointer.h"
+#include "Core/Memory/TempHeap.h"
 #include "Core/Reflection/Object.h"
 #include "Runtime/Async/AsyncImpl.h"
 #include "Runtime/Common/RuntimeGlobals.h"
 #include "Runtime/Reflection/ReflectionTypes.h"
 #include "Runtime/Reflection/ReflectionMgr.h"
+#include "Runtime/Event/EventMgrImpl.h"
 
 #include "Engine/App/Application.h"
+
+#include "Engine/ForcedExports.h"
 
 #ifdef LF_OS_WINDOWS
 #define NOMINMAX
@@ -187,6 +193,7 @@ const bool VERBOSE_START_UP = true;
 // Globals:
 TokenTable    gTokenTableInstance;
 AsyncImpl*    gAsyncInstance = nullptr;
+EventMgrImpl* gEventMgrInstance = nullptr;
 bool          gProgramRunning = true;
 
 // LogControl:
@@ -196,7 +203,8 @@ Log* gLogGroup[] =
     &gSysLog,
     &gIOLog,
     &gTestLog,
-    &gGfxLog
+    &gGfxLog,
+    &gNetLog
 };
 static void SyncLogs()
 {
@@ -221,7 +229,26 @@ static void UpdateLogs(void*)
     }
 }
 
-void InitializeCore(const String& cmdLine);
+// Update background tasks in the runtime
+static void UpdateRuntime(void*)
+{
+    while (gProgramRunning)
+    {
+        Timer frame;
+        frame.Start();
+        // GetDefaultServiceLocator().Update();
+        // TODO: App->BackgroundUpdate();
+        frame.Stop();
+
+        Float64 frameMS = frame.GetDelta() * 1000.0;
+        if (frameMS < 16)
+        {
+            SleepCallingThread(16 - static_cast<SizeT>(frameMS));
+        }
+    }
+}
+
+void InitializeCore(const String& cmdLine, TempHeap* errorHeap);
 void TerminateCore();
 
 void InitializeRuntime();
@@ -238,7 +265,9 @@ void Program::Execute(SizeT argc, const char** argv)
         cmdString.Append(argv[i]).Append(' ');
     }
     
-    InitializeCore(cmdString);
+    TempHeap errorHeap;
+    errorHeap.Initialize(2 * 1024, 1); // 2KB Error Heap
+    InitializeCore(cmdString, &errorHeap);
     cmdString.Clear();
     InitializeRuntime();
 
@@ -261,6 +290,7 @@ void Program::Execute(SizeT argc, const char** argv)
     // system, io, math, util
     Thread logUpdater;
     logUpdater.Fork(UpdateLogs, nullptr);
+    logUpdater.SetDebugName("UpdateLogs");
     ExecuteStaticInit(INIT_SCP_POST_INIT, nullptr);
     StaticInitFence();
     gSysLog.Debug(LogMessage("Program::Initialize Complete"));
@@ -268,8 +298,11 @@ void Program::Execute(SizeT argc, const char** argv)
     gSysLog.Info(LogMessage("Command Line=") << CmdLine::GetCmdString());
     SyncLogs();
 
-    // todo: What sort of application should we run? 
-    // app.Run();
+    Thread background;
+    background.Fork(UpdateRuntime, nullptr);
+    background.SetDebugName("UpdateRuntime");
+    ExportTypes();
+
     String appTypeName;
     if (CmdLine::GetArgOption("app", "type", appTypeName))
     {
@@ -277,9 +310,9 @@ void Program::Execute(SizeT argc, const char** argv)
         if (appType)
         {
             auto app = GetReflectionMgr().Create<Application>(appType);
-            app->SetConfig(&config);
             if (app)
             {
+                app->SetConfig(&config);
                 app->OnStart();
                 app->OnExit();
             }
@@ -291,10 +324,12 @@ void Program::Execute(SizeT argc, const char** argv)
     }
     
     gProgramRunning = false;
+    background.Join();
     logUpdater.Join();
     ExecuteStaticDestroy(DESTROY_SCP_PRE_INIT_SERVICE, nullptr);
     TerminateRuntime();
     TerminateCore();
+    errorHeap.Release();
 
     StaticDestroyFence();
     gSysLog.Debug(LogMessage("Program::Terminate Complete"));
@@ -302,23 +337,30 @@ void Program::Execute(SizeT argc, const char** argv)
     CloseLogs();
     config.Close();
 
-    lf::SizeT bytesAtShutdown = lf::LFGetBytesAllocated();
+    SizeT activeThreadCount = GetActiveThreadCount();
+    Assert(activeThreadCount == 0);
+    SizeT bytesAtShutdown = LFGetBytesAllocated();
     Assert(bytesAtStartup == bytesAtShutdown);
 }
 
-void GenerateReportCommon(const StackTrace& stackTrace)
+void GenerateReportCommon(const StackTrace& stackTrace, UInt32 errorFlags, SizeT skipFrames = 0)
 {
-    gSysLog.Info(LogMessage("Last Platform Error = ") << gLastPlatformErrorCode);
+    gSysLog.Info(LogMessage("  Last Platform Error = ") << gLastPlatformErrorCode);
 
-    if ((gAssertFlags & ERROR_FLAG_LOG_THREAD) > 0)
+    if ((errorFlags & ERROR_FLAG_LOG_THREAD) > 0)
     {
         gSysLog.Info(LogMessage("  Current Thread = [") << GetThreadName() << "] " << GetPlatformThreadId());
     }
 
-    if ((gAssertFlags & ERROR_FLAG_LOG_CALLSTACK) > 0)
+    if ((errorFlags & ERROR_FLAG_LOG_CALLSTACK) > 0)
     {
         for (SizeT i = 0; i < stackTrace.frameCount; ++i)
         {
+            if (skipFrames > 0)
+            {
+                --skipFrames;
+                continue;
+            }
             if (stackTrace.frames[i].filename)
             {
                 gSysLog.Info(LogMessage("  ") << stackTrace.frames[i].filename << ":" << stackTrace.frames[i].line << "  " << stackTrace.frames[i].function);
@@ -336,7 +378,7 @@ void HandleAssert(const char* msg, const StackTrace& stackTrace, UInt32 code, UI
     if ((gAssertFlags & ERROR_FLAG_LOG) > 0)
     {
         gSysLog.Error(LogMessage("Assertion failed (") << msg << ") Code=" << code << ", API=" << api);
-        GenerateReportCommon(stackTrace);
+        GenerateReportCommon(stackTrace, gAssertFlags);
         gSysLog.Sync();
     }
     WaitDebugger();
@@ -347,7 +389,7 @@ void HandleCrash(const char* msg, const StackTrace& stackTrace, UInt32 code, UIn
     if ((gAssertFlags & ERROR_FLAG_LOG) > 0)
     {
         gSysLog.Error(LogMessage("Critical error detected! Crash(") << msg << ") Code=" << code << ", API=" << api);
-        GenerateReportCommon(stackTrace);
+        GenerateReportCommon(stackTrace, gAssertFlags);
         gSysLog.Sync();
     }
     WaitDebugger();
@@ -358,14 +400,25 @@ void HandleBug(const char* msg, const StackTrace& stackTrace, UInt32 code, UInt3
     if ((gAssertFlags & ERROR_FLAG_LOG) > 0)
     {
         gSysLog.Error(LogMessage("Reporting Bug (") << msg << ") Code=" << code << ", API=" << api);
-        GenerateReportCommon(stackTrace);
+        GenerateReportCommon(stackTrace, gAssertFlags);
         gSysLog.Sync();
     }
     WaitDebugger();
 
 }
 
-void InitializeCore(const String& cmdLine)
+void HandleError(const ErrorBase& error, UInt32 errorFlags)
+{
+    if ((errorFlags & ERROR_FLAG_LOG) > 0)
+    {
+        gSysLog.Error(LogMessage("Reporting Error: ") << error.GetErrorMessage() << ")");
+        GenerateReportCommon(error.GetStackTrace(), errorFlags, 2); // Skip 2 frames
+        gSysLog.Sync();
+    }
+    WaitDebugger();
+}
+
+void InitializeCore(const String& cmdLine, TempHeap* errorHeap)
 {
     // Set thread-local variable to signal this as the main thread.
     SetMainThread();
@@ -373,6 +426,8 @@ void InitializeCore(const String& cmdLine)
     gAssertCallback     = HandleAssert;
     gCriticalAssertCallback = HandleCrash;
     gReportBugCallback  = HandleBug;
+    ErrorBase::SetReportCallback(HandleError);
+    ErrorBase::SetAllocator(errorHeap);
     // todo: StackTrace.Init
     gSysLog.Debug(LogMessage("InitializeCore -- Default assert handlers assigned."));
     
@@ -409,6 +464,7 @@ void TerminateCore()
     gTokenTableInstance.Shutdown();
     GetEnumRegistry().Clear();
     gSysLog.Debug(LogMessage("TerminateCore -- Complete"));
+    ErrorBase::SetAllocator(nullptr);
 }
 
 void InitializeRuntime()
@@ -420,6 +476,13 @@ void InitializeRuntime()
 
     GetReflectionMgr().BuildTypes();
     gSysLog.Debug(LogMessage("ReflectionMgr::BuildTypes"));
+
+    gEventMgrInstance = LFNew<EventMgrImpl>();
+    gEventMgr = gEventMgrInstance;
+    gEventMgrInstance->Initialize();
+    gSysLog.Debug(LogMessage("EventMgr::Initialized"));
+
+    // GetDefaultServiceLocator().Initialize();
     ExecuteStaticInit(INIT_SCP_PRE_INIT_RUNTIME, nullptr);
 
     SYSTEM_LOGICAL_PROCESSOR_INFORMATION procInfo[64];
@@ -495,6 +558,11 @@ void InitializeRuntime()
 void TerminateRuntime()
 {
     ExecuteStaticDestroy(DESTROY_SCP_PRE_INIT_RUNTIME, nullptr);
+    gEventMgrInstance->Shutdown();
+    LFDelete(gEventMgrInstance);
+    gEventMgr = nullptr;
+
+    // GetDefaultServiceLocator().Shutdown();
     GetReflectionMgr().ReleaseTypes();
 
     gAsyncInstance->Shutdown();

@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -18,8 +18,10 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
+#include "Core/PCH.h"
 #include "Enum.h"
 #include "Core/String/StringCommon.h"
+#include "Core/Utility/StdVector.h"
 
 #include <algorithm>
 
@@ -31,7 +33,7 @@ void EnumRegistry::Clear()
     {
         data->Release();
     }
-    mEnumDatas.Clear();
+    mEnumDatas.clear();
 }
 
 bool EnumData::Initialized(const char* name, const char* details)
@@ -42,17 +44,20 @@ bool EnumData::Initialized(const char* name, const char* details)
         return true;
     }
 
-    BuildEnumData(name, details, this);
-
-    TArray<EnumData*>& datas = GetEnumRegistry().GetData();
-    TArray<EnumData*>::iterator findIt = std::find_if(datas.begin(), datas.end(), [&name](const EnumData* data)
+    TVector<EnumData*>& datas = GetEnumRegistry().GetData();
+    TVector<EnumData*>::iterator findIt = std::find_if(datas.begin(), datas.end(), [&name](const EnumData* data)
     {
         return strcmp(data->enumName, name) == 0;
     });
 
     if (findIt == datas.end())
     {
+        BuildEnumData(name, details, this);
         GetEnumRegistry().Add(this);
+    }
+    else
+    {
+        *this = **findIt;
     }
 
     return (enumValues != nullptr && prettyStrings != nullptr && rawStrings != nullptr);

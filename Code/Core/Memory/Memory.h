@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -18,8 +18,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
-#ifndef LF_CORE_MEMORY_H
-#define LF_CORE_MEMORY_H
+#pragma once
 
 #include "Core/Common/Types.h"
 #include "Core/Common/API.h"
@@ -31,6 +30,7 @@ enum MemoryMarkupTag
 {
     MMT_GENERAL,
     MMT_POINTER_NODE,
+    MMT_GRAPHICS,
     MMT_MAX_VALUE
 };
 struct MemoryMarkup
@@ -40,18 +40,43 @@ struct MemoryMarkup
     volatile long long   mAllocs;
 };
 
+LF_CORE_API MemoryMarkupTag LFGetCurrentMemoryTag();
+LF_CORE_API void LFSetCurrentMemoryTag(MemoryMarkupTag tag);
+
+struct ScopedMemoryTag
+{
+    LF_INLINE ScopedMemoryTag() : mPreviousTag(LFGetCurrentMemoryTag())
+    {
+        LFSetCurrentMemoryTag(MemoryMarkupTag::MMT_GENERAL);
+    }
+    LF_INLINE ScopedMemoryTag(MemoryMarkupTag value) : mPreviousTag(LFGetCurrentMemoryTag())
+    {
+        LFSetCurrentMemoryTag(value);
+    }
+    ~ScopedMemoryTag()
+    {
+        LFSetCurrentMemoryTag(mPreviousTag);
+    }
+
+    MemoryMarkupTag mPreviousTag;
+};
+
+#define LF_SCOPED_MEMORY(tag_) ::lf::ScopedMemoryTag LF_ANONYMOUS_NAME(scopedMemoryTag)(tag_);
+
 LF_CORE_API extern MemoryMarkup MEMORY_MARK_UP[MMT_MAX_VALUE];
 LF_CORE_API extern const char*  MEMORY_MARK_UP_STRING[MMT_MAX_VALUE];
 
-LF_CORE_API void* LFAlloc(SizeT size, SizeT alignment, MemoryMarkupTag tag = MMT_GENERAL);
+LF_CORE_API void* LFAlloc(SizeT size, SizeT alignment);
 LF_CORE_API void  LFFree(void* pointer);
 LF_CORE_API SizeT LFGetBytesAllocated();
 LF_CORE_API SizeT LFGetAllocations();
+LF_CORE_API void  LFEnterTrackAllocs();
+LF_CORE_API void  LFExitTrackAllocs();
 
 template<typename T, typename... ARGS>
-T* LFNew(MemoryMarkupTag tag = MMT_GENERAL, ARGS... constructorArgs)
+T* LFNew(ARGS... constructorArgs)
 {
-    void* pointer = LFAlloc(sizeof(T), alignof(T), tag);
+    void* pointer = LFAlloc(sizeof(T), alignof(T));
     if (!pointer)
     {
         return nullptr;
@@ -129,7 +154,9 @@ const Dest& StaticCast(const Src& src)
     return *reinterpret_cast<const Dest*>(&src);
 }
 
+struct PointerConvertibleType
+{
+
+};
 
 } // namespace lf
-
-#endif // LF_CORE_MEMORY_H

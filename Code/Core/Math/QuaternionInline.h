@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -100,6 +100,7 @@ namespace lf
         Quaternion q2 = RotationBetween(upAxis, yaxis);
         return q2 * q1;
     }
+    // http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-17-quaternions/#i-need-an-equivalent-of-glulookat-how-do-i-orient-an-object-towards-a-point-
     Quaternion::quaternion_type Quaternion::LookRotation(const vector_type& forward)
     {
         Quaternion q1 = RotationBetween(Vector::Forward, forward);
@@ -113,6 +114,8 @@ namespace lf
     // {
     // 
     // }
+
+    // http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-17-quaternions/#how-do-i-find-the-rotation-between-2-vectors-
     Quaternion::quaternion_type Quaternion::RotationBetween(const vector_type& a, const vector_type& b)
     {
         Vector aNorm = a.Normalized();
@@ -121,8 +124,11 @@ namespace lf
         Float32 dot = Vector::Dot(aNorm, bNorm);
         Vector rotationAxis = Vector(LAZY);
 
-        if (ApproxEquals(dot, -1.0f))
+        if (ApproxEquals(dot, -1.0f, 0.001f))
         {
+            // special case when vectors in opposite directions:
+            // there is no "ideal" rotation axis
+            // So guess one; any will do as long as it's perpendicular to start
             rotationAxis = Vector::Cross(Vector::Forward, aNorm);
             if (rotationAxis.Magnitude() < 0.01f)
             {

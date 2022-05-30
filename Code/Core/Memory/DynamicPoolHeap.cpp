@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -18,7 +18,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
-
+#include "Core/PCH.h"
 #include "DynamicPoolHeap.h"
 #include "Core/Common/Assert.h"
 #include "Core/Memory/Memory.h"
@@ -72,7 +72,7 @@ DynamicPoolHeap::DynamicPoolHeap(DynamicPoolHeap&& other)
     , mHeapCount(AtomicLoad(&other.mHeapCount))
     , mGarbageHeapCount(AtomicLoad(&other.mGarbageHeapCount))
 {
-    ScopeRWLockWrite lock(other.mGCLock);
+    ScopeRWSpinLockWrite lock(other.mGCLock);
 
     mTop.GetHeap() = std::move(other.mTop.GetHeap());
     mTop.SetNext(other.mTop.GetNext());
@@ -97,8 +97,8 @@ DynamicPoolHeap& DynamicPoolHeap::operator=(DynamicPoolHeap&& other)
     }
     Release();
 
-    ScopeRWLockWrite lock(mGCLock);
-    ScopeRWLockWrite otherLock(other.mGCLock);
+    ScopeRWSpinLockWrite lock(mGCLock);
+    ScopeRWSpinLockWrite otherLock(other.mGCLock);
 
     mTop.GetHeap() = std::move(other.mTop.GetHeap());
     mTop.SetNext(other.mTop.GetNext());
@@ -129,7 +129,7 @@ bool DynamicPoolHeap::Initialize(SizeT objectSize, SizeT objectAlignment, SizeT 
 
 void DynamicPoolHeap::Release()
 {
-    ScopeRWLockWrite lock(mGCLock);
+    ScopeRWSpinLockWrite lock(mGCLock);
     RecursiveFree(mTop.GetNext());
     mTop.GetHeap().Release();
     mTop.SetIsGarbage(true);
@@ -141,7 +141,7 @@ void DynamicPoolHeap::Release()
 
 void* DynamicPoolHeap::Allocate()
 {
-    ScopeRWLockRead lock(mGCLock);
+    ScopeRWSpinLockRead lock(mGCLock);
     // Heap not initialized.
     if (mTop.IsGarbage())
     {
@@ -175,7 +175,7 @@ void* DynamicPoolHeap::Allocate()
 
 void DynamicPoolHeap::Free(void* pointer)
 {
-    ScopeRWLockRead lock(mGCLock);
+    ScopeRWSpinLockRead lock(mGCLock);
     // Heap not initialized.
     if (mTop.IsGarbage())
     {
@@ -211,7 +211,7 @@ void DynamicPoolHeap::Free(void* pointer)
 
 void DynamicPoolHeap::GCCollect()
 {
-    ScopeRWLockWrite lock(mGCLock);
+    ScopeRWSpinLockWrite lock(mGCLock);
     if (mTop.IsGarbage())
     {
         return;
@@ -241,7 +241,7 @@ SizeT DynamicPoolHeap::GetHeapCount() const
 }
 SizeT DynamicPoolHeap::GetAllocations() const
 {
-    ScopeRWLockRead lock(mGCLock);
+    ScopeRWSpinLockRead lock(mGCLock);
     
     SizeT allocations = 0;
     const Node* it = &mTop;

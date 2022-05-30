@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -19,8 +19,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
 
-#ifndef LF_CORE_STRING_H
-#define LF_CORE_STRING_H
+#pragma once
 
 #include "Core/Common/Types.h"
 #include "Core/Common/API.h"
@@ -51,6 +50,11 @@ public:
 
     String();
     String(const String& other);
+    // ********************************************************************
+    // Explicit constructor to assign the string as Copy On Write only if
+    // the 'other' string is Copy On Write
+    // ********************************************************************
+    explicit String(const String& other, CopyOnWriteTag);
     String(String&& other);
     String(const value_type* string);
     String(const SizeT length, const value_type* string);
@@ -72,6 +76,8 @@ public:
     void Resize(SizeT size, value_type fill = ' ');
     void Reserve(SizeT size);
 
+    String& Assign(const String& other, CopyOnWriteTag);
+    String& Assign(const value_type* other, CopyOnWriteTag);
     String& Assign(const String& other);
     String& Assign(const value_type* other);
     
@@ -118,6 +124,10 @@ public:
             for (size_t i = 0; i < LF_ARRAY_SIZE(mStorage.local.buffer); ++i)
             {
                 mStorage.local.buffer[i] = other.mStorage.local.buffer[i];
+            }
+            if (CopyOnWrite())
+            {
+                MakeUnique();
             }
         }
         other.ZeroBuffer();
@@ -292,6 +302,8 @@ private:
     }
     void Grow(SizeT desiredCapacity);
     void MakeLocal();
+    void MakeHeap();
+    void MakeUnique();
 
     StringStorage mStorage;
 };
@@ -320,5 +332,3 @@ String::value_type String::First() const { return GetBufferPointer()[0]; }
 String::value_type String::Last() const { return GetBufferPointer()[Size() - 1]; }
 
 } // namespace lf
-
-#endif // LF_CORE_STIRNG_H

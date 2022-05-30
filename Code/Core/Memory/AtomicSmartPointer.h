@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -18,8 +18,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
-#ifndef LF_CORE_ATOMIC_SMART_POINTER_H
-#define LF_CORE_ATOMIC_SMART_POINTER_H
+#pragma once
 
 #include "Core/Common/Types.h"
 #include "Core/Common/Assert.h"
@@ -74,7 +73,7 @@ public:
     {
         LF_STATIC_IS_A(U, ValueType);
         const TAtomicStrongPointer<T>* otherPtr = reinterpret_cast<const TAtomicStrongPointer<T>*>(&other);
-        AtomicStorePointer(&mNode, AtomicLoadPointer(otherPtr->mNode));
+        AtomicStorePointer(&mNode, AtomicLoadPointer(&otherPtr->mNode));
         IncrementRef();
     }
 
@@ -83,7 +82,7 @@ public:
     {
         LF_STATIC_IS_A(U, ValueType);
         const TAtomicWeakPointer<T>* otherPtr = reinterpret_cast<const TAtomicWeakPointer<T>*>(&other);
-        AtomicStorePointer(&mNode, AtomicLoadPointer(otherPtr->mNode));
+        AtomicStorePointer(&mNode, AtomicLoadPointer(&otherPtr->mNode));
         IncrementRef();
     }
 
@@ -121,7 +120,8 @@ private:
     {
         mNode = AtomicLoadPointer(&mNode);
         Assert(!mNode);
-        AtomicStorePointer(&mNode, static_cast<NodeType*>(LFAlloc(sizeof(NodeType), alignof(NodeType), MMT_POINTER_NODE)));
+        LF_SCOPED_MEMORY(MMT_POINTER_NODE);
+        AtomicStorePointer(&mNode, static_cast<NodeType*>(LFAlloc(sizeof(NodeType), alignof(NodeType))));
         mNode->mStrong = 1;
         mNode->mWeak = 0;
         mNode->mPointer = nullptr;
@@ -130,7 +130,7 @@ private:
     {
         mNode = AtomicLoadPointer(&mNode);
         Assert(mNode);
-        Assert(!mNode->mPointer);
+        Assert(!AtomicLoadPointer(&mNode->mPointer));
         LFFree(const_cast<NodeType*>(mNode));
         AtomicStorePointer(&mNode, reinterpret_cast<NodeType*>(&gNullAtomicPointerNode));
     }
@@ -157,14 +157,17 @@ private:
     {
         if (AtomicLoadPointer(&mNode))
         {
-            if ((AtomicLoad(&mNode->mStrong) - 1) == 0)
+            Atomic32 result = AtomicDecrement32(&mNode->mStrong);
+            if (result == 0)
             {
+                AtomicIncrement32(&mNode->mWeak);
                 DestroyPointer();
+                AtomicDecrement32(&mNode->mWeak);
             }
-
-            if (AtomicDecrement32(&mNode->mStrong) == 0)
+            AtomicRWBarrier();
+            if (result == 0)
             {
-                if (AtomicLoad(&mNode->mWeak) == 0)
+                if (AtomicLoad(&mNode->mWeak) == 0 && AtomicLoad(&mNode->mStrong) == 0)
                 {
                     ReleaseNode();
                 }
@@ -234,7 +237,7 @@ public:
 
     operator bool() const;
     operator Pointer() { return AtomicLoadPointer(&mNode->mPointer); }
-    operator const Pointer() const { return AtomicLoadPointer(mNode->mPointer); }
+    operator const Pointer() const { return AtomicLoadPointer(&mNode->mPointer); }
 
     Pointer operator->();
     const Pointer operator->() const;
@@ -281,16 +284,20 @@ private:
     NodeType* volatile mNode;
 };
 
-// Convertable Smart Atomic Pointers
+// Convertible Smart Atomic Pointers
 // usage:
-// class MyType : public TAtomicWeakPointerConvertable
+// class MyType : public TAtomicWeakPointerConvertible
+//
+// public: 
+//      // ### Use this typedef to automatically create a convertible weak pointer when using ReflectionMgr
+//      using PointerConvertible = PointerConvertibleType;
 // 
-// ptr = MakeConvertableAtomicPtr<MyType>();
+// ptr = MakeConvertibleAtomicPtr<MyType>();
 // wptr = GetAtomicPointer(rawPtr);
 //
 
 template<typename T>
-struct TAtomicWeakPointerConvertable
+struct TAtomicWeakPointerConvertible
 {
 public:
     const TAtomicWeakPointer<T>& GetWeakPointer() const { return mPointer; }
@@ -300,9 +307,17 @@ private:
 };
 
 template<typename T>
-TAtomicStrongPointer<T> MakeConvertableAtomicPtr()
+TAtomicStrongPointer<T> MakeConvertibleAtomicPtr()
 {
     TAtomicStrongPointer<T> ptr(LFNew<T>());
+    ptr->GetWeakPointer() = ptr;
+    return ptr;
+}
+
+template<typename T, typename ... ARGS>
+TAtomicStrongPointer<T> MakeConvertibleAtomicPtr(ARGS&&... args)
+{
+    TAtomicStrongPointer<T> ptr(LFNew<T>(std::forward<ARGS>(args)...));
     ptr->GetWeakPointer() = ptr;
     return ptr;
 }
@@ -314,7 +329,7 @@ TAtomicWeakPointer<T> GetAtomicPointer(T* self)
     {
         return NULL_PTR;
     }
-    return self->GetWeakPointer();
+    return StaticCast<TAtomicWeakPointer<T>>(self->GetWeakPointer());
 }
 
 template<typename T>
@@ -324,7 +339,7 @@ const TAtomicWeakPointer<T>& GetAtomicPointer(const T* self)
     {
         return *reinterpret_cast<const TAtomicWeakPointer<T>*>(&NULL_PTR);
     }
-    return self->GetWeakPointer();
+    return StaticCast<TAtomicWeakPointer<T>>(self->GetWeakPointer());
 }
 
 template<typename T>
@@ -374,14 +389,17 @@ TAtomicStrongPointer<T>::~TAtomicStrongPointer()
 {
     if (AtomicLoadPointer(&mNode))
     {
-        if ((AtomicLoad(&mNode->mStrong) - 1) == 0)
+        Atomic32 result = AtomicDecrement32(&mNode->mStrong);
+        if (result == 0)
         {
+            AtomicIncrement32(&mNode->mWeak);
             DestroyPointer();
+            AtomicDecrement32(&mNode->mWeak);
         }
-
-        if (AtomicDecrement32(&mNode->mStrong) == 0)
+        AtomicRWBarrier();
+        if (result == 0)
         {
-            if (AtomicLoad(&mNode->mWeak) == 0)
+            if (AtomicLoad(&mNode->mWeak) == 0 && AtomicLoad(&mNode->mStrong) == 0)
             {
                 ReleaseNode();
             }
@@ -675,5 +693,3 @@ SizeT TAtomicWeakPointer<T>::GetStrongRefs() const
 }
 
 } // namespace lf
-
-#endif // LF_CORE_ATOMIC_SMART_POINTER_H

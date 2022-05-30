@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -39,23 +39,26 @@ void OnError(const String& error)
     gSysLog.Error(LogMessage("Promise Error! Error=") << error);
 }
 
+DECLARE_HASHED_CALLBACK(MyPromiseTypeResolver, void);
+DECLARE_HASHED_CALLBACK(MyPromiseTypeError, void, const String&);
+
 class PromiseApp : public Application
 {
     DECLARE_CLASS(PromiseApp, Application);
 public:
-    using MyPromiseType = PromiseImpl<TCallback<void>, TCallback<void, const String&>>;
+    using MyPromiseType = PromiseImpl<MyPromiseTypeResolver, MyPromiseTypeError>;
 
     void RunPromise()
     {
         auto promise = MyPromiseType([](Promise* self)
         {
-            self->Resolve();
+            static_cast<MyPromiseType*>(self)->Resolve();
             // self->Reject("Rejected!");
         })
-        .Then(OnResolve)
-        .Then([]() { gSysLog.Info(LogMessage("On Lambda Resolved! ThreadId=") << GetPlatformThreadId()); })
-        .Catch(OnError)
-        .Catch([](const String& error) { gSysLog.Error(LogMessage("On Lambda Error! Error=") << error); })
+        .Then(MyPromiseType::ResolverCallbackType::Make(OnResolve))
+        .Then(MyPromiseType::ResolverCallbackType::Make([]() { gSysLog.Info(LogMessage("On Lambda Resolved! ThreadId=") << GetPlatformThreadId()); }))
+        .Catch(MyPromiseType::ErrorCallbackType::Make(OnError))
+        .Catch(MyPromiseType::ErrorCallbackType::Make([](const String& error) { gSysLog.Error(LogMessage("On Lambda Error! Error=") << error); }))
         .Execute();
 
         gSysLog.Info(LogMessage("Waiting for promise to complete!"));

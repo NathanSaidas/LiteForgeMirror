@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -20,9 +20,7 @@
 // ********************************************************************
 // todo: (Nathan) RSASign/Verify should support 2 modes (bcrypt/sha256) currently it signs sha256 with 'random' data.
 // ********************************************************************
-#ifndef LF_CORE_RSA_H
-#define LF_CORE_RSA_H
-
+#pragma once
 #include "Core/Common/API.h"
 #include "Core/String/String.h"
 
@@ -319,5 +317,3 @@ private:
 #endif // #ifdef LF_EXPERIMENTAL
 
 } // namespace lf
-
-#endif // LF_CORE_RSA_H

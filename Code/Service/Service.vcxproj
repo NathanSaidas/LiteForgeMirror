@@ -21,32 +21,32 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{7E076562-33DC-432C-92ED-84E189D53948}</ProjectGuid>
     <RootNamespace>Service</RootNamespace>
-    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Final|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
@@ -97,13 +97,12 @@
       <TreatWarningAsError>true</TreatWarningAsError>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <ExceptionHandling>Sync</ExceptionHandling>
-      <PreprocessorDefinitions>_ALLOW_RTCc_IN_STL;LF_INTERNAL_DEBUG;LF_INTERNAL_IMPORT_CORE;LF_INTERNAL_IMPORT_RUNTIME;LF_INTERNAL_EXPORT_SERVICE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_ALLOW_RTCc_IN_STL;LF_INTERNAL_DEBUG;LF_INTERNAL_IMPORT_CORE;LF_INTERNAL_IMPORT_RUNTIME;LF_INTERNAL_IMPORT_ABSTRACT_ENGINE;LF_INTERNAL_EXPORT_SERVICE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <SmallerTypeCheck>true</SmallerTypeCheck>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <MinimalRebuild>false</MinimalRebuild>
-      <ProgramDataBaseFileName>$(IntDir)%(Filename).pdb</ProgramDataBaseFileName>
     </ClCompile>
     <Lib>
       <AdditionalDependencies>$(SolutionDir)Code\AbstractEngine_x64Debug.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -122,10 +121,9 @@
       <TreatWarningAsError>true</TreatWarningAsError>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <ExceptionHandling>Sync</ExceptionHandling>
-      <PreprocessorDefinitions>_ALLOW_RTCc_IN_STL;LF_INTERNAL_TEST;LF_INTERNAL_IMPORT_CORE;LF_INTERNAL_IMPORT_RUNTIME;LF_INTERNAL_EXPORT_SERVICE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_ALLOW_RTCc_IN_STL;LF_INTERNAL_TEST;LF_INTERNAL_IMPORT_CORE;LF_INTERNAL_IMPORT_RUNTIME;LF_INTERNAL_IMPORT_ABSTRACT_ENGINE;LF_INTERNAL_EXPORT_SERVICE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
-      <ProgramDataBaseFileName>$(IntDir)%(Filename).pdb</ProgramDataBaseFileName>
       <SmallerTypeCheck>true</SmallerTypeCheck>
     </ClCompile>
     <Lib>
@@ -145,7 +143,6 @@
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>$(SolutionDir)Code\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <ProgramDataBaseFileName>$(IntDir)%(Filename).pdb</ProgramDataBaseFileName>
       <PreprocessorDefinitions>_HAS_EXCEPTIONS=0;_ALLOW_RTCc_IN_STL;LF_INTERNAL_RELEASE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ExceptionHandling>false</ExceptionHandling>
     </ClCompile>
@@ -166,7 +163,6 @@
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>$(SolutionDir)Code\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <ProgramDataBaseFileName>$(IntDir)%(Filename).pdb</ProgramDataBaseFileName>
       <PreprocessorDefinitions>_HAS_EXCEPTIONS=0;_ALLOW_RTCc_IN_STL;LF_INTERNAL_FINAL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ExceptionHandling>false</ExceptionHandling>
     </ClCompile>
@@ -179,7 +175,12 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Config.cpp" />
+    <ClCompile Include="Profiler\Profiler.cpp" />
+    <ClCompile Include="RestService\RestServiceImpl.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Profiler\Profiler.h" />
+    <ClInclude Include="RestService\RestServiceImpl.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

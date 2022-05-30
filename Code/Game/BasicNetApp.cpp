@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -19,6 +19,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
 #include "Engine/App/Application.h"
+#if 0
 #include "Core/Concurrent/TaskScheduler.h"
 #include "Core/IO/EngineConfig.h"
 #include "Core/Platform/FileSystem.h"
@@ -28,10 +29,10 @@
 #include "Core/Utility/ByteOrder.h"
 
 #include "Core/Net/NetFramework.h"
-
-#include "Core/Net/NetServerDriver.h"
-#include "Core/Net/NetClientDriver.h"
 #include "Core/Net/UDPSocket.h"
+
+#include "Runtime/Net/NetServerDriver.h"
+#include "Runtime/Net/NetClientDriver.h"
 
 namespace lf {
 
@@ -72,7 +73,7 @@ struct ClientArgs
 //     f) Run a server, await client connection 3 connections, drop the 2nd one. shutdown
 // 2. 
 //     a) Run a client, connect to server, wait T seconds, disconnect.
-//     b) Run a client, connect to server, wait T seconds (be disconnected)
+//     b) Run a client, connect to server, wait T seconds (be disconnected)qqq
 //     c) Run a client, connect 
 class BasicNetApp : public Application
 {
@@ -89,9 +90,6 @@ public:
 
     void OnStart() final
     {
-        gSysLog.SetLogLevel(LogLevel::LOG_DEBUG);
-        gSysLog.Debug(LogMessage("Hello World"));
-
         String executionStr;
         Execution exec = BasicServer;
         if (!CmdLine::GetArgOption("net", "execution", executionStr))
@@ -252,24 +250,41 @@ void BasicNetApp::RunClient()
         CriticalAssert(IPV6(endPoint, LOCAL_IPV6, static_cast<UInt16>(port)));
     }
 
+    const SizeT MAX_CONNECTION_ATTEMPTS = 5;
     NetClientDriver driver;
-    if (!driver.Initialize(mServerKey, endPoint, appID, appVersion))
-    {
-        gSysLog.Error(LogMessage("Failed to initialize the NetClientDriver"));
-        return;
-    }
-
-    // Wait for connection
     Int64 frequency = GetClockFrequency();
-    Int64 connectionBegin = GetClockTime();
-    while (!driver.IsConnected())
+    for (SizeT i = 0; i < MAX_CONNECTION_ATTEMPTS; ++i)
     {
-        if ((GetClockTime() - connectionBegin) / static_cast<Float64>(frequency) > 2.0)
+        gSysLog.Info(LogMessage("Attempting to connect to server..."));
+        if (!driver.Initialize(mServerKey, endPoint, appID, appVersion))
         {
-            driver.Shutdown();
+            gSysLog.Error(LogMessage("Failed to initialize the NetClientDriver"));
             return;
         }
+
+        // Wait for connection
+        Int64 connectionBegin = GetClockTime();
+        while (!driver.IsConnected())
+        {
+            if ((GetClockTime() - connectionBegin) / static_cast<Float64>(frequency) > 2.0)
+            {
+                driver.Shutdown();
+                break;
+            }
+        }
+
+        if (driver.IsConnected())
+        {
+            break;
+        }
     }
+
+    if (!driver.IsConnected())
+    {
+        gSysLog.Error(LogMessage("Failed to connect to server..."));
+        return;
+    }
+    
 
     Int64 begin = GetClockTime();
     Float64 time = 0.0;
@@ -301,6 +316,10 @@ void BasicNetApp::RunClient()
 
         time = (GetClockTime() - begin) / static_cast<Float64>(frequency);
     } while (time < args.mWaitTime);
+
+    // As a client I want to be able to send a 'request' and receive a 'response'
+    // As a server I want to be able to send a 'request' and receive a 'response'
+    //
 
     driver.Shutdown();
 }
@@ -417,6 +436,8 @@ void BasicNetApp::RunBasicClient()
         return;
     }
 
+    socket.Bind(0);
+
     String message = "Hello Server";
     SizeT numBytes = message.Size();
     const ByteT* bytes = reinterpret_cast<const ByteT*>(message.CStr());
@@ -426,6 +447,8 @@ void BasicNetApp::RunBasicClient()
     {
         gSysLog.Error(LogMessage("Failed to send some data!"));
     }
+
+    gSysLog.Info(LogMessage("Client Bound to port ") << socket.GetBoundPort());
     SleepCallingThread(16);
 
 
@@ -534,30 +557,18 @@ void BasicNetApp::RunBasicServer()
             if (context->mSocket->ReceiveFrom(bytes, numBytes, endPoint))
             {
                 String originalIPAddress = IPToString(endPoint);
-                String ipAddress = IPToString(endPoint);
-                String portStr = ipAddress.SubString(ipAddress.FindLast(':') + 1);
-                ipAddress = ipAddress.SubString(0, ipAddress.FindLast(':'));
-                if (Invalid(ipAddress.Find(':')))
-                {
-                    gSysLog.Info(LogMessage("Converting IPV6 to IPV4"));
-                    CriticalAssert(IPV4(endPoint, ipAddress.CStr(), SwapBytes(static_cast<UInt16>(ToInt32(portStr)))));
-                }
-                else if (ipAddress.Find("::ffff:") == 0)
-                {
-                    // ipv4 convert
-
-                    ipAddress = ipAddress.SubString(7);
-                    gSysLog.Info(LogMessage("Converting IPV6 to IPV4"));
-                    CriticalAssert(IPV4(endPoint, ipAddress.CStr(), static_cast<UInt16>(ToInt32(portStr))));
-                }
-
-                gSysLog.Info(LogMessage("Sending echo to ") << originalIPAddress << " | " << IPToString(endPoint));
+                gSysLog.Info(LogMessage("Sending echo to ") << IPToString(endPoint));
                 UDPSocket socket;
                 socket.Create(endPoint.mAddressFamily == NetAddressFamily::NET_ADDRESS_FAMILY_IPV4 ? NetProtocol::NET_PROTOCOL_IPV4_UDP : NetProtocol::NET_PROTOCOL_IPV6_UDP);
-                String message = IPToString(endPoint);
-                const ByteT* messageBytes = reinterpret_cast<const ByteT*>(message.CStr());
-                SizeT messageLength = message.Size();
-                socket.SendTo(messageBytes, messageLength, endPoint);
+
+                for (SizeT i = 0; i < 100; ++i)
+                {
+                    String message = IPToString(endPoint);
+                    const ByteT* messageBytes = reinterpret_cast<const ByteT*>(message.CStr());
+                    SizeT messageLength = message.Size();
+                    socket.SendTo(messageBytes, messageLength, endPoint);
+                }
+                
                 socket.Close();
             }
         }
@@ -582,3 +593,4 @@ void BasicNetApp::RunBasicServer()
 }
 
 }
+#endif

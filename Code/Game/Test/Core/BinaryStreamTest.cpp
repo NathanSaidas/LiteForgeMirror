@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -42,14 +42,14 @@ String EncodeBytes(ByteT* bytes, SizeT length, SizeT splitLine = 8)
     return encoded;
 }
 
-TArray<ByteT> DecodeBytes(String string)
+TVector<ByteT> DecodeBytes(String string)
 {
-    TArray<String> hexTokens;
+    TVector<String> hexTokens;
     string.Replace("\n", "");
     StrSplit(string, ' ', hexTokens);
 
-    TArray<ByteT> hexBytes;
-    for (SizeT i = 0; i < hexTokens.Size(); ++i)
+    TVector<ByteT> hexBytes;
+    for (SizeT i = 0; i < hexTokens.size(); ++i)
     {
         if (hexTokens[i][0] == '\n')
         {
@@ -58,12 +58,12 @@ TArray<ByteT> DecodeBytes(String string)
         ByteT left = HexToByte(hexTokens[i][0]);
         ByteT right = HexToByte(hexTokens[i][1]);
         ByteT byte = (left << 4) | right;
-        hexBytes.Add(byte);
+        hexBytes.push_back(byte);
     }
     return hexBytes;
 }
 
-REGISTER_TEST(BinaryStream_EmptyObjectTest)
+REGISTER_TEST(BinaryStream_EmptyObjectTest, "Core.IO")
 {
     auto expected = DecodeBytes("54 65 73 74 53 75 70 65 72 54 65 73 74 4E 61 6D 65 00 00 00 00 00 00 00 00 09 00 00 00 08 00 00 00 01 00 00 00");
 
@@ -76,11 +76,11 @@ REGISTER_TEST(BinaryStream_EmptyObjectTest)
 
     // gTestLog.Info(LogMessage("Generated:\n") << EncodeBytes(reinterpret_cast<ByteT*>(buffer.GetData()), buffer.GetSize(), 0));
 
-    TEST_CRITICAL(buffer.GetSize() == expected.Size());
-    TEST(memcmp(buffer.GetData(), expected.GetData(), expected.Size()) == 0);
+    TEST_CRITICAL(buffer.GetSize() == expected.size());
+    TEST(memcmp(buffer.GetData(), expected.data(), expected.size()) == 0);
 }
 
-REGISTER_TEST(BinaryStream_MultiEmptyObjectTest)
+REGISTER_TEST(BinaryStream_MultiEmptyObjectTest, "Core.IO")
 {
     auto expected = DecodeBytes("54 65 73 74 53 75 70 65 72 54 65 73 74 4E 61 6D 65 00 00 00 00 00 00 00 00 09 00 00 00 08 00 00 00 54 65 73 74 53 75 70 65 72 54 65 73 74 4F 62 6A 65 63 74 00 00 00 00 00 00 00 00 09 00 00 00 0A 00 00 00 02 00 00 00");
 
@@ -96,11 +96,11 @@ REGISTER_TEST(BinaryStream_MultiEmptyObjectTest)
 
     // gTestLog.Info(LogMessage("Generated:\n") << EncodeBytes(reinterpret_cast<ByteT*>(buffer.GetData()), buffer.GetSize(), 0));
 
-    TEST_CRITICAL(buffer.GetSize() == expected.Size());
-    TEST(memcmp(buffer.GetData(), expected.GetData(), expected.Size()) == 0);
+    TEST_CRITICAL(buffer.GetSize() == expected.size());
+    TEST(memcmp(buffer.GetData(), expected.data(), expected.size()) == 0);
 }
 
-REGISTER_TEST(BinaryStream_PropertyWriteTest)
+REGISTER_TEST(BinaryStream_PropertyWriteTest, "Core.IO")
 {
     auto expected = DecodeBytes(
         "48 D5 54 3A AE 05 00 F6 81 FA 4E 9B 70 00 00 88 6A A5 28 EF 7F FF 65 33 46 15 D5 FE FF FF 54 65 73 74 53 75 70 65 72 54 "
@@ -131,11 +131,11 @@ REGISTER_TEST(BinaryStream_PropertyWriteTest)
     bs.EndObject();
     bs.Close();
 
-    TEST_CRITICAL(buffer.GetSize() == expected.Size());
-    TEST(memcmp(buffer.GetData(), expected.GetData(), expected.Size()) == 0);
+    TEST_CRITICAL(buffer.GetSize() == expected.size());
+    TEST(memcmp(buffer.GetData(), expected.data(), expected.size()) == 0);
 }
 
-REGISTER_TEST(BinaryStream_PropertyReadTest)
+REGISTER_TEST(BinaryStream_PropertyReadTest, "Core.IO")
 {
     auto expected = DecodeBytes(
         "48 D5 54 3A AE 05 00 F6 81 FA 4E 9B 70 00 00 88 6A A5 28 EF 7F FF 65 33 46 15 D5 FE FF FF 54 65 73 74 53 75 70 65 72 54 "
@@ -152,9 +152,9 @@ REGISTER_TEST(BinaryStream_PropertyReadTest)
     Int64  s64val = 0;
 
     MemoryBuffer buffer;
-    buffer.Allocate(expected.Size(), LF_SIMD_ALIGN);
-    memcpy(buffer.GetData(), expected.GetData(), expected.Size());
-    buffer.SetSize(expected.Size());
+    buffer.Allocate(expected.size(), LF_SIMD_ALIGN);
+    memcpy(buffer.GetData(), expected.data(), expected.size());
+    buffer.SetSize(expected.size());
 
     BinaryStream bs;
     bs.Open(Stream::MEMORY, &buffer, Stream::SM_READ);
@@ -180,27 +180,39 @@ REGISTER_TEST(BinaryStream_PropertyReadTest)
     TEST(s64val == -1283838299291);
 }
 
-REGISTER_TEST(BinaryStreamTest)
+REGISTER_TEST(BinaryStream_StructTest, "Core.IO")
 {
-    TestConfig config = TestFramework::GetConfig();
-    TestFramework::ExecuteTest("BinaryStream_EmptyObjectTest", config);
-    TestFramework::ExecuteTest("BinaryStream_MultiEmptyObjectTest", config);
-    TestFramework::ExecuteTest("BinaryStream_PropertyWriteTest", config);
-    TestFramework::ExecuteTest("BinaryStream_PropertyReadTest", config);
-    TestFramework::TestReset();
+    struct Data
+    {
+        LF_NO_INLINE void Serialize(Stream& s)
+        {
+            SERIALIZE(s, mFoo, "");
+        }
 
-    // MemoryBuffer buffer;
-    // BinaryStream bs;
-    // bs.Open(Stream::MEMORY, &buffer, Stream::SM_WRITE);
-    // bs.BeginObject("TestName", "TestSuper");
-    // bs.EndObject();
-    // bs.Close();
-    // 
-    // String encoded = EncodeBytes(reinterpret_cast<ByteT*>(buffer.GetData()), buffer.GetSize());
-    // TArray<ByteT> hexBytes = DecodeBytes(encoded);
-    // 
-    // TEST_CRITICAL(hexBytes.Size() == buffer.GetSize());
-    // TEST(memcmp(hexBytes.GetData(), buffer.GetData(), hexBytes.Size()) == 0);
+        UInt32 mFoo;
+    };
+
+
+    Data data;
+    data.mFoo = 72;
+
+    MemoryBuffer buffer;
+    buffer.Allocate(200, LF_SIMD_ALIGN);
+    buffer.SetSize(200);
+
+    BinaryStream bs;
+    bs.Open(Stream::MEMORY, &buffer, Stream::SM_WRITE);
+    bs.BeginObject("0", "1");
+    data.Serialize(bs);
+    bs.EndObject();
+    bs.Close();
+
+    bs.Open(Stream::MEMORY, &buffer, Stream::SM_WRITE);
+    bs.BeginObject("0", "1");
+    data.Serialize(bs);
+    bs.EndObject();
+    bs.Close();
+
 
 }
 

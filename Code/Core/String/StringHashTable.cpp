@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -18,6 +18,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
+#include "Core/PCH.h"
 #include "StringHashTable.h"
 
 namespace lf {
@@ -59,8 +60,8 @@ StringHashTable::HashedString StringHashTable::Create(const char* string, SizeT 
     hashedString[len] = '\0';
 
     bucket.mName = hash;
-    bucket.mStrings.Add(hashedString);
-    bucket.mStringLengths.Add(static_cast<UInt32>(len));
+    bucket.mStrings.push_back(hashedString);
+    bucket.mStringLengths.push_back(static_cast<UInt32>(len));
 
     ++mSize;
 
@@ -119,7 +120,7 @@ SizeT StringHashTable::Collisions() const
     SizeT val = 0;
     for (auto& bucket : mMap)
     {
-        if (bucket.second.mStrings.Size() > 1)
+        if (bucket.second.mStrings.size() > 1)
         {
             ++val;
         }

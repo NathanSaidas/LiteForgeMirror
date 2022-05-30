@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -19,72 +19,208 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
 #include "Core/Test/Test.h"
+#include "Core/IO/EngineConfig.h"
+#include "Core/Platform/FileSystem.h"
 #include "Core/Utility/CmdLine.h"
 #include "Core/Utility/Log.h"
 #include "Engine/App/Application.h"
 #include "Engine/App/Program.h"
+#include "Engine/App/GameApp.h"
+#include "AbstractEngine/App/AppService.h"
+#include "Engine/DX11/DX11GfxDevice.h"
 
 namespace lf {
 
-
-class TestRunner : public Application
+REGISTER_TEST(ExampleSetup, "Core.Tests", TestFlags::TF_SETUP)
 {
-DECLARE_CLASS(TestRunner, Application);
-public:
-    void OnStart() override
-    {
-        String a = "test";
-        String b = "test";
-        Assert(a == b);
-
-        // Requirements:
-        // -test /single=<test_name>
-        // -test /all
-        // -test /batch=<test_name>,<test_name>,<test_name>
-        TestConfig config;
-        config.mEngineConfig = GetConfig();
-        config.mStress = CmdLine::HasArgOption("test", "opt_stress");
-        if (CmdLine::HasArgOption("test", "opt_no_break"))
-        {
-            config.mTriggerBreakpoint = false;
-        }
-        if (CmdLine::HasArgOption("test", "opt_debug"))
-        {
-            gTestLog.SetLogLevel(LOG_DEBUG);
-        }
-        else
-        {
-            gTestLog.SetLogLevel(LOG_INFO);
-        }
-
-        String arg;
-        if (CmdLine::HasArgOption("test", "all"))
-        {
-            TestFramework::ExecuteAllTests(config);
-        }
-        else if (CmdLine::GetArgOption("test", "batch", arg))
-        {
-            TArray<String> tests;
-            StrSplit(arg, ',', tests);
-            for (const String& test : tests)
-            {
-                TestFramework::ExecuteTest(test.CStr(), config);
-            }
-        }
-        else if (CmdLine::GetArgOption("test", "single", arg))
-        {
-            TestFramework::ExecuteTest(arg.CStr(), config);
-        }
-
-    }
-private:
-};
-DEFINE_CLASS(TestRunner) { NO_REFLECTION; }
+    gTestLog.Info(LogMessage("TempDir=") << TestFramework::GetTempDirectory());
 
 
 }
 
-int main(int argc, const char** argv)
+class TestRunnerService : public Service
 {
-    lf::Program::Execute(argc, argv);
+    DECLARE_CLASS(TestRunnerService, Service);
+public:
+    static void Get(const char* arg, bool& optionValue)
+    {
+        if (CmdLine::HasArgOption("test", arg))
+        {
+            optionValue = true;
+        }
+    }
+
+    static void GetExclusive(const char* arg, bool& optionValue)
+    {
+        String exclusive;
+        if (CmdLine::GetArgOption("test", arg, exclusive) && StrToLower(exclusive) == "exclusive")
+        {
+            optionValue = true;
+        }
+    }
+
+    APIResult<ServiceResult::Value> OnFrameUpdate() override
+    {
+        AppService* appService = GetServices()->GetService<AppService>();
+        if (!appService)
+        {
+            return APIResult<ServiceResult::Value>(ServiceResult::SERVICE_RESULT_FAILED);
+        }
+        Run();
+        appService->Stop();
+        return APIResult<ServiceResult::Value>(ServiceResult::SERVICE_RESULT_SUCCESS);
+    }
+
+    void Run()
+    {
+        if (CmdLine::HasArgOption("test", "list"))
+        {
+            TestFramework::ListGroups();
+            return;
+        }
+
+
+        TestConfig config;
+        config.mEngineConfig = GetConfig();
+        config.mSetupEnabled = false;
+        config.mStressEnabled = false;
+        config.mBenchmarkEnabled = false;
+        config.mParallelExecution = false;
+        config.mTriggerBreakpoint = true;
+        config.mStressExclusive = false;
+        config.mBenchmarkExclusive = false;
+        config.mSetupExclusive = false;
+        config.mClean = false;
+
+        String testConfigPath = FileSystem::PathResolve(GetConfig()->GetTestConfig());
+        if (FileSystem::FileExists(testConfigPath))
+        {
+            mTestConfig.Open(testConfigPath);
+            config.mEngineConfig = &mTestConfig;
+        }
+
+        Get("setup", config.mSetupEnabled);
+        Get("stress", config.mStressEnabled);
+        Get("benchmark", config.mBenchmarkEnabled);
+        Get("parallel", config.mParallelExecution);
+        Get("no_debug", config.mTriggerBreakpoint);
+        Get("clean", config.mClean);
+
+        GetExclusive("setup", config.mSetupExclusive);
+        GetExclusive("benchmark", config.mBenchmarkExclusive);
+        GetExclusive("stress", config.mStressExclusive);
+        // todo: -test /config=<...>
+
+
+        // ignored...
+        String ignored;
+        if (CmdLine::GetArgOption("test", "ignored_tests", ignored))
+        {
+            StrSplit(ignored, ',', config.mIgnoredTests);
+        }
+        if (CmdLine::GetArgOption("test", "ignored_groups", ignored))
+        {
+            StrSplit(ignored, ',', config.mIgnoredGroups);
+        }
+
+
+        // execution type
+        bool execute = false;
+        String executionStr;
+        if (CmdLine::GetArgOption("test", "single", executionStr))
+        {
+            config.mSetupEnabled = true;
+            config.mStressEnabled = true;
+            config.mBenchmarkEnabled = true;
+            config.mTestTargets.push_back(executionStr);
+            execute = true;
+        }
+        else if (CmdLine::GetArgOption("test", "batch", executionStr))
+        {
+            config.mSetupEnabled = true;
+            config.mStressEnabled = true;
+            config.mBenchmarkEnabled = true;
+            if (CmdLine::HasArgOption("test", "group"))
+            {
+                StrSplit(executionStr, ',', config.mGroupTargets);
+            }
+            else
+            {
+                StrSplit(executionStr, ',', config.mTestTargets);
+            }
+            execute = true;
+        }
+        else if (CmdLine::GetArgOption("test", "group", executionStr))
+        {
+            StrSplit(executionStr, ',', config.mGroupTargets);
+            execute = true;
+        }
+        else if (CmdLine::HasArgOption("test", "all"))
+        {
+            execute = true;
+        }
+
+        if (execute)
+        {
+            TestFramework::ExecuteAll(config);
+        }
+        else
+        {
+            gTestLog.Warning(LogMessage("Skipping test execution, no execution method found. Consider using /single /batch /group /all"));
+        }
+
+        mTestConfig.Close();
+    }
+
+    void SetConfig(const EngineConfig* config) { mConfig = config; }
+    const EngineConfig* GetConfig() const { return mConfig; }
+private:
+    EngineConfig mTestConfig;
+    const EngineConfig* mConfig;
+};
+DEFINE_CLASS(lf::TestRunnerService) { NO_REFLECTION; }
+
+class TestRunner : public GameApp
+{
+DECLARE_CLASS(TestRunner, Application);
+public:
+    ServiceResult::Value RegisterServices()
+    {
+        auto appService = MakeService<AppService>();
+        if (!GetServices().Register(appService))
+        {
+            return ServiceResult::SERVICE_RESULT_FAILED;
+        }
+        // if (!GetServices().Register(MakeService<DX11GfxDevice>()))
+        // {
+        //     return ServiceResult::SERVICE_RESULT_FAILED;
+        // }
+        auto testService = MakeService<TestRunnerService>();
+        if (!GetServices().Register(testService))
+        {
+            return ServiceResult::SERVICE_RESULT_FAILED;
+        }
+        testService->SetConfig(GetConfig());
+
+        appService->SetRunning();
+        return ServiceResult::SERVICE_RESULT_SUCCESS;
+    }
+};
+DEFINE_CLASS(lf::TestRunner) { NO_REFLECTION; }
+
+
+}
+
+
+// int main(int argc, const char** argv)
+// {
+//     lf::Program::Execute(argc, argv);
+// }
+
+#include <Windows.h>
+int WINAPI WinMain(HINSTANCE, HINSTANCE, char* cmdString, int)
+{
+    const char* args[] = { "", cmdString };
+    lf::Program::Execute(2, args);
+    return 0;
 }

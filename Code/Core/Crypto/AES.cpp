@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -18,14 +18,14 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
-
+#include "Core/PCH.h"
 #include "AES.h"
 #include "Core/Crypto/SecureRandom.h"
 
 #include <openssl/conf.h>
 #include <openssl/evp.h>
 #include <openssl/err.h>
-#include <utility>
+#include <cstring>
 
 namespace lf {
 
@@ -115,6 +115,7 @@ static SizeT CalculateCipherTextLength(const AESKey* key, SizeT bytes)
 {
     const SizeT BLOCK_SIZE = 16;
     const SizeT BLOCK_SIZE_MINUS_ONE = BLOCK_SIZE - 1;
+    bytes += 1;
     SizeT M = bytes & BLOCK_SIZE_MINUS_ONE;   // bytes % BLOCK_SIZE
 
     switch (key->GetKeySize())

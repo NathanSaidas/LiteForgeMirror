@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -18,8 +18,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
-#ifndef LF_CORE_DYNAMIC_POOL_HEAP_H
-#define LF_CORE_DYNAMIC_POOL_HEAP_H
+#pragma once
 
 #include "Core/Memory/PoolHeap.h"
 #include "Core/Platform/RWSpinLock.h"
@@ -135,6 +134,99 @@ private:
     volatile Atomic32 mGarbageHeapCount;
 };
 
-} // namespace lf
 
-#endif // LF_CORE_DYNAMIC_POOL_HEAP_H
+template<typename T>
+class TDynamicPoolHeap
+{
+public:
+    TDynamicPoolHeap(const TDynamicPoolHeap& other) = delete;
+    TDynamicPoolHeap& operator=(const TDynamicPoolHeap& other) = delete;
+
+    TDynamicPoolHeap();
+    TDynamicPoolHeap(TDynamicPoolHeap&& other);
+    ~TDynamicPoolHeap();
+    TDynamicPoolHeap& operator=(TDynamicPoolHeap&& other);
+
+    bool Initialize(SizeT objectCount, SizeT maxHeaps, UInt32 flags);
+    void Release();
+    void GCCollect();
+
+    T* Allocate();
+    void Free(T* packet);
+
+    DynamicPoolHeap& GetHeap() { return mHeap; }
+    const DynamicPoolHeap& GetHeap() const { return mHeap; }
+
+private:
+    DynamicPoolHeap mHeap;
+};
+
+template<typename T>
+TDynamicPoolHeap<T>::TDynamicPoolHeap()
+: mHeap()
+{
+
+}
+template<typename T>
+TDynamicPoolHeap<T>::TDynamicPoolHeap(TDynamicPoolHeap&& other)
+: mHeap(std::move(other.mHeap))
+{
+
+}
+
+template<typename T>
+TDynamicPoolHeap<T>::~TDynamicPoolHeap()
+{
+
+}
+
+template<typename T>
+TDynamicPoolHeap<T>& TDynamicPoolHeap<T>::operator=(TDynamicPoolHeap&& other)
+{
+    if (this != &other)
+    {
+        mHeap = std::move(other.mHeap);
+    }
+    return *this;
+}
+
+template<typename T>
+bool TDynamicPoolHeap<T>::Initialize(SizeT objectCount, SizeT maxHeaps, UInt32 flags)
+{
+    return mHeap.Initialize(sizeof(T), alignof(T), objectCount, maxHeaps, flags);
+}
+
+template<typename T>
+void TDynamicPoolHeap<T>::Release()
+{
+    mHeap.Release();
+}
+
+template<typename T>
+void TDynamicPoolHeap<T>::GCCollect()
+{
+    mHeap.GCCollect();
+}
+
+template<typename T>
+T* TDynamicPoolHeap<T>::Allocate()
+{
+    void* object = mHeap.Allocate();
+    if (object)
+    {
+        return new(object)T();
+    }
+    return nullptr;
+}
+
+template<typename T>
+void TDynamicPoolHeap<T>::Free(T* object)
+{
+    if (object)
+    {
+        object->~T();
+        mHeap.Free(object);
+    }
+}
+
+} // namespace lf

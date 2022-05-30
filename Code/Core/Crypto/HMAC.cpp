@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -18,7 +18,9 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
+#include "Core/PCH.h"
 #include "HMAC.h"
+#include "Core/Crypto/SecureRandom.h"
 #include "Core/Utility/StaticCallback.h"
 
 #include <openssl/hmac.h>
@@ -34,40 +36,52 @@ STATIC_INIT(OnInitHMAC, SCP_PRE_INIT_CORE)
 }
 
 namespace Crypto {
-bool HMACCompute(const ByteT key[HMAC_KEY_SIZE], const ByteT* data, SizeT dataLength, ByteT outBytes[HMAC_HASH_SIZE])
+
+bool HMACKey::Generate()
+{
+    Crypto::SecureRandomBytes(Bytes(), Size());
+    return true;
+}
+
+bool HMACKey::Compute(const ByteT* data, SizeT dataLength, HMACBuffer& outBuffer) const
 {
     // Still a bit confused on how to do this correctly. 
     // Going based off of https://stackoverflow.com/questions/242665/understanding-engine-initialization-in-openssl
 
-    const int OPENSSL_TRUE = 1; 
+    const int OPENSSL_TRUE = 1;
 
     HMAC_CTX* ctx = HMAC_CTX_new();
+    bool success = false;
+    UInt32 outBytesLength = static_cast<UInt32>(outBuffer.Size());
     if (!ctx)
     {
         return false;
     }
 
-    if (HMAC_Init_ex(ctx, key, HMAC_KEY_SIZE, EVP_sha256(), NULL) != OPENSSL_TRUE)
+    do
     {
-        HMAC_CTX_free(ctx);
-        return false;
-    }
+        if (HMAC_Init_ex(ctx, Bytes(), sizeof(HMACKey), EVP_sha256(), NULL) != OPENSSL_TRUE)
+        {
+            break;
+        }
 
-    if (HMAC_Update(ctx, data, dataLength) != OPENSSL_TRUE)
-    {
-        HMAC_CTX_free(ctx);
-        return false;
-    }
+        if (HMAC_Update(ctx, data, dataLength) != OPENSSL_TRUE)
+        {
+            break;
+        }
 
-    UInt32 outBytesLength = HMAC_HASH_SIZE;
-    if (HMAC_Final(ctx, outBytes, &outBytesLength) != OPENSSL_TRUE)
-    {
-        HMAC_CTX_free(ctx);
-        return false;
-    }
+        if (HMAC_Final(ctx, outBuffer.Bytes(), &outBytesLength) != OPENSSL_TRUE)
+        {
+            break;
+        }
+
+        success = true;
+
+    } while (0);
 
     HMAC_CTX_free(ctx);
-    return outBytesLength == HMAC_HASH_SIZE;
+    return success && outBytesLength == sizeof(Crypto::HMACBuffer);
 }
+
 } // namespace Crypto
 } // namespace lf

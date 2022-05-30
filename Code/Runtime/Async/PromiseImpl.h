@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -34,51 +34,67 @@ public:
     using ErrorCallbackType = ErrorCallbackT;
     using Super = Promise;
 
-    PromiseImpl() : Super()
+    PromiseImpl() 
+    : Super()
     {}
-    PromiseImpl(PromiseCallback executor, Async* async = nullptr) : Super(executor, async)
+    ~PromiseImpl()
+    {
+        if (mExecuteOnDestroy)
+        {
+            Execute();
+        }
+    }
+    PromiseImpl(PromiseCallback executor, Async* async = nullptr) 
+    : Super(executor, async)
     {}
     template<typename LambdaT>
-    PromiseImpl(LambdaT executor, Async* async = nullptr) : Super(PromiseCallback::CreateLambda(executor), async)
+    PromiseImpl(LambdaT executor, Async* async = nullptr) 
+    : Super(PromiseCallback::Make(executor), async)
     {}
 
     PromiseImpl& Then(ResolverCallbackType callback)
     {
         if (AtomicLoad(&mState) <= PROMISE_QUEUED)
         {
-            mResolverCallbacks.Add(callback.GetHandle());
+            mResolverCallbacks.push_back(callback.DownCastAnonymous());
         }
         return *this;
     }
-    template<typename LambdaT>
-    PromiseImpl& Then(const LambdaT& callback)
-    {
-        Then(ResolverCallbackType::CreateLambda(callback));
-        return *this;
-    }
+    // template<typename LambdaT>
+    // PromiseImpl& Then(const LambdaT& callback)
+    // {
+    //     Then(ResolverCallbackType::Make(callback));
+    //     return *this;
+    // }
 
     PromiseImpl& Catch(ErrorCallbackType callback)
     {
         if (AtomicLoad(&mState) <= PROMISE_QUEUED)
         {
-            mErrorCallbacks.Add(callback.GetHandle());
+            mErrorCallbacks.push_back(callback.DownCastAnonymous());
         }
         return *this;
     }
-    template<typename LambdaT>
-    PromiseImpl& Catch(const LambdaT& callback)
-    {
-        Catch(ErrorCallbackType::CreateLambda(callback));
-        return *this;
-    }
+    // template<typename LambdaT>
+    // PromiseImpl& Catch(const LambdaT& callback)
+    // {
+    //     Catch(ErrorCallbackType::Make(callback));
+    //     return *this;
+    // }
 
     PromiseWrapper Execute()
     {
+        if (!mExecuteOnDestroy)
+        {
+            return PromiseWrapper();
+        }
         PromiseImpl* promise = LFNew<PromiseImpl>();
         promise->mErrorCallbacks.swap(mErrorCallbacks);
         promise->mResolverCallbacks.swap(mResolverCallbacks);
         promise->mExecutor = std::move(mExecutor);
         promise->mAsync = mAsync;
+        promise->mExecuteOnDestroy = false;
+        mExecuteOnDestroy = false;
         PromiseWrapper wrapped(promise);
         GetAsync().RunPromise(wrapped);
         return wrapped;
@@ -86,14 +102,66 @@ public:
 
     PromiseWrapper Queue()
     {
+        if (!mExecuteOnDestroy)
+        {
+            return PromiseWrapper();
+        }
         PromiseImpl* promise = LFNew<PromiseImpl>();
         promise->mErrorCallbacks.swap(mErrorCallbacks);
         promise->mResolverCallbacks.swap(mResolverCallbacks);
         promise->mExecutor = std::move(mExecutor);
         promise->mAsync = mAsync;
+        promise->mExecuteOnDestroy = false;
+        mExecuteOnDestroy = false;
         PromiseWrapper wrapped(promise);
         GetAsync().QueuePromise(wrapped);
         return wrapped;
+    }
+
+    // **********************************
+    // Invokes all callbacks registered as a resolver,
+    // the promise is then marked as resolved.
+    // **********************************
+    template<typename ... ARGS>
+    void Resolve(ARGS&&... args)
+    {
+        if (!IsPending())
+        {
+            return;
+        }
+
+        for (AnonymousCallback& callback : mResolverCallbacks)
+        {
+            ResolverCallbackType invoker;
+            if (invoker.UpCast(callback) && invoker.IsValid())
+            {
+                invoker.Invoke(args...);
+            }
+        }
+        SetState(PROMISE_RESOLVED);
+    }
+
+    // **********************************
+    // Invokes all callbacks registered as an error callback
+    // the promise is then marked as rejected
+    // **********************************
+    template<typename ... ARGS>
+    void Reject(ARGS&&... args)
+    {
+        if (!IsPending())
+        {
+            return;
+        }
+        for (AnonymousCallback& callback : mErrorCallbacks)
+        {
+            ErrorCallbackType invoker;
+            if (invoker.UpCast(callback) && invoker.IsValid())
+            {
+                invoker.Invoke(args...);
+            }
+        }
+
+        SetState(PROMISE_REJECTED);
     }
 };
 

@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -18,8 +18,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
-#ifndef LF_CORE_PLATFORM_TYPES_H
-#define LF_CORE_PLATFORM_TYPES_H
+#pragma once
 
 #include "Core/Common/Types.h"
 
@@ -36,14 +35,17 @@ enum FileFlags
     FF_SHARE_READ       = 1 << 2,      // Multiple users can read
     FF_SHARE_WRITE      = 1 << 3,      // Multiple writers
     FF_EOF              = 1 << 4,
-    FF_OUT_OF_MEMORY    = 1 << 5
+    FF_OUT_OF_MEMORY    = 1 << 5,
+    FF_NO_BUFFERING     = 1 << 6,
+    FF_RANDOM_ACCESS    = 1 << 7
 };
 
 enum FileOpenMode
 {
-    FILE_OPEN_EXISTING, // Open file only if it exists
-    FILE_OPEN_NEW,      // Open file only if it does not exist
-    FILE_OPEN_ALWAYS    // Open file regardless of its existence.
+    FILE_OPEN_EXISTING,   // Open file only if it exists
+    FILE_OPEN_NEW,        // Open file only if it does not exist
+    FILE_OPEN_CREATE_NEW, // Open new file overwritting any file that was there
+    FILE_OPEN_ALWAYS      // Open file regardless of its existence.
 };
 
 enum FileCursorMode
@@ -54,5 +56,3 @@ enum FileCursorMode
 };
 
 }
-
-#endif // LF_CORE_PLATFORM_TYPES_H

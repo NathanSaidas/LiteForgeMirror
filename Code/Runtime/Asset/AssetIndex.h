@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -21,7 +21,7 @@
 #ifndef LF_CORE_ASSET_INDEX_H
 #define LF_CORE_ASSET_INDEX_H
 
-#include "Core/Utility/Array.h"
+#include "Core/Utility/StdVector.h"
 #include <algorithm>
 
 namespace lf {
@@ -39,10 +39,10 @@ struct TAssetIndexTraits
 
 // Object Oriented index
 template<typename KeyT, typename IndexT>
-using TAssetPairIndex = TArray<std::pair<KeyT, IndexT>>;
+using TAssetPairIndex = TVector<std::pair<KeyT, IndexT>>;
 
 // Data Oriented Index
-template<typename KeyT, typename IndexT, typename TraitsT = AssetIndexTraits<KeyT, IndexT>>
+template<typename KeyT, typename IndexT, typename TraitsT = TAssetIndexTraits<KeyT, IndexT>>
 class TAssetIndex
 {
 public:
@@ -50,6 +50,8 @@ public:
     using IndexType = IndexT;
     using TraitsType = TraitsT;
     using CompareType = typename TraitsT::Compare;
+    using BuilderDataType = TAssetPairIndex<KeyType, IndexType>;
+    using PairType = std::pair<KeyT, IndexT>;
 
     // **********************************
     // Builds the index assuming 'data' is sorted and each key is unique
@@ -58,11 +60,11 @@ public:
     {
         Clear();
 
-        const SizeT tableSize = data.Size();
-        mKeys.Reserve(tableSize);
-        mKeys.Resize(tableSize);
-        mIndices.Reserve(tableSize);
-        mIndices.Resize(tableSize);
+        const SizeT tableSize = data.size();
+        mKeys.reserve(tableSize);
+        mKeys.resize(tableSize);
+        mIndices.reserve(tableSize);
+        mIndices.resize(tableSize);
 
         for (SizeT i = 0; i < tableSize; ++i)
         {
@@ -88,13 +90,23 @@ public:
         return TraitsT::DefaultIndex();
     }
 
+    IndexType& FindRef(const KeyType& key)
+    {
+        CompareType comp = {};
+        auto it = std::lower_bound(mKeys.begin(), mKeys.end(), key);
+        auto result = it != mKeys.end() && !comp(key, *it) ? it : mKeys.end();
+        Assert(result != mKeys.end());
+        auto index = it - mKeys.begin();
+        return mIndices[index];
+    }
+
     // **********************************
     // Clears all keys/indices from the index
     // **********************************
     void Clear()
     {
-        mKeys.Clear();
-        mIndices.Clear();
+        mKeys.clear();
+        mIndices.clear();
     }
 
     // **********************************
@@ -122,8 +134,8 @@ public:
         return footprint;
     }
 private:
-    TArray<KeyType>     mKeys;
-    TArray<IndexType>   mIndices;
+    TVector<KeyType>     mKeys;
+    TVector<IndexType>   mIndices;
 };
 
 namespace AssetUtil

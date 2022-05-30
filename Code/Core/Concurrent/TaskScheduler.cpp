@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -18,9 +18,11 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
+#include "Core/PCH.h"
 #include "TaskScheduler.h"
 #include "Core/Concurrent/TaskDeliveryThread.h"
 #include "Core/Concurrent/TaskWorker.h"
+#include "Core/Utility/Time.h"
 
 namespace lf {
 
@@ -37,7 +39,7 @@ TaskScheduler::~TaskScheduler()
 {
     // If these trip you're forgetting a call to Shutdown
     CriticalAssertEx(!IsRunning(), LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
-    CriticalAssertEx(mWorkerThreads.Empty(), LF_ERROR_RESOURCE_LEAK, ERROR_API_CORE);
+    CriticalAssertEx(mWorkerThreads.empty(), LF_ERROR_RESOURCE_LEAK, ERROR_API_CORE);
     // Oh no some tasks are not going to be run even though we have a guarantee to run them
     CriticalAssertEx(mDispatcherQueue.Size() == 0, LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
 }
@@ -53,11 +55,11 @@ void TaskScheduler::Initialize(const OptionsType& options, bool async)
 
     // If these trip you haven't called Shutdown, thus the scheduler is still running!
     AssertEx(!IsRunning(), LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
-    AssertEx(mWorkerThreads.Empty(), LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
+    AssertEx(mWorkerThreads.empty(), LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
     AssertEx(mDispatcherQueue.Size() == 0, LF_ERROR_INVALID_OPERATION, ERROR_API_CORE);
 
     mAsync = async;
-    mWorkerThreads.Resize(options.mNumWorkerThreads);
+    mWorkerThreads.resize(async ? options.mNumWorkerThreads : 1);
     mDispatcherQueue.Resize(options.mDispatcherSize);
     CriticalAssert(mDispatcherFence.Initialize());
     mDispatcherFence.Set(true);
@@ -83,7 +85,7 @@ void TaskScheduler::Shutdown()
 
     SetRunning(false);
     // Tasks that were not completed by workers that must be completed now!
-    TArray<TaskItemType> spilledTasks;
+    TVector<TaskItemType> spilledTasks;
 
     for (TaskWorker& worker : mWorkerThreads)
     {
@@ -95,7 +97,7 @@ void TaskScheduler::Shutdown()
         worker.Join();
     }
 
-    mWorkerThreads.Clear();
+    mWorkerThreads.clear();
 
     while (mDispatcherQueue.Size() > 0)
     {
@@ -107,7 +109,7 @@ void TaskScheduler::Shutdown()
             task.mParam = result.mData.mParam;
             if (task.mCallback)
             {
-                spilledTasks.Add(task);
+                spilledTasks.push_back(task);
             }
         }
     }
@@ -124,7 +126,7 @@ void TaskScheduler::Shutdown()
 
 TaskHandle TaskScheduler::RunTask(TaskLambdaCallback func, void* param)
 {
-    return RunTask(TaskCallback(func), param);
+    return RunTask(TaskCallback::Make(func), param);
 }
 TaskHandle TaskScheduler::RunTask(TaskCallback func, void* param)
 {
@@ -137,6 +139,20 @@ TaskHandle TaskScheduler::RunTask(TaskCallback func, void* param)
     } while (!taskHandle);
     mDispatcherFence.Signal();
     return taskHandle;
+}
+
+void TaskScheduler::UpdateSync(Float64 budgetSeconds)
+{
+    if (!mAsync)
+    {
+        CriticalAssert(mWorkerThreads.size() == 1);
+        Timer timer;
+        timer.Start();
+        while (timer.PeekDelta() < budgetSeconds && mDispatcherQueue.Size() > 0)
+        {
+            mWorkerThreads.front().UpdateSync();
+        }
+    }
 }
 
 #if defined(LF_MPMC_BOUNDLESS_EXP)

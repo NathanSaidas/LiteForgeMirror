@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -65,8 +65,8 @@ private:
 
     String GetTempDirectory() const;
 
-    void AnalyzeOBJ(const String& objDirectory, bool async, TArray<ObjectCodeCSVRow>& outRows, String& outReport, String& outCycles);
-    void AnalyzeSource(const String& sourceDirectory, bool async, TArray<SourceCodeCSVRow>& csvRows, TArray<HeaderCSVRow>& headerRows, String& outReport, String& outCycles);
+    void AnalyzeOBJ(const String& objDirectory, bool async, TVector<ObjectCodeCSVRow>& outRows, String& outReport, String& outCycles);
+    void AnalyzeSource(const String& sourceDirectory, bool async, TVector<SourceCodeCSVRow>& csvRows, TVector<HeaderCSVRow>& headerRows, String& outReport, String& outCycles);
 };
 
 } // namespace lf

@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -27,13 +27,17 @@
 #include "Runtime/Asset/CacheTypes.h"
 
 namespace lf {
+
+DECLARE_HASHED_CALLBACK(CacheWriteResolver, void);
+DECLARE_HASHED_CALLBACK(CacheWriteError, void, const String&);
+
 namespace CacheWriterError {
 LF_RUNTIME_API extern const char* ERROR_MSG_INTERNAL_ERROR;
 LF_RUNTIME_API extern const char* ERROR_MSG_FAILED_TO_OPEN_FILE;
 LF_RUNTIME_API extern const char* ERROR_MSG_INDEX_OUT_OF_BOUNDS;
 } // namespace CacheWriterError
 
-using CacheWritePromise = PromiseImpl<TCallback<void>, TCallback<void, const String&>>;
+using CacheWritePromise = PromiseImpl<CacheWriteResolver, CacheWriteError>;
 
 // **********************************
 // A utility class that gets information to write to a 
@@ -106,6 +110,8 @@ private:
     CacheObject mObject;
     // ** The output filename, determined by the 'CacheBlock' and 'index'
     Token       mOutputFile;
+    // ** 
+    SizeT mReserveSize;
 };
 
 }

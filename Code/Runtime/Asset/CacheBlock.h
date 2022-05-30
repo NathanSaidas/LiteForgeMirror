@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -24,6 +24,7 @@
 #include "Core/Common/API.h"
 #include "Core/String/Token.h"
 #include "Core/Utility/Array.h"
+#include "Core/Platform/RWSpinLock.h"
 #include "Runtime/Asset/CacheTypes.h"
 #include "Runtime/Asset/CacheBlob.h"
 
@@ -51,23 +52,35 @@ public:
     void Initialize(const Token& name, UInt32 defaultCapacity = 8 * 1024 * 1024);
     void Release();
 
+    void Serialize(Stream& s);
+
     // ** Creates a cache object ( if the uid does not exist within any blobs)
     CacheIndex Create(UInt32 uid, UInt32 size);
     // ** Updates the size of the cached object, final object location returned by cache index
     CacheIndex Update(CacheIndex index, UInt32 size);
+    // #TODO [Nathan] If the returned CacheIndex == index then we should just return bool instead.
     CacheIndex Destroy(CacheIndex index);
+
     CacheIndex Find(UInt32 uid);
+
+    bool DestroyObject(UInt32 uid);
+
+    bool DestroyIndex(const CacheIndex& cacheIndex);
+
+    bool FindObject(UInt32 uid, CacheObject& outObject, CacheIndex& outIndex) const;
+
+    const bool Empty() const { return mIndices.empty() && mBlobs.empty(); }
 
     bool GetObject(CacheIndex index, CacheObject& outObject) const;
     CacheBlobStats GetBlobStat(SizeT index) const;
-    SizeT GetNumBlobs() const { return mBlobs.Size(); }
+    SizeT GetNumBlobs() const { return mBlobs.size(); }
 
     const Token& GetName() const { return mName; }
     void SetFilename(const Token& value) { mFilename = value; }
     const Token& GetFilename() const { return mFilename; }
     UInt32 GetDefaultCapacity() const { return mDefaultCapacity; }
 
-    TArray<CacheDefragStep> GetDefragSteps() const;
+    TVector<CacheDefragStep> GetDefragSteps() const;
 private:
     // ** The name of the cache block file
     Token              mName;
@@ -76,9 +89,12 @@ private:
     // ** Default capacity of cache blobs (in bytes)
     UInt32             mDefaultCapacity;
     // ** List of assets held in the cache block ( UID -> Blob -> Object )
-    TArray<CacheIndex> mIndices;
+    TVector<CacheIndex> mIndices;
     // ** List of cache blob data (Object -> Data Location) the ID in blobs is redundant?
-    TArray<CacheBlob>  mBlobs;
+    TVector<CacheBlob>  mBlobs;
+    // ** Lock for accessing the indicies/blobs
+    mutable RWSpinLock mLock;
+    
 };
 
 }

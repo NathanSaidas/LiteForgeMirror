@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -32,8 +32,8 @@
 #include "Core/Utility/Log.h"
 #include "Core/Utility/Utility.h"
 
-#include "Runtime/Asset/AssetDataController.h"
-#include "Runtime/Asset/AssetCacheController.h"
+#include "Runtime/Asset/Controllers/AssetDataController.h"
+// #include "Runtime/Asset/AssetCacheController.h"
 #include "Runtime/Asset/AssetObject.h"
 #include "Runtime/Asset/AssetTypes.h"
 #include "Runtime/Asset/CacheBlob.h"
@@ -82,7 +82,7 @@ struct MockCacheDefrag
 // Stubs:
 struct StubAssetTypeData
 {
-    AssetTypeData mTypeData;
+    // AssetTypeData mTypeData;
     UInt32        mSize;
     String        mCacheName;
 };
@@ -142,6 +142,7 @@ CREATE_ASSET_OBJECT_STUB(Titan, StubAssetCharacter);
 CREATE_ASSET_OBJECT_STUB(AdamTitan, StubAssetTitan);
 CREATE_ASSET_OBJECT_STUB(KrisTitan, StubAssetTitan);
 
+#if 0
 
 #define DEFINE_MAKE_ASSET(AssetType, CacheName, Category)                                                                                                              \
 void Make##AssetType(const char* name, UInt32 uid, UInt32 size, const char* dataHash, const char* objectHash, StubAssetTypeData& outData, StubAssetTypeData& outObject)  \
@@ -170,16 +171,16 @@ void Make##AssetType(const char* name, UInt32 uid, UInt32 size, const char* data
     TEST(outData.mTypeData.mHash.Parse(objectHash));                                                                                                          \
     outObject.mSize = 2 * 1024;                                                                                                                             \
 }                                                                                                                                                   \
-void Make##AssetType(const char* name, UInt32 uid, UInt32 size, const char* dataHash, const char* objectHash, TArray<StubAssetTypeData>& outTypes)                   \
+void Make##AssetType(const char* name, UInt32 uid, UInt32 size, const char* dataHash, const char* objectHash, TVector<StubAssetTypeData>& outTypes)                   \
 {                                                                                                                                                   \
     StubAssetTypeData data;                                                                                                                             \
     StubAssetTypeData object;                                                                                                                           \
     Make##AssetType(name, uid, size, dataHash, objectHash, data, object);                                                                                 \
-    outTypes.Add(data);                                                                                                                             \
-    outTypes.Add(object);                                                                                                                           \
+    outTypes.push_back(data);                                                                                                                             \
+    outTypes.push_back(object);                                                                                                                           \
 }                                                                                                                                                   
 
-void MakeObject(const Type* concreteType, const char* name, UInt32 uid, const UInt32 size, const char* hash, TArray<StubAssetTypeData>& types)
+void MakeObject(const Type* concreteType, const char* name, UInt32 uid, const UInt32 size, const char* hash, TVector<StubAssetTypeData>& types)
 {
     StubAssetTypeData object;
     object.mTypeData.mFullName = Token(String(name) + ".lfpkg");
@@ -194,10 +195,10 @@ void MakeObject(const Type* concreteType, const char* name, UInt32 uid, const UI
     TEST(object.mTypeData.mHash.Parse(hash));
     object.mSize = size;
 
-    types.Add(object);
+    types.push_back(object);
 }
 
-void DeriveObject(const char* name, const char* parent, UInt32 uid, UInt32 size, const char* hash, TArray<StubAssetTypeData >& types)
+void DeriveObject(const char* name, const char* parent, UInt32 uid, UInt32 size, const char* hash, TVector<StubAssetTypeData >& types)
 {
     Token parentName(String(parent) + ".lfpkg");
     for (const StubAssetTypeData & data : types)
@@ -216,7 +217,7 @@ void DeriveObject(const char* name, const char* parent, UInt32 uid, UInt32 size,
             object.mTypeData.mCategory = AssetCategory::AC_SERIALIZED_OBJECT;
             TEST(object.mTypeData.mHash.Parse(hash));
             object.mSize = size;
-            types.Add(object);
+            types.push_back(object);
             return;
         }
     }
@@ -230,8 +231,10 @@ DEFINE_MAKE_ASSET(Mesh, "gb_m", AssetCategory::AC_MESH);
 DEFINE_MAKE_ASSET(Shader, "gb_s", AssetCategory::AC_SHADER);
 DEFINE_MAKE_ASSET(Level, "gb_l", AssetCategory::AC_LEVEL);
 DEFINE_MAKE_ASSET(Script, "gb_x", AssetCategory::AC_SCRIPT);
-#undef DEFINE_CREATE_ASSET
+#undef DEFINE_MAKE_ASSET
+#endif
 
+#if 0
 void PopulateAssetCategories(const Type* categoryTypes[AssetCategory::MAX_VALUE])
 {
     categoryTypes[AssetCategory::AC_TEXTURE] = typeof(StubAssetTextureData);
@@ -244,7 +247,7 @@ void PopulateAssetCategories(const Type* categoryTypes[AssetCategory::MAX_VALUE]
     categoryTypes[AssetCategory::AC_SERIALIZED_OBJECT] = typeof(AssetObject);
 }
 
-void PopulateSampleAssets(TArray<StubAssetTypeData>& types)
+void PopulateSampleAssets(TVector<StubAssetTypeData>& types)
 {
     MakeTexture("/User/Environments/AncientForest/Textures/grass0.png", 0, 370688, "ddfef8c83e5a5f337e8d145d5b0d0fd3", "fe797073bb0ab6bed7632320ab04e3e6", types);
     MakeTexture("/User/Environments/AncientForest/Textures/grass1.png", 2, 278528, "4f2a2564cb75cc00fb10a8d9835a1583", "6119100460826c1b0b8379e0334efb66", types);
@@ -320,10 +323,10 @@ void PopulateSampleAssets(TArray<StubAssetTypeData>& types)
 
 void StubFillCacheData(MemoryBuffer& buffer, String& text)
 {
-    TArray<StubAssetTypeData> data;
+    TVector<StubAssetTypeData> data;
     PopulateSampleAssets(data);
 
-    TArray<StubAssetCacheHeader> headers;
+    TVector<StubAssetCacheHeader> headers;
     AssetCacheController cache;
     for (const auto& type : data)
     {
@@ -344,7 +347,7 @@ void StubFillCacheData(MemoryBuffer& buffer, String& text)
         header.mBlobObjectID = static_cast<CacheObjectId>(index.mObjectID);
         header.mCacheName = cacheName.CStr();
         header.mCacheName += "_" + ToString(index.mBlobID);
-        headers.Add(header);
+        headers.push_back(header);
     }
 
     BinaryStream bs;
@@ -361,6 +364,7 @@ void StubFillCacheData(MemoryBuffer& buffer, String& text)
     ts.EndObject();
     ts.Close();
 }
+#endif 
 
 void ReportBlobState(CacheBlob& blob, const char* header)
 {
@@ -413,12 +417,10 @@ struct AssetEditorTypeInfo
 {
     Token               mSourceFile;
     DateTimeEncoded     mLastModify;
-    TArray<ObjectPtr>   mInstances;
+    TVector<ObjectPtr>   mInstances;
 };
 
-const SizeT ATI_SIZE = sizeof(AssetType);
 const SizeT ATI_EDITOR_SIZE = sizeof(AssetEditorTypeInfo);
-const SizeT ATD_SIZE = sizeof(AssetTypeData);
 
 
 //
@@ -439,25 +441,25 @@ String AssetNameToFilePath(const String& assetName)
 
 
 
-REGISTER_TEST(CacheBlob_FragmentationTest)
+REGISTER_TEST(CacheBlob_FragmentationTest, "Runtime.Asset")
 {
     gReportBugCallback = TestBugReporter;
     BUG_MESSAGE = NULL_MSG;
 
-    TArray<MockAssetData> assets;
-    assets.Add(MockAssetData(723, 607252, "Bush1.png"));
-    assets.Add(MockAssetData(427, 592652, "Bush2.png"));
-    assets.Add(MockAssetData(172, 262994, "Bush3.png"));
-    assets.Add(MockAssetData(864, 732137, "Bush4.png"));
-    assets.Add(MockAssetData(824, 782395, "Bush5.png"));
-    assets.Add(MockAssetData(726, 1028271, "Bush6.png"));
-    assets.Add(MockAssetData(72, 1140934, "Bush7.png"));
+    TVector<MockAssetData> assets;
+    assets.push_back(MockAssetData(723, 607252, "Bush1.png"));
+    assets.push_back(MockAssetData(427, 592652, "Bush2.png"));
+    assets.push_back(MockAssetData(172, 262994, "Bush3.png"));
+    assets.push_back(MockAssetData(864, 732137, "Bush4.png"));
+    assets.push_back(MockAssetData(824, 782395, "Bush5.png"));
+    assets.push_back(MockAssetData(726, 1028271, "Bush6.png"));
+    assets.push_back(MockAssetData(72, 1140934, "Bush7.png"));
 
     CacheBlob blob;
-    blob.Initialize(TArray<CacheObject>(), 10 * MB);
+    blob.Initialize(TVector<CacheObject>(), 10 * MB);
     TEST_CRITICAL(BUG_MESSAGE == NULL_MSG);
 
-    for (SizeT i = 0; i < assets.Size(); ++i)
+    for (SizeT i = 0; i < assets.size(); ++i)
     {
         assets[i].mCacheObjectID = blob.Reserve(assets[i].mID, assets[i].mSize);
         TEST_CRITICAL(Valid(assets[i].mCacheObjectID));
@@ -492,7 +494,7 @@ REGISTER_TEST(CacheBlob_FragmentationTest)
     assets[1].mSize -= 122720;
     ReportBlobState(blob, "Destroy Bush2:");
 
-    for (SizeT i = 0; i < assets.Size(); ++i)
+    for (SizeT i = 0; i < assets.size(); ++i)
     {
         auto& asset = assets[i];
         if (Invalid(asset.mCacheObjectID))
@@ -506,10 +508,10 @@ REGISTER_TEST(CacheBlob_FragmentationTest)
 
     // Defrag:
     CacheBlob defrag;
-    defrag.Initialize(TArray<CacheObject>(), static_cast<UInt32>(blob.GetCapacity()));
+    defrag.Initialize(TVector<CacheObject>(), static_cast<UInt32>(blob.GetCapacity()));
 
     // Map < BlobID, DefragID >
-    TArray<MockCacheDefrag> defragSteps;
+    TVector<MockCacheDefrag> defragSteps;
     for (SizeT i = 0, size = blob.Size(); i < size; ++i)
     {
         CacheObject obj;
@@ -524,7 +526,7 @@ REGISTER_TEST(CacheBlob_FragmentationTest)
         step.mSource = static_cast<CacheObjectId>(i);
         step.mDest = static_cast<CacheObjectId>(defrag.Size());
         step.mAssetID = obj.mUID;
-        defragSteps.Add(step);
+        defragSteps.push_back(step);
 
         CacheObjectId id = defrag.Reserve(obj.mUID, obj.mSize);
         TEST_CRITICAL(Valid(id));
@@ -546,7 +548,7 @@ REGISTER_TEST(CacheBlob_FragmentationTest)
     ReportBlobState(defrag, "After Defrag");
 }
 
-REGISTER_TEST(CacheBlob_FailReserveTest)
+REGISTER_TEST(CacheBlob_FailReserveTest, "Runtime.Asset")
 {
     gReportBugCallback = TestBugReporter;
     BUG_MESSAGE = NULL_MSG;
@@ -557,7 +559,7 @@ REGISTER_TEST(CacheBlob_FailReserveTest)
     TEST_CRITICAL(BUG_MESSAGE == CacheBlobError::ERROR_MSG_INVALID_OPERATION_BLOB_NOT_INITIALIZED);
     BUG_MESSAGE = NULL_MSG;
 
-    blob.Initialize(TArray<CacheObject>(), 10 * MB);
+    blob.Initialize(TVector<CacheObject>(), 10 * MB);
     TEST_CRITICAL(BUG_MESSAGE == NULL_MSG);
 
     TEST_CRITICAL(Invalid(blob.Reserve(INVALID32, 450)));
@@ -572,7 +574,7 @@ REGISTER_TEST(CacheBlob_FailReserveTest)
     TEST_CRITICAL(BUG_MESSAGE == NULL_MSG);
 }
 
-REGISTER_TEST(CacheBlob_FailUpdateTest)
+REGISTER_TEST(CacheBlob_FailUpdateTest, "Runtime.Asset")
 {
     gReportBugCallback = TestBugReporter;
     BUG_MESSAGE = NULL_MSG;
@@ -582,7 +584,7 @@ REGISTER_TEST(CacheBlob_FailUpdateTest)
     TEST_CRITICAL(BUG_MESSAGE == CacheBlobError::ERROR_MSG_INVALID_OPERATION_BLOB_NOT_INITIALIZED);
     BUG_MESSAGE = NULL_MSG;
 
-    blob.Initialize(TArray<CacheObject>(), 10 * MB);
+    blob.Initialize(TVector<CacheObject>(), 10 * MB);
     TEST_CRITICAL(BUG_MESSAGE == NULL_MSG);
     
     TEST_CRITICAL(blob.Update(INVALID16, 450) == false);
@@ -612,7 +614,7 @@ REGISTER_TEST(CacheBlob_FailUpdateTest)
     TEST_CRITICAL(BUG_MESSAGE == NULL_MSG);
 }
 
-REGISTER_TEST(CacheBlob_FailDestroyTest)
+REGISTER_TEST(CacheBlob_FailDestroyTest, "Runtime.Asset")
 {
     gReportBugCallback = TestBugReporter;
     BUG_MESSAGE = NULL_MSG;
@@ -622,7 +624,7 @@ REGISTER_TEST(CacheBlob_FailDestroyTest)
     TEST_CRITICAL(BUG_MESSAGE == CacheBlobError::ERROR_MSG_INVALID_OPERATION_BLOB_NOT_INITIALIZED);
     BUG_MESSAGE = NULL_MSG;
 
-    blob.Initialize(TArray<CacheObject>(), 10 * MB);
+    blob.Initialize(TVector<CacheObject>(), 10 * MB);
     TEST_CRITICAL(BUG_MESSAGE == NULL_MSG);
 
     TEST_CRITICAL(blob.Destroy(INVALID16) == false);
@@ -645,7 +647,7 @@ REGISTER_TEST(CacheBlob_FailDestroyTest)
     BUG_MESSAGE = NULL_MSG;
 }
 
-REGISTER_TEST(CacheBlob_FailGetObjectTest)
+REGISTER_TEST(CacheBlob_FailGetObjectTest, "Runtime.Asset")
 {
     gReportBugCallback = TestBugReporter;
     BUG_MESSAGE = NULL_MSG;
@@ -657,7 +659,7 @@ REGISTER_TEST(CacheBlob_FailGetObjectTest)
     TEST_CRITICAL(BUG_MESSAGE == CacheBlobError::ERROR_MSG_INVALID_OPERATION_BLOB_NOT_INITIALIZED);
     BUG_MESSAGE = NULL_MSG;
 
-    blob.Initialize(TArray<CacheObject>(), 10 * MB);
+    blob.Initialize(TVector<CacheObject>(), 10 * MB);
     CacheObjectId id = blob.Reserve(1239, 450);
     TEST_CRITICAL(id == 0);
     TEST_CRITICAL(BUG_MESSAGE == NULL_MSG);
@@ -669,7 +671,7 @@ REGISTER_TEST(CacheBlob_FailGetObjectTest)
     TEST_CRITICAL(BUG_MESSAGE == CacheBlobError::ERROR_MSG_INVALID_OPERATION_ASSOC_OBJECT_ID);
 }
 
-REGISTER_TEST(CacheBlock_FailInitialize)
+REGISTER_TEST(CacheBlock_FailInitialize, "Runtime.Asset")
 {
     gReportBugCallback = TestBugReporter;
     BUG_MESSAGE = NULL_MSG;
@@ -701,7 +703,7 @@ REGISTER_TEST(CacheBlock_FailInitialize)
     TEST(block.GetDefaultCapacity() == KB);
 }
 
-REGISTER_TEST(CacheBlock_FailCreate)
+REGISTER_TEST(CacheBlock_FailCreate, "Runtime.Asset")
 {
     gReportBugCallback = TestBugReporter;
     BUG_MESSAGE = NULL_MSG;
@@ -750,7 +752,7 @@ REGISTER_TEST(CacheBlock_FailCreate)
     BUG_MESSAGE = NULL_MSG;
 }
 
-REGISTER_TEST(CacheBlock_FailUpdate)
+REGISTER_TEST(CacheBlock_FailUpdate, "Runtime.Asset")
 {
     gReportBugCallback = TestBugReporter;
     BUG_MESSAGE = NULL_MSG;
@@ -809,7 +811,7 @@ REGISTER_TEST(CacheBlock_FailUpdate)
     BUG_MESSAGE = NULL_MSG;
 }
 
-REGISTER_TEST(CacheBlock_FailDestroy)
+REGISTER_TEST(CacheBlock_FailDestroy, "Runtime.Asset")
 {
     gReportBugCallback = TestBugReporter;
     BUG_MESSAGE = NULL_MSG;
@@ -847,7 +849,7 @@ REGISTER_TEST(CacheBlock_FailDestroy)
     TEST(block.Destroy(CacheIndex(0, 0, 0)) == true);
 }
 
-REGISTER_TEST(CacheBlock_Test)
+REGISTER_TEST(CacheBlock_Test, "Runtime.Asset")
 {
     gReportBugCallback = TestBugReporter;
     BUG_MESSAGE = NULL_MSG;
@@ -855,7 +857,7 @@ REGISTER_TEST(CacheBlock_Test)
     CacheBlock block;
     block.Initialize(Token("gb"), 8 * KB);
     TEST_CRITICAL(block.GetDefaultCapacity() == 8 * KB);
-    TArray<CacheIndex> indices;
+    TVector<CacheIndex> indices;
 
     // OP | UID |   BlobID   | ObjectID |  Size    | Blob_0 Memory | Blob_1 Memory | Blob_2 Memory
     //  C |   0 |        0   |        0 |     2 KB |          6 KB | ------------- | -------------
@@ -872,63 +874,63 @@ REGISTER_TEST(CacheBlock_Test)
     TEST(index.mUID == 0);
     TEST(index.mBlobID == 0);
     TEST(index.mObjectID == 0);
-    indices.Add(index);
+    indices.push_back(index);
 
     index = block.Create(1, 3 * KB);
     TEST(index == true);
     TEST(index.mUID == 1);
     TEST(index.mBlobID == 0);
     TEST(index.mObjectID == 1);
-    indices.Add(index);
+    indices.push_back(index);
 
     index = block.Create(2, 2 * KB);
     TEST(index == true);
     TEST(index.mUID == 2);
     TEST(index.mBlobID == 0);
     TEST(index.mObjectID == 2);
-    indices.Add(index);
+    indices.push_back(index);
 
     index = block.Create(3, 4 * KB);
     TEST(index == true);
     TEST(index.mUID == 3);
     TEST(index.mBlobID == 1);
     TEST(index.mObjectID == 0);
-    indices.Add(index);
+    indices.push_back(index);
 
     index = block.Create(4, 256);
     TEST(index == true);
     TEST(index.mUID == 4);
     TEST(index.mBlobID == 0);
     TEST(index.mObjectID == 3);
-    indices.Add(index);
+    indices.push_back(index);
 
     index = block.Create(5, 767);
     TEST(index == true);
     TEST(index.mUID == 5);
     TEST(index.mBlobID == 0);
     TEST(index.mObjectID == 4);
-    indices.Add(index);
+    indices.push_back(index);
 
     index = block.Create(6, 2 * KB);
     TEST(index == true);
     TEST(index.mUID == 6);
     TEST(index.mBlobID == 1);
     TEST(index.mObjectID == 1);
-    indices.Add(index);
+    indices.push_back(index);
 
     index = block.Create(7, 2049);
     TEST(index == true);
     TEST(index.mUID == 7);
     TEST(index.mBlobID == 2);
     TEST(index.mObjectID == 0);
-    indices.Add(index);
+    indices.push_back(index);
 
     index = block.Create(8, 2000);
     TEST(index == true);
     TEST(index.mUID == 8);
     TEST(index.mBlobID == 1);
     TEST(index.mObjectID == 2);
-    indices.Add(index);
+    indices.push_back(index);
     
     // Blob States: ( UID : ObjectID, Size )
     // [Blob 0:    1 B] -- { 0 : 0, 2KB }, { 1 : 1, 3KB }, { 2 : 2, 2KB }, { 4 : 3, 256B }, { 5 : 4, 767B }
@@ -1086,7 +1088,7 @@ REGISTER_TEST(CacheBlock_Test)
         );
     }
 
-    TEST(defragSteps.Size() == 7);
+    TEST(defragSteps.size() == 7);
     TEST(defragSteps[0].mUID == 3);
     TEST(defragSteps[0].mSize == 4096);
     TEST(defragSteps[0].mSourceBlobID == 1);
@@ -1158,7 +1160,7 @@ void CacheWriterCleanup()
     
 }
 
-REGISTER_TEST(CacheWriter_WriteTest)
+REGISTER_TEST(CacheWriter_WriteTest, "Runtime.Asset")
 {
     const String testBlock = CacheWriterSetup();
     const String message = "Test content as a string.";
@@ -1188,7 +1190,7 @@ REGISTER_TEST(CacheWriter_WriteTest)
     }
 }
 
-REGISTER_TEST(CacheWriter_WriteOutputTest)
+REGISTER_TEST(CacheWriter_WriteOutputTest, "Runtime.Asset")
 {
     const SizeT testSize = 8 * KB;
     const String testBlock = CacheWriterSetup();
@@ -1198,10 +1200,10 @@ REGISTER_TEST(CacheWriter_WriteOutputTest)
     TEST_CRITICAL(block.GetDefaultCapacity() == testSize);
     block.SetFilename(Token(testBlock));
 
-    TStaticArray<CacheIndex, 16> indices;
+    TStackVector<CacheIndex, 16> indices;
     for (SizeT i = 0; i < 16; ++i)
     {
-        indices.Add(block.Create(static_cast<UInt32>(i), static_cast<UInt32>(1 * KB)));
+        indices.push_back(block.Create(static_cast<UInt32>(i), static_cast<UInt32>(1 * KB)));
         TEST_CRITICAL(indices[i]);
     }
     ByteT outputBuffer[3][testSize + 2 * KB];
@@ -1297,7 +1299,7 @@ REGISTER_TEST(CacheWriter_WriteOutputTest)
 
 }
 
-REGISTER_TEST(CacheWriter_WriteAsyncTest)
+REGISTER_TEST(CacheWriter_WriteAsyncTest, "Runtime.Asset")
 {
     const String testBlock = CacheWriterSetup();
     const String message = "Test content as a string.";
@@ -1321,18 +1323,19 @@ REGISTER_TEST(CacheWriter_WriteAsyncTest)
 
         {
             bool writeDone = false;
+            auto writeComplete = [&writeDone]()
+            {
+                gTestLog.Info(LogMessage("Success!"));
+                writeDone = true;
+            };
+            auto writeFail = [](const String&)
+            {
+                TEST(false);
+            };
+
             auto promise = cw.WriteAsync()
-                .Then([&writeDone]()
-                {
-                    gTestLog.Info(LogMessage("Success!"));
-                    writeDone = true;
-                }
-                )
-                .Catch([](const String&)
-                    {
-                        TEST(false);
-                    }
-                )
+                .Then( CacheWritePromise::ResolverCallbackType::Make(writeComplete))
+                .Catch( CacheWritePromise::ErrorCallbackType::Make(writeFail))
                 .Execute();
 
             SleepCallingThread(2000); // Pretend like were doing something else...
@@ -1345,19 +1348,19 @@ REGISTER_TEST(CacheWriter_WriteAsyncTest)
         
         {
             bool writeDone = false;
+            auto writeComplete = [&writeDone]()
+            {
+                TEST(IsMainThread());
+                gTestLog.Info(LogMessage("Success!"));
+                writeDone = true;
+            };
+            auto writeFail = [](const String&)
+            {
+                TEST(false);
+            };
             cw.WriteAsync()
-                .Then([&writeDone]()
-                    {
-                        TEST(IsMainThread());
-                        gTestLog.Info(LogMessage("Success!"));
-                        writeDone = true;
-                    }
-                )
-                .Catch([](const String&)
-                    {
-                        TEST(false);
-                    }
-                )
+                .Then(CacheWritePromise::ResolverCallbackType::Make(writeComplete))
+                .Catch(CacheWritePromise::ErrorCallbackType::Make(writeFail))
                 .Run();
 
             // SleepCallingThread(2000); // Pretend like were doing something else...
@@ -1385,7 +1388,7 @@ REGISTER_TEST(CacheWriter_WriteAsyncTest)
     }
 }
 
-REGISTER_TEST(CacheReader_ReadTest)
+REGISTER_TEST(CacheReader_ReadTest, "Runtime.Asset")
 {
     const String testBlock = CacheWriterSetup();
     const String message = "Test content as a string.";
@@ -1443,9 +1446,10 @@ REGISTER_TEST(CacheReader_ReadTest)
         CacheReader cr;
         cr.Open(block, i0, output, sizeof(output));
         cr.SetInputBuffer(buffer + 1 * KB, 8 * KB);
+        auto readFail = [](const String&) { TEST(false); };
 
         auto promise = cr.ReadAsync()
-            .Catch([](const String& ) { TEST(false); })
+            .Catch(CacheReadPromise::ErrorCallbackType::Make(readFail))
             .Execute();
 
         SleepCallingThread(2000);
@@ -1454,8 +1458,9 @@ REGISTER_TEST(CacheReader_ReadTest)
 
         memset(compare, 0x02, sizeof(compare));
         cr.Open(block, i1, output, sizeof(output));
+        
         promise = cr.ReadAsync()
-            .Catch([](const String& ) { TEST(false); })
+            .Catch(CacheReadPromise::ErrorCallbackType::Make(readFail))
             .Execute();
 
         SleepCallingThread(2000);
@@ -1464,14 +1469,15 @@ REGISTER_TEST(CacheReader_ReadTest)
     }
 }
 
-REGISTER_TEST(CacheBlock_TestEx)
+#if 0
+REGISTER_TEST(CacheBlock_TestEx, "Runtime.Asset")
 {
     CacheBlock block;
     block.Initialize(Token("gb"), 1 * MB);
 
-    TArray<CacheIndex> indices;
+    TVector<CacheIndex> indices;
 
-    TArray<StubAssetTypeData> types;
+    TVector<StubAssetTypeData> types;
     PopulateSampleAssets(types);
     
     const Type* categoryTypes[AssetCategory::MAX_VALUE];
@@ -1482,13 +1488,13 @@ REGISTER_TEST(CacheBlock_TestEx)
         const AssetTypeData& type = types[i].mTypeData;
         CacheIndex index = block.Create(type.mUID, 204923);
         TEST(index);
-        indices.Add(index);
+        indices.push_back(index);
     }
 
-    TArray<AssetTypeData> assetTypeDatas;
+    TVector<AssetTypeData> assetTypeDatas;
     for (const StubAssetTypeData& type : types)
     {
-        assetTypeDatas.Add(type.mTypeData);
+        assetTypeDatas.push_back(type.mTypeData);
     }
     AssetDataController dataController;
     dataController.Initialize(assetTypeDatas, categoryTypes);
@@ -1514,13 +1520,12 @@ REGISTER_TEST(CacheBlock_TestEx)
         }
     }
 }
-
-REGISTER_TEST(CacheController_Test)
+REGISTER_TEST(CacheController_Test, "Runtime.Asset")
 {
     gReportBugCallback = TestBugReporter;
     BUG_MESSAGE = NULL_MSG;
 
-    TArray<StubAssetTypeData> types;
+    TVector<StubAssetTypeData> types;
     PopulateSampleAssets(types);
     const Type* categoryTypes[AssetCategory::MAX_VALUE];
     PopulateAssetCategories(categoryTypes);
@@ -1529,10 +1534,10 @@ REGISTER_TEST(CacheController_Test)
 
     AssetDataController data;
     {
-        TArray<AssetTypeData> assetTypes;
+        TVector<AssetTypeData> assetTypes;
         for (const auto& type : types)
         {
-            assetTypes.Add(type.mTypeData);
+            assetTypes.push_back(type.mTypeData);
             nameFill = Max(type.mTypeData.mFullName.Size(), nameFill);
         }
         data.Initialize(assetTypes, categoryTypes);
@@ -1607,43 +1612,6 @@ REGISTER_TEST(CacheController_Test)
     // auto assetCacheIndex = cache.Find(assetCacheBlockIndex, uid);
 }
 
-REGISTER_TEST(CacheStreamTest)
-{
-    if (TestFramework::TestAll())
-    {
-        return;
-    }
-
-    auto config = TestFramework::GetConfig();
-    TestFramework::ExecuteTest("CacheBlob_FailReserveTest", config);
-    TestFramework::ExecuteTest("CacheBlob_FailUpdateTest", config);
-    TestFramework::ExecuteTest("CacheBlob_FailDestroyTest", config);
-    TestFramework::ExecuteTest("CacheBlob_FailGetObjectTest", config);
-    TestFramework::ExecuteTest("CacheBlob_FragmentationTest", config);
-    TestFramework::ExecuteTest("CacheBlock_FailInitialize", config);
-    TestFramework::ExecuteTest("CacheBlock_FailCreate", config);
-    TestFramework::ExecuteTest("CacheBlock_FailUpdate", config);
-    TestFramework::ExecuteTest("CacheBlock_FailDestroy", config);
-    TestFramework::ExecuteTest("CacheBlock_Test", config);
-    TestFramework::ExecuteTest("CacheWriter_WriteTest", config);
-    TestFramework::ExecuteTest("CacheWriter_WriteAsyncTest", config);
-    TestFramework::ExecuteTest("CacheWriter_WriteOutputTest", config);
-    TestFramework::ExecuteTest("CacheReader_ReadTest", config);
-    // TestFramework::ExecuteTest("CacheController_Test", config);
-    TestFramework::TestReset();
-
-    // String workingDir = FileSystem::GetWorkingPath();
-    // String assetName = "/User/Textures/Bush 1.png";
-    // String assetFile = AssetNameToFilePath(assetName);
-    // gTestLog.Debug(LogMessage("Working Dir=") << workingDir);
-    // gTestLog.Debug(LogMessage("AssetName: ") << assetName);
-    // gTestLog.Debug(LogMessage("AssetFile: ") << assetFile);
-    // 
-    // AssetExporter exporter;
-    // exporter.Export(assetName);
-
-}
-
 struct MyAssetIndexTraits
 {
     using Base = TAssetIndexTraits<const char*, UInt32>;
@@ -1653,23 +1621,23 @@ struct MyAssetIndexTraits
     static Base::IndexType DefaultIndex() { return INVALID32; }
 };
 
-REGISTER_TEST(AssetIndexTest)
+REGISTER_TEST(AssetIndexTest, "Runtime.Asset")
 {
     using MyAssetPairIndex = TAssetPairIndex<const char*, UInt32>;
     using MyAssetIndex = TAssetIndex<const char*, UInt32, MyAssetIndexTraits>;
 
     MyAssetPairIndex builder;
-    builder.Add(std::make_pair("/user/characters/markus/textures/face.png", 0));
-    builder.Add(std::make_pair("/user/characters/markus/textures/face.png.lfpkg", 1));
-    builder.Add(std::make_pair("/user/characters/markus/models/head.fbx", 2));
-    builder.Add(std::make_pair("/user/characters/markus/models/head.fbx.lfpkg", 3));
-    builder.Add(std::make_pair("/user/characters/markus/models/body.fbx", 4));
-    builder.Add(std::make_pair("/user/characters/markus/models/body.fbx.lfpkg", 5));
-    builder.Add(std::make_pair("/user/characters/markus/voice/dialog00.wav", 6));
-    builder.Add(std::make_pair("/user/characters/markus/voice/dialog00.wav.lfpkg", 7));
-    builder.Add(std::make_pair("/user/characters/markus/scripts/markus.lua", 8));
-    builder.Add(std::make_pair("/user/characters/markus/scripts/markus.lua.lfpkg", 9));
-    builder.Add(std::make_pair("/user/characters/markus/markus.lfpkg", 10));
+    builder.push_back(std::make_pair("/user/characters/markus/textures/face.png", 0));
+    builder.push_back(std::make_pair("/user/characters/markus/textures/face.png.lfpkg", 1));
+    builder.push_back(std::make_pair("/user/characters/markus/models/head.fbx", 2));
+    builder.push_back(std::make_pair("/user/characters/markus/models/head.fbx.lfpkg", 3));
+    builder.push_back(std::make_pair("/user/characters/markus/models/body.fbx", 4));
+    builder.push_back(std::make_pair("/user/characters/markus/models/body.fbx.lfpkg", 5));
+    builder.push_back(std::make_pair("/user/characters/markus/voice/dialog00.wav", 6));
+    builder.push_back(std::make_pair("/user/characters/markus/voice/dialog00.wav.lfpkg", 7));
+    builder.push_back(std::make_pair("/user/characters/markus/scripts/markus.lua", 8));
+    builder.push_back(std::make_pair("/user/characters/markus/scripts/markus.lua.lfpkg", 9));
+    builder.push_back(std::make_pair("/user/characters/markus/markus.lfpkg", 10));
 
     std::sort(builder.begin(), builder.end());
     
@@ -1695,7 +1663,7 @@ REGISTER_TEST(AssetIndexTest)
     gTestLog.Debug(LogMessage("Asset Index Footprint=") << footprint);
 }
 
-REGISTER_TEST(AssetHashTest)
+REGISTER_TEST(AssetHashTest, "Runtime.Asset")
 {
     AssetHash hash;
     TEST_CRITICAL(hash.IsZero());
@@ -1734,7 +1702,7 @@ REGISTER_TEST(AssetHashTest)
 
 
 
-REGISTER_TEST(AssetDataController_InitializeTest)
+REGISTER_TEST(AssetDataController_InitializeTest, "Runtime.Asset")
 {
     // todo: Make 'Stubs' for asset types.
     // todo: Make 'Stub' asset data
@@ -1742,12 +1710,12 @@ REGISTER_TEST(AssetDataController_InitializeTest)
     const Type* categoryTypes[AssetCategory::MAX_VALUE];
     PopulateAssetCategories(categoryTypes);
     
-    TArray<StubAssetTypeData> types;
+    TVector<StubAssetTypeData> types;
     PopulateSampleAssets(types);
-    TArray<AssetTypeData> assetTypeDatas;
+    TVector<AssetTypeData> assetTypeDatas;
     for (const StubAssetTypeData& type : types)
     {
-        assetTypeDatas.Add(type.mTypeData);
+        assetTypeDatas.push_back(type.mTypeData);
     }
     
     AssetDataController dataController;
@@ -1759,93 +1727,7 @@ REGISTER_TEST(AssetDataController_InitializeTest)
 
     
 }
-
-REGISTER_TEST(AssetTest)
-{
-    auto config = TestFramework::GetConfig();
-    TestFramework::ExecuteTest("AssetIndexTest", config);
-    TestFramework::ExecuteTest("AssetHashTest", config);
-
-    TestFramework::ExecuteTest("CacheBlob_FailReserveTest", config);
-    TestFramework::ExecuteTest("CacheBlob_FailUpdateTest", config);
-    TestFramework::ExecuteTest("CacheBlob_FailDestroyTest", config);
-    TestFramework::ExecuteTest("CacheBlob_FailGetObjectTest", config);
-    TestFramework::ExecuteTest("CacheBlob_FragmentationTest", config);
-
-
-
-    // TestFramework::ExecuteTest("AssetDataController_InitializeTest", config);
-    TestFramework::TestReset();
-}
-
-REGISTER_TEST(AssetExporterTest)
-{
-    AssetTypeData data;
-    data.mFullName = Token("/user/characters/markus/textures/face.png");
-    data.mConcreteType = typeof(StubAssetTexture)->GetFullName();
-    data.mCacheName = Token("gb_t");
-    data.mUID = 0;
-    data.mParentUID = INVALID32;
-    data.mVersion = 0;
-    data.mAttributes = 0;
-    data.mFlags = (1 << AssetFlags::AF_BINARY);
-    data.mCategory = AssetCategory::AC_TEXTURE;
-    UInt8 hash[] = { 0xFF, 0xDB, 0xA1, 0x23, 0x44, 0x7F, 0x05, 0x0C, 0xD4, 0x74, 0xCC, 0xAD, 0xFF, 0xDB, 0xA1, 0x23 };
-    memcpy(data.mHash.mData, hash, sizeof(hash));
-
-    String text;
-    TextStream ts;
-    ts.Open(Stream::TEXT, &text, Stream::SM_WRITE);
-    ts.BeginObject(data.mFullName.CStr(), data.mConcreteType.CStr());
-    data.Serialize(ts);
-    ts.EndObject();
-    ts.Close();
-
-    gTestLog.Debug(LogMessage("\n") << text);
-
-    AssetTypeData other;
-    ts.Open(Stream::TEXT, &text, Stream::SM_READ);
-    ts.BeginObject(ts.GetObjectName(0), ts.GetObjectSuper(0));
-    other.Serialize(ts);
-    ts.EndObject();
-
-    other.mFullName = Token(ts.GetObjectName(0));
-    other.mConcreteType = Token(ts.GetObjectSuper(0));
-    ts.Close();
-    LF_DEBUG_BREAK;
-
-    // AssetExporter exporter;
-    // exporter.AddBundle(AssetBundleExportName("GameBase", "gb"));
-    // 
-    // AssetExportPackage markus;
-    // markus.mTag = "";
-    // markus.mBundle = "GameBase";
-    // markus.mAssets.Add("/user/characters/markus/textures/face.png");
-    // markus.mAssets.Add("/user/characters/markus/textures/face.png.lfpkg");
-    // markus.mAssets.Add("/user/characters/markus/models/head.fbx");
-    // markus.mAssets.Add("/user/characters/markus/models/head.fbx.lfpkg");
-    // markus.mAssets.Add("/user/characters/markus/models/body.fbx");
-    // markus.mAssets.Add("/user/characters/markus/models/body.fbx.lfpkg");
-    // markus.mAssets.Add("/user/characters/markus/voice/dialog00.wav");
-    // markus.mAssets.Add("/user/characters/markus/voice/dialog00.wav.lfpkg");
-    // markus.mAssets.Add("/user/characters/markus/scripts/markus.lua");
-    // markus.mAssets.Add("/user/characters/markus/scripts/markus.lua.lfpkg");
-    // markus.mAssets.Add("/user/characters/markus/markus.lfpkg");
-    // markus.mBlacklist.Add("/user/characters/markus/scripts/markus.lua");
-    // markus.mBlacklist.Add("/user/characters/markus/markus.lfpkg");
-    // 
-    // exporter.AddPackage(markus);
-    // 
-    // AssetExportManifest manifest = exporter.CreateManifest();
-    // 
-    // for (auto& exportInfo : manifest.mExports)
-    // {
-    //     gTestLog.Debug(LogMessage("Exporting ") << exportInfo.mAssetName << "... " << exportInfo.mCacheFile);
-    // }
-
-
-}
-
+#endif
 
 
 }

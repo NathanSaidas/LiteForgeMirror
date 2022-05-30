@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -18,8 +18,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
-#ifndef LF_CORE_SSE_COMMON_H
-#define LF_CORE_SSE_COMMON_H
+#pragma once
 
 // TODO: Move this into project include or define in project..
 
@@ -46,6 +45,8 @@ namespace lf
 {
 #if defined(LF_ENABLE_SSE_1)
 #define internal_vector __m128
+#define internal_ivector __m128i
+
 #define internal_aligned_buffer __declspec(align(16)) Float32
 
     /**
@@ -69,6 +70,7 @@ namespace lf
 #define vector_set_array(arr)       vector_set(arr[0],arr[1],arr[2],arr[3])
 
 #define vector_zero                 _mm_setzero_ps()
+#define ivector_zero                _mm_setzero_si128()
 
     /**
     * Adds (a+b) to vectors component wise
@@ -106,8 +108,13 @@ namespace lf
 
 #define vector_abs(x)               vector_max(vector_mul(x, vector_set(-1.0f, -1.0f, -1.0f, -1.0f)), x)
 
-#define vector_cmp(a,b)             _mm_movemask_ps(_mm_cmpeq_ps(a, b)) == 0xF;
-#define vector_ncmp(a,b)            _mm_movemask_ps(_mm_cmpneq_ps(a, b)) == 0xF;
+#define vector_cmp(a,b)             (_mm_movemask_ps(_mm_cmpeq_ps(a, b)) == 0xF)
+#define vector_ncmp(a,b)            (_mm_movemask_ps(_mm_cmpneq_ps(a, b)) == 0xF)
+
+// #define ivector_cmp(a,b)            (_mm_movemask_epi8(_mm_cmpeq_epi32(a, b)) == 0xFFFF)
+// #define ivector_ncmp(a,b)           (_mm_movemask_epi8(_mm_cmpeq_epi32(a, b)) != 0xFFFF)
+#define ivector_cmp(a,b)            (a.m128i_u64[0] == b.m128i_u64[0] && a.m128i_u64[1] == b.m128i_u64[1])
+#define ivector_ncmp(a,b)           (a.m128i_u64[0] != b.m128i_u64[0] || a.m128i_u64[1] != b.m128i_u64[1])
 
 
 #define vector_cross_shuffle(v,a,b,c,d) _mm_shuffle_ps(v,v,_MM_SHUFFLE(a,b,c,d))
@@ -118,5 +125,3 @@ namespace lf
 #endif
 
 }
-
-#endif 

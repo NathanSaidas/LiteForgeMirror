@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -18,6 +18,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
+#include "Core/PCH.h"
 #include "File.h"
 #include "Core/Common/Assert.h"
 #include "Core/String/String.h"
@@ -171,9 +172,18 @@ bool File::Open(const String& filename, FileFlagsT flags, FileOpenMode openMode)
         case FILE_OPEN_ALWAYS:
             creationDisposition = OPEN_ALWAYS;
             break;
+        case FILE_OPEN_CREATE_NEW:
+            creationDisposition = CREATE_ALWAYS;
+            break;
         default:
             CriticalAssertMsgEx("File::Open invalid argument", LF_ERROR_INVALID_ARGUMENT, ERROR_API_CORE);
             break;
+    }
+
+    DWORD attribs = FILE_ATTRIBUTE_NORMAL;
+    if ((flags & FF_RANDOM_ACCESS) > 0)
+    {
+        attribs |= FILE_FLAG_RANDOM_ACCESS;
     }
 
     mHandle->mFileHandle = CreateFile
@@ -183,7 +193,7 @@ bool File::Open(const String& filename, FileFlagsT flags, FileOpenMode openMode)
         share,
         NULL,
         creationDisposition,
-        FILE_ATTRIBUTE_NORMAL,
+        attribs,
         NULL
     );
 
@@ -443,8 +453,12 @@ bool File::ReadAsync(AsyncIOBuffer* buffer, SizeT bufferLength)
 }
 SizeT File::Write(const void* buffer, SizeT bufferLength)
 {
-    AssertEx(buffer != nullptr, LF_ERROR_INVALID_ARGUMENT, ERROR_API_CORE);
-    AssertEx(bufferLength != 0, LF_ERROR_INVALID_ARGUMENT, ERROR_API_CORE);
+    ReportBugEx(buffer != nullptr, LF_ERROR_INVALID_ARGUMENT, ERROR_API_CORE);
+    // AssertEx(bufferLength != 0, LF_ERROR_INVALID_ARGUMENT, ERROR_API_CORE);
+    if (buffer == nullptr || bufferLength == 0)
+    {
+        return 0;
+    }
     if (!IsOpen())
     {
         return 0;
@@ -589,6 +603,11 @@ bool File::Wait(SizeT waitMilliseconds)
     return HasPending();
 }
 
+SizeT File::Size() const
+{
+    return static_cast<SizeT>(GetSize());
+}
+
 FileSize File::GetSize() const
 {
     if (!IsOpen())
@@ -624,7 +643,7 @@ FileCursor File::GetCursor() const
     LF_STATIC_CRASH("Missing implementation.");
 #endif
 }
-bool File::SetCursor(FileCursor offset, FileCursorMode mode)
+bool File::SetCursor(FileCursor offset, FileCursorMode mode, bool setEOF)
 {
     if (!IsOpen())
     {
@@ -647,11 +666,20 @@ bool File::SetCursor(FileCursor offset, FileCursorMode mode)
             break;
     }
     cursor.QuadPart = offset;
-    if (SetFilePointerEx(mHandle->mFileHandle, cursor, NULL, cursorMode) == TRUE)
+    if (SetFilePointerEx(mHandle->mFileHandle, cursor, NULL, cursorMode) == FALSE)
     {
-        return true;
+        return false;
     }
-    return false;
+    if (setEOF)
+    {
+        if (SetEndOfFile(mHandle->mFileHandle) == FALSE)
+        {
+            FlushFileBuffers(mHandle->mFileHandle);
+            return false;
+        }
+    }
+
+    return true;
 #else
     LF_STATIC_CRASH("Missing implementation.");
 #endif
@@ -690,6 +718,35 @@ bool File::HasPending() const
 const String& File::GetName()
 {
     return IsOpen() ? mHandle->mFilename : EMPTY_STRING;
+}
+
+bool File::ReadAllText(const String& filename, String& outText)
+{
+    File file;
+    if (file.Open(filename, FF_READ | FF_SHARE_READ | FF_SHARE_WRITE, FILE_OPEN_EXISTING))
+    {
+        SizeT size = static_cast<SizeT>(file.GetSize());
+        outText.Resize(size);
+        if (file.Read(const_cast<char*>(outText.CStr()), size) == size)
+        {
+            return true;
+        }
+    }
+    outText.Resize(0);
+    return false;
+}
+
+bool File::WriteAllText(const String& filename, const String& text)
+{
+    File file;
+    if (file.Open(filename, FF_WRITE | FF_READ | FF_SHARE_READ | FF_SHARE_WRITE, FILE_OPEN_ALWAYS))
+    {
+        if (file.Write(text.CStr(), text.Size()) == text.Size())
+        {
+            return true;
+        }
+    }
+    return false;
 }
 
 } // namespace lf

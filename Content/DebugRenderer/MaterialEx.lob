@@ -1,0 +1,16 @@
+$MaterialEx=Engine/DebugRenderer/Material
+{
+    Shader="Engine/DebugRenderer/Shader"
+    Defines=[
+    ]
+    Properties=[
+    ]
+    MultiBufferCompile=0
+    UseDepth=1
+    WriteDepth=1
+    DepthFunc=LESS
+}
+$TypeFlags=NativeType
+{
+	RootContainer=1
+}

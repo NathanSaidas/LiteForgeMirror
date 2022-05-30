@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -18,8 +18,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
-#ifndef LF_RUNTIME_OBJECT_H
-#define LF_RUNTIME_OBJECT_H
+#pragma once
 
 #include "Core/Utility/StaticCallback.h"
 #include "Core/Memory/SmartPointer.h"
@@ -50,11 +49,13 @@ private:
     // **********************************
     static SafeStaticCallback sInternalTypeInitializer;
     using ClassType = Object;
-public:
     // **********************************
     // Static reference to the processed reflection data.
     // **********************************
     static const Type* sClassType;
+public:
+    using PointerConvertible = void*;
+    static const Type** GetClassType();
 
     // **********************************
     // Object Constructor
@@ -68,8 +69,8 @@ public:
     // **********************************
     // Object Accessors
     // **********************************
-    LF_INLINE const ObjectWPtr& GetPointer() const { return mPointer; }
-    LF_INLINE void SetPointer(const ObjectWPtr& pointer) { mPointer = pointer; }
+    // LF_INLINE const ObjectWPtr& GetPointer() const { return mPointer; }
+    // LF_INLINE void SetPointer(const ObjectWPtr& pointer) { mPointer = pointer; }
 
     bool IsA(const Type* type) const;
     LF_INLINE void SetType(const Type* type) { mRuntimeType = type; }
@@ -90,10 +91,8 @@ protected:
     // **********************************
     virtual void OnClone(const Object& obj);
 
-    ObjectWPtr  mPointer;
+    // ObjectWPtr  mPointer;
     const Type* mRuntimeType;
 };
 
 } // namespace lf
-
-#endif // LF_RUNTIME_OBJECT_H

@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -18,10 +18,13 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
+#include "Core/PCH.h"
 #include "Log.h"
 #include "Core/Common/Assert.h"
 #include "Core/IO/EngineConfig.h"
+#include "Core/String/StringCommon.h"
 #include "Core/Utility/ErrorCore.h"
+#include "Core/Utility/Time.h"
 #include "Core/Platform/FileSystem.h"
 
 #if defined(LF_OS_WINDOWS)
@@ -32,11 +35,28 @@
 
 namespace lf {
 
+Timer gLogTimer;
 Log gMasterLog("Engine");
 Log gSysLog("Sys", &gMasterLog);
 Log gIOLog("IO", &gMasterLog);
 Log gTestLog("Test", &gMasterLog);
 Log gGfxLog("Gfx", &gMasterLog);
+Log gNetLog("Net", &gMasterLog);
+
+String LoggerMessage::GetPointerString(const LogPtr& ptr)
+{
+    String hex = ToHexString(ptr.mValue);
+    String result = "0x";
+    if (hex.Size() < 16)
+    {
+        const SizeT numZero = 16 - hex.Size();
+        for (SizeT i = 0; i < numZero; ++i)
+        {
+            result.Append('0');
+        }
+    }
+    return result + hex;
+}
 
 Log::Log(const String& name, Log* master) :
 mBufferStreamLock(),
@@ -45,8 +65,11 @@ mFile(),
 mName(name),
 mMasterLog(master),
 mLogLevel(LOG_INFO),
-mConfig(nullptr)
-{}
+mConfig(nullptr),
+mWorkingDirectoryCached()
+{
+    if (&gMasterLog == this) { gLogTimer.Start(); }
+}
 Log::~Log()
 {
     mFile.Close();
@@ -107,12 +130,28 @@ void Log::Close()
         ScopeLock lock(mOutputLock);
         mFile.Close();
     }
+    mWorkingDirectoryCached.Clear();
+}
+
+const char* StripWorkingDirectory(const char* filename, String& workingDir)
+{
+    if (workingDir.Empty())
+    {
+        workingDir = FileSystem::GetWorkingPath();
+    }
+    String filenameStr(filename, COPY_ON_WRITE);
+    SizeT find = filenameStr.Find(workingDir);
+    if (Valid(find))
+    {
+        return (filename + find) + workingDir.Size();
+    }
+    return filename;
 }
 
 String Log::FormatHeader(const LoggerMessage& message, const char* logLevel)
 {
     SStream header;
-    header << "[" << mName << "][" << logLevel << "][" << message.mFilename << ":" << message.mLine << "]:";
+    header << "[" << ToString(gLogTimer.PeekDelta(), 3) << "][" << mName << "][" << logLevel << "][" << StripWorkingDirectory(message.mFilename, mWorkingDirectoryCached) << ":" << message.mLine << "]:";
     return header.Str();
 }
 

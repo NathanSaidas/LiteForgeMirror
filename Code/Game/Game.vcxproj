@@ -21,32 +21,32 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{FCD33A39-9982-4E52-AAF2-06DBB5185320}</ProjectGuid>
     <RootNamespace>Game</RootNamespace>
-    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Final|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
@@ -57,9 +57,11 @@
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\..\Public\DirectX\D3D12\D3D12.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Test|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\..\Public\DirectX\D3D12\D3D12.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -103,12 +105,13 @@
       <SmallerTypeCheck>true</SmallerTypeCheck>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <MinimalRebuild>false</MinimalRebuild>
-      <ProgramDataBaseFileName>$(IntDir)%(Filename).pdb</ProgramDataBaseFileName>
+      <LanguageStandard>Default</LanguageStandard>
     </ClCompile>
     <Link>
       <AdditionalDependencies>$(TargetDir)Core_x64Debug.lib;$(TargetDir)Runtime_x64Debug.lib;$(TargetDir)AbstractEngine_x64Debug.lib;$(TargetDir)Service_x64Debug.lib;$(TargetDir)Engine_x64Debug.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ProgramDatabaseFile>$(OutDir)$(TargetName).pdb</ProgramDatabaseFile>
+      <SubSystem>Windows</SubSystem>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Test|x64'">
@@ -117,19 +120,21 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>$(SolutionDir)Code\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <TreatWarningAsError>true</TreatWarningAsError>
+      <TreatWarningAsError>false</TreatWarningAsError>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <ExceptionHandling>Sync</ExceptionHandling>
       <PreprocessorDefinitions>_ALLOW_RTCc_IN_STL;LF_INTERNAL_TEST;LF_INTERNAL_IMPORT_CORE;LF_INTERNAL_IMPORT_RUNTIME;LF_INTERNAL_IMPORT_SERIVCE;LF_INTERNAL_IMPORT_ABSTRACT_ENGINE;LF_INTERNAL_IMPORT_ENGINE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
-      <ProgramDataBaseFileName>$(IntDir)%(Filename).pdb</ProgramDataBaseFileName>
       <SmallerTypeCheck>true</SmallerTypeCheck>
+      <MinimalRebuild>false</MinimalRebuild>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <AdditionalDependencies>$(TargetDir)Core_x64Test.lib;$(TargetDir)Runtime_x64Test.lib;$(TargetDir)AbstractEngine_x64Test.lib;$(TargetDir)Service_x64Test.lib;$(TargetDir)Engine_x64Test.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ProgramDatabaseFile>$(OutDir)$(TargetName).pdb</ProgramDatabaseFile>
+      <SubSystem>Windows</SubSystem>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -141,9 +146,9 @@
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>$(SolutionDir)Code\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <ProgramDataBaseFileName>$(IntDir)%(Filename).pdb</ProgramDataBaseFileName>
       <PreprocessorDefinitions>_HAS_EXCEPTIONS=0;_ALLOW_RTCc_IN_STL;LF_INTERNAL_RELEASE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ExceptionHandling>false</ExceptionHandling>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -161,9 +166,9 @@
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>$(SolutionDir)Code\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <ProgramDataBaseFileName>$(IntDir)%(Filename).pdb</ProgramDataBaseFileName>
       <PreprocessorDefinitions>_HAS_EXCEPTIONS=0;_ALLOW_RTCc_IN_STL;LF_INTERNAL_FINAL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ExceptionHandling>false</ExceptionHandling>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -175,28 +180,93 @@
   <ItemGroup>
     <ClCompile Include="AnalyzeProjectApp\AnalyzeProjectApp.cpp" />
     <ClCompile Include="AnalyzeProjectApp\DumpbinProcess.cpp" />
+    <ClCompile Include="Artherion\App\Artherion.cpp" />
+    <ClCompile Include="Artherion\ComponentSystems\RenderSubmitComponentSystem.cpp" />
+    <ClCompile Include="Artherion\ComponentTypes\BoundsComponent.cpp" />
+    <ClCompile Include="Artherion\ComponentTypes\ModelComponent.cpp" />
+    <ClCompile Include="Artherion\ComponentTypes\TransformComponent.cpp" />
+    <ClCompile Include="Artherion\ComponentTypes\Units\UnitProperties.cpp" />
+    <ClCompile Include="Artherion\GameUtils\DamageUtil.cpp" />
     <ClCompile Include="BasicNetApp.cpp" />
-    <ClCompile Include="Config.cpp" />
     <ClCompile Include="CryptoApp.cpp" />
     <ClCompile Include="DeployBuild.cpp" />
+    <ClCompile Include="GraphicsApp\GraphicsAppBase.cpp" />
+    <ClCompile Include="GraphicsApp\GraphicsServiceBase.cpp" />
+    <ClCompile Include="GraphicsApp\Tutorial_1_WindowCreation.cpp" />
+    <ClCompile Include="GraphicsApp\Tutorial_2_BasicTriangle.cpp" />
+    <ClCompile Include="GraphicsApp\Tutorial_3_Texturing.cpp" />
     <ClCompile Include="MyApp.cpp" />
     <ClCompile Include="PromiseApp.cpp" />
-    <ClCompile Include="Test\Core\AESTest.cpp" />
+    <ClCompile Include="Test\AbstractEngine\ECSTestGame.cpp" />
+    <ClCompile Include="Test\AbstractEngine\GfxShaderBinaryTest.cpp" />
+    <ClCompile Include="Test\AbstractEngine\GfxShaderFileTest.cpp" />
+    <ClCompile Include="Test\AbstractEngine\GfxShaderTextTest.cpp" />
+    <ClCompile Include="Test\AbstractEngine\WorldTests.cpp" />
     <ClCompile Include="Test\Core\ArrayTest.cpp" />
     <ClCompile Include="Test\Core\BinaryStreamTest.cpp" />
     <ClCompile Include="Test\Core\CacheStreamTest.cpp" />
-    <ClCompile Include="Test\Core\CryptoTests.cpp" />
+    <ClCompile Include="Test\Core\CallbackTests.cpp" />
+    <ClCompile Include="Test\Core\Crypto\AESTest.cpp" />
+    <ClCompile Include="Test\Core\Crypto\CryptoTests.cpp" />
+    <ClCompile Include="Test\Core\Crypto\RSATest.cpp" />
     <ClCompile Include="Test\Core\ExceptionTesting.cpp" />
+    <ClCompile Include="Test\Core\FileTests.cpp" />
+    <ClCompile Include="Test\Core\IO\MemDBTest.cpp" />
+    <ClCompile Include="Test\Core\JsonStreamTest.cpp" />
     <ClCompile Include="Test\Core\MemoryTests.cpp" />
     <ClCompile Include="Test\Core\NetConnectionTest.cpp" />
-    <ClCompile Include="Test\Core\RSATest.cpp" />
+    <ClCompile Include="Test\Core\Net\BasicNetTests.cpp" />
+    <ClCompile Include="Test\Core\Net\NetSocketTest.cpp" />
+    <ClCompile Include="Test\Core\Net\NetTestUtils.cpp" />
+    <ClCompile Include="Test\Core\Net\RequestPacketTest.cpp" />
+    <ClCompile Include="Test\Core\PointerTest.cpp" />
+    <ClCompile Include="Test\Core\SStreamTest.cpp" />
+    <ClCompile Include="Test\Core\StringTest.cpp" />
+    <ClCompile Include="Test\Core\TestConsole.cpp" />
     <ClCompile Include="Test\Core\TextStreamTest.cpp" />
+    <ClCompile Include="Test\Core\ThreadTest.cpp" />
+    <ClCompile Include="Test\Core\Utility\EventBusTest.cpp" />
+    <ClCompile Include="Test\Core\WStringTest.cpp" />
+    <ClCompile Include="Test\Runtime\AssetMgrTests.cpp" />
+    <ClCompile Include="Test\Runtime\AssetOpTests.cpp" />
+    <ClCompile Include="Test\Runtime\AssetPathTests.cpp" />
     <ClCompile Include="Test\Runtime\AsyncTests.cpp" />
+    <ClCompile Include="Test\Runtime\CacheBlockTypeTests.cpp" />
+    <ClCompile Include="Test\Runtime\FileTransferMessageControllerTests.cpp" />
+    <ClCompile Include="Test\Runtime\InputTests.cpp" />
+    <ClCompile Include="Test\Runtime\NetDriverConnectionTests.cpp" />
+    <ClCompile Include="Test\Runtime\NetDriverMessageTests.cpp" />
+    <ClCompile Include="Test\Runtime\NetDriverTestUtils.cpp" />
+    <ClCompile Include="Test\Service\FileServer\FileResourceTests.cpp" />
+    <ClCompile Include="Test\Service\FileServer\FileServerDataTests.cpp" />
+    <ClCompile Include="Test\StressDataAsset.cpp" />
     <ClCompile Include="Test\TestRunner.cpp" />
+    <ClCompile Include="Test\TestUtils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AnalyzeProjectApp\AnalyzeProjectApp.h" />
     <ClInclude Include="AnalyzeProjectApp\DumpbinProcess.h" />
+    <ClInclude Include="Artherion\ComponentSystems\RenderSubmitComponentSystem.h" />
+    <ClInclude Include="Artherion\ComponentTypes\BoundsComponent.h" />
+    <ClInclude Include="Artherion\ComponentTypes\ModelComponent.h" />
+    <ClInclude Include="Artherion\ComponentTypes\TransformComponent.h" />
+    <ClInclude Include="Artherion\ComponentTypes\Units\UnitProperties.h" />
+    <ClInclude Include="Artherion\GameTypes\AgeType.h" />
+    <ClInclude Include="Artherion\GameTypes\ArmorClass.h" />
+    <ClInclude Include="Artherion\GameTypes\DamageType.h" />
+    <ClInclude Include="Artherion\GameTypes\MagicSchool.h" />
+    <ClInclude Include="Artherion\GameTypes\SeasonType.h" />
+    <ClInclude Include="Artherion\GameTypes\TypeDefs.h" />
+    <ClInclude Include="Artherion\GameUtils\DamageUtil.h" />
+    <ClInclude Include="GraphicsApp\GraphicsAppBase.h" />
+    <ClInclude Include="GraphicsApp\GraphicsServiceBase.h" />
+    <ClInclude Include="GraphicsApp\Tutorial_1_WindowCreation.h" />
+    <ClInclude Include="GraphicsApp\Tutorial_2_BasicTriangle.h" />
+    <ClInclude Include="GraphicsApp\Tutorial_3_Texturing.h" />
+    <ClInclude Include="Test\Core\Net\NetTestUtils.h" />
+    <ClInclude Include="Test\Runtime\NetDriverTestUtils.h" />
+    <ClInclude Include="Test\StressDataAsset.h" />
+    <ClInclude Include="Test\TestUtils.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

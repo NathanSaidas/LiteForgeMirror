@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -18,11 +18,28 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
+#include "Core/PCH.h"
 #include "EngineConfig.h"
 #include "Core/Platform/FileSystem.h"
 #include "Core/IO/TextStream.h"
 
 namespace lf {
+
+EngineConfig::EngineConfig()
+: mTempDirectory()
+, mProjectDirectory()
+, mUserDirectory()
+, mCacheDirectory()
+, mLogFilename()
+, mDebugGPU(false)
+, mResolvedTempDirectory()
+, mResolvedProjectDirectory()
+, mResolvedUserDirectory()
+, mResolvedCacheDirectory()
+{
+
+}
+
 
 void EngineConfig::Open(const String& filename)
 {
@@ -33,6 +50,8 @@ void EngineConfig::Open(const String& filename)
     mUserDirectory = "../User";
     mCacheDirectory = "../Cache";
     mLogFilename = "Engine";
+    mTestConfig = "TestRunner.config";
+    mAppConfig = "AppConfig.config";
 
     if (!FileSystem::FileExists(fullpath))
     {
@@ -86,6 +105,7 @@ void EngineConfig::Close()
     mResolvedCacheDirectory.Clear();
 
     mLogFilename.Clear();
+    mTestConfig.Clear();
 }
 
 void EngineConfig::Serialize(Stream& s)
@@ -95,6 +115,9 @@ void EngineConfig::Serialize(Stream& s)
     SERIALIZE(s, mUserDirectory, "");
     SERIALIZE(s, mCacheDirectory, "");
     SERIALIZE(s, mLogFilename, "");
+    SERIALIZE(s, mDebugGPU, "");
+    SERIALIZE(s, mTestConfig, "");
+    SERIALIZE(s, mAppConfig, "");
 }
 
 } // namespace lf 

@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -18,7 +18,10 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
+#include "Runtime/PCH.h"
 #include "CacheBlob.h"
+#include "Core/IO/Stream.h"
+#include <algorithm>
 
 namespace lf {
 
@@ -47,7 +50,7 @@ CacheBlob::~CacheBlob()
 {
     Release();
 }
-void CacheBlob::Initialize(const TArray<CacheObject>& objects, UInt32 capacity)
+void CacheBlob::Initialize(const TVector<CacheObject>& objects, UInt32 capacity)
 {
     if (capacity == 0)
     {
@@ -66,11 +69,20 @@ void CacheBlob::Initialize(const TArray<CacheObject>& objects, UInt32 capacity)
 }
 void CacheBlob::Release()
 {
-    mObjects.Clear();
+    mObjects.clear();
     mUsed = 0;
     mReserved = 0;
     mCapacity = 0;
 }
+
+void CacheBlob::Serialize(Stream& s)
+{
+    SERIALIZE(s, mUsed, "");
+    SERIALIZE(s, mReserved, "");
+    SERIALIZE(s, mCapacity, "");
+    SERIALIZE_STRUCT_ARRAY(s, mObjects, "");
+}
+
 CacheObjectId CacheBlob::Reserve(UInt32 assetID, UInt32 size)
 {
     if (Invalid(assetID))
@@ -96,7 +108,7 @@ CacheObjectId CacheBlob::Reserve(UInt32 assetID, UInt32 size)
     }
 
     // Check if we can re-use a null object
-    for (SizeT i = 0, objectSize = mObjects.Size(); i < objectSize; ++i)
+    for (SizeT i = 0, objectSize = mObjects.size(); i < objectSize; ++i)
     {
         if (Invalid(mObjects[i].mUID) && mObjects[i].mCapacity >= size)
         {
@@ -112,14 +124,14 @@ CacheObjectId CacheBlob::Reserve(UInt32 assetID, UInt32 size)
     if (freeBytes >= size)
     {
         UInt32 location = 0;
-        SizeT id = mObjects.Size();
+        SizeT id = mObjects.size();
         if (id > 0)
         {
-            location = mObjects.GetLast().mLocation + mObjects.GetLast().mCapacity;
+            location = mObjects.back().mLocation + mObjects.back().mCapacity;
         }
 
-        mObjects.Add(CacheObject());
-        auto& obj = mObjects.GetLast();
+        mObjects.push_back(CacheObject());
+        auto& obj = mObjects.back();
         obj.mUID = assetID;
         obj.mCapacity = obj.mSize = size;
         obj.mLocation = location;
@@ -141,7 +153,7 @@ bool CacheBlob::Update(CacheObjectId objectID, UInt32 size)
         ReportBugMsgEx(ERROR_MSG_INVALID_OPERATION_BLOB_NOT_INITIALIZED, LF_ERROR_INVALID_OPERATION, ERROR_API_RUNTIME);
         return false;
     }
-    if (objectID >= mObjects.Size())
+    if (objectID >= mObjects.size())
     {
         ReportBugMsgEx(ERROR_MSG_INVALID_OPERATION_ASSOC_OBJECT_ID, LF_ERROR_INVALID_OPERATION, ERROR_API_RUNTIME);
         return false;
@@ -175,7 +187,7 @@ bool CacheBlob::Destroy(CacheObjectId objectID)
         ReportBugMsgEx(ERROR_MSG_INVALID_OPERATION_BLOB_NOT_INITIALIZED, LF_ERROR_INVALID_OPERATION, ERROR_API_RUNTIME);
         return false;
     }
-    if (objectID >= mObjects.Size())
+    if (objectID >= mObjects.size())
     {
         ReportBugMsgEx(ERROR_MSG_INVALID_OPERATION_ASSOC_OBJECT_ID, LF_ERROR_INVALID_OPERATION, ERROR_API_RUNTIME);
         return false;
@@ -203,13 +215,83 @@ bool CacheBlob::GetObject(CacheObjectId objectID, CacheObject& outObject) const
         ReportBugMsgEx(ERROR_MSG_INVALID_OPERATION_BLOB_NOT_INITIALIZED, LF_ERROR_INVALID_OPERATION, ERROR_API_RUNTIME);
         return INVALID16;
     }
-    if (objectID >= mObjects.Size())
+    if (objectID >= mObjects.size())
     {
         ReportBugMsgEx(ERROR_MSG_INVALID_OPERATION_ASSOC_OBJECT_ID, LF_ERROR_INVALID_OPERATION, ERROR_API_RUNTIME);
         return false;
     }
     outObject = mObjects[objectID];
     return true;
+}
+TVector<CacheObject> CacheBlob::GetFreeObjects() const
+{
+    TVector<CacheObject> objects;
+    objects.reserve(mObjects.size());
+    
+    for (const CacheObject& obj : mObjects)
+    {
+        if (Valid(obj.mUID))
+        {
+            objects.push_back(obj);
+        }
+    }
+
+    std::sort(objects.begin(), objects.end(), [](const CacheObject& a, const CacheObject& b)
+        {
+            return a.mLocation < b.mLocation;
+        });
+
+    TVector<CacheObject> freeObjects;
+    UInt32 location = 0;
+    for (CacheObject& obj : objects)
+    {
+        UInt32 size = obj.mLocation - location;
+        if (size > 0)
+        {
+            freeObjects.push_back(CacheObject(INVALID32, location, size, size));
+        }
+        location = obj.mLocation + obj.mCapacity;
+    }
+
+    UInt32 size = mCapacity - location;
+    if (size > 0 && mCapacity > location)
+    {
+        freeObjects.push_back(CacheObject(INVALID32, location, size, size));
+    }
+    return freeObjects;
+}
+TVector<CacheObject> CacheBlob::GetCorruptedObjects() const
+{
+    if (mObjects.size() <= 1)
+    {
+        return TVector<CacheObject>();
+    }
+
+    TVector<CacheObject> objects = mObjects;
+
+    std::sort(objects.begin(), objects.end(), [](const CacheObject& a, const CacheObject& b)
+        {
+            return a.mLocation < b.mLocation;
+        });
+
+    UInt32 lastLocation = objects.back().mLocation;
+    UInt32 lastSize = objects.back().mSize;
+    TVector<CacheObject> corruptObjects;
+
+    for (auto it = objects.begin() + 1; it != objects.end(); ++it)
+    {
+        UInt32 left = it->mLocation;
+        UInt32 prevLeft = lastLocation;
+        UInt32 prevRight = lastLocation + lastSize;
+        if (left >= prevLeft && left < prevRight)
+        {
+            corruptObjects.push_back(*(it - 1));
+        }
+        lastLocation = it->mLocation;
+        lastSize = it->mSize;
+    }
+
+    return corruptObjects;
 }
 void CacheBlob::CalculateMemoryUsage()
 {
@@ -221,5 +303,6 @@ void CacheBlob::CalculateMemoryUsage()
         mReserved += obj.mCapacity;
     }
 }
+
 
 }

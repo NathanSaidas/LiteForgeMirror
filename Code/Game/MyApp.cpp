@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -49,7 +49,7 @@ struct TestData
     TestData() : mIds(), mThread(), mApp() {}
     TestData(AtomicIncTestApp* app) : mIds(), mThread(), mApp(app) {}
 
-    TArray<Atomic32>    mIds;
+    TVector<Atomic32>    mIds;
     Thread              mThread;
     AtomicIncTestApp*   mApp;
 };
@@ -97,7 +97,7 @@ static void ProcessData(void* param)
     for (SizeT i = 0; i < THREAD_WORK; ++i)
     {
         Atomic32 id = AtomicIncrement32(&self->mApp->mId);
-        self->mIds.Add(id);
+        self->mIds.push_back(id);
     }
 }
 
@@ -105,11 +105,11 @@ static void ProcessData(void* param)
 // even at high contention.
 void AtomicIncTestApp::TestAtomicIncrement()
 {
-    TArray<TestData> threads;
+    TVector<TestData> threads;
     gSysLog.Info(LogMessage("Starting") << THREAD_COUNT << " threads.");
     for (SizeT i = 0; i < THREAD_COUNT; ++i)
     {
-        threads.Add(TestData(this));
+        threads.push_back(TestData(this));
     }
 
     for (TestData& thread : threads)
@@ -122,22 +122,22 @@ void AtomicIncTestApp::TestAtomicIncrement()
     for (TestData& thread : threads)
     {
         thread.mThread.Join();
-        reserve += thread.mIds.Size();
+        reserve += thread.mIds.size();
     }
 
 
     gSysLog.Info(LogMessage("Sorting results..."));
-    TArray<Atomic32> merged;
-    merged.Reserve(reserve);
+    TVector<Atomic32> merged;
+    merged.reserve(reserve);
     for (TestData& thread : threads)
     {
-        merged.Insert(merged.end(), thread.mIds.begin(), thread.mIds.end());
+        merged.insert(merged.end(), thread.mIds.begin(), thread.mIds.end());
     }
 
     std::sort(merged.begin(), merged.end());
 
     gSysLog.Info(LogMessage("Validating results..."));
-    for (SizeT i = 0; i < merged.Size(); ++i)
+    for (SizeT i = 0; i < merged.size(); ++i)
     {
         if (merged[i] != static_cast<Atomic32>(i + 1))
         {
@@ -221,7 +221,7 @@ public:
     volatile Atomic32 mWorkCompleted;
     volatile Atomic32 mWorkersRunning;
 
-    TArray<CCData> mPendingWork;
+    TVector<CCData> mPendingWork;
 
     volatile Atomic32 mBenchSize;
 
@@ -249,10 +249,10 @@ public:
         gSysLog.Info(LogMessage("Producers=") << numProducers);
         gSysLog.Info(LogMessage("Consumers=") << numConsumers);
 
-        TArray<Thread> producers;
-        TArray<Thread> consumers;
-        producers.Resize(numProducers);
-        consumers.Resize(numConsumers);
+        TVector<Thread> producers;
+        TVector<Thread> consumers;
+        producers.resize(numProducers);
+        consumers.resize(numConsumers);
         for (Thread& t : consumers)
         {
             t.Fork(consumerEntry, this);
@@ -263,11 +263,11 @@ public:
         }
 
         gSysLog.Info(LogMessage("Waiting for producers to finish..."));
-        Thread::JoinAll(producers.GetData(), producers.Size());
+        Thread::JoinAll(producers.data(), producers.size());
         AtomicStore(&mWorkersRunning, 0);
 
         gSysLog.Info(LogMessage("Waiting for consumers to finish..."));
-        Thread::JoinAll(consumers.GetData(), consumers.Size());
+        Thread::JoinAll(consumers.data(), consumers.size());
 
         auto completed = AtomicLoad(&mWorkCompleted);
         auto submitted = AtomicLoad(&mWorkSubmitted);
@@ -301,15 +301,15 @@ public:
         AtomicStorePointer(&mScheduler, &scheduler);
         scheduler.Initialize(options, true);
 
-        TArray<Thread> producers;
-        producers.Resize(numProducers);
+        TVector<Thread> producers;
+        producers.resize(numProducers);
         for (Thread& t : producers)
         {
             t.Fork(producerEntry, this);
         }
 
         gSysLog.Info(LogMessage("Waiting for producers to finish..."));
-        Thread::JoinAll(producers.GetData(), producers.Size());
+        Thread::JoinAll(producers.data(), producers.size());
         AtomicStore(&mWorkersRunning, 0);
 
         gSysLog.Info(LogMessage("Waiting for consumers to finish..."));
@@ -338,13 +338,13 @@ public:
         gSysLog.Info(LogMessage("SPSC test running..."));
         TestWorkers(1, 1, SingleProducerEntry, SingleConsumerEntry);
         gSysLog.Info(LogMessage("SPSC (IOCP) test running..."));
-        mPendingWork.Resize(WORK_TO_SUBMIT);
+        mPendingWork.resize(WORK_TO_SUBMIT);
         TestWorkersIOCP(1, 1, IOCPProducerEntry, IOCPConsumerEntry);
-        mPendingWork.Clear();
+        mPendingWork.clear();
         gSysLog.Info(LogMessage("SPSC (TaskScheduler) test running..."));
-        mPendingWork.Resize(WORK_TO_SUBMIT);
+        mPendingWork.resize(WORK_TO_SUBMIT);
         TestScheduler(1, 1, SchedulerProducerEntry);
-        mPendingWork.Clear();
+        mPendingWork.clear();
 
     }
     void TestSPMC()
@@ -352,57 +352,57 @@ public:
         gSysLog.Info(LogMessage("SPMC test running..."));
         TestWorkers(1, 4, SingleProducerEntry, MultiConsumerEntry);
         gSysLog.Info(LogMessage("SPMC (IOCP) test running..."));
-        mPendingWork.Resize(WORK_TO_SUBMIT);
+        mPendingWork.resize(WORK_TO_SUBMIT);
         TestWorkersIOCP(1, 4, IOCPProducerEntry, IOCPConsumerEntry);
-        mPendingWork.Clear();
+        mPendingWork.clear();
         gSysLog.Info(LogMessage("SPMC (TaskScheduler) test running..."));
-        mPendingWork.Resize(WORK_TO_SUBMIT);
+        mPendingWork.resize(WORK_TO_SUBMIT);
         TestScheduler(1, 4, SchedulerProducerEntry);
-        mPendingWork.Clear();
+        mPendingWork.clear();
     }
     void TestMPSC()
     {
         gSysLog.Info(LogMessage("MPSC test running..."));
         TestWorkers(4, 1, MultiProducerEntry, SingleConsumerEntry);
         gSysLog.Info(LogMessage("MPSC (IOCP) test running..."));
-        mPendingWork.Resize(WORK_TO_SUBMIT);
+        mPendingWork.resize(WORK_TO_SUBMIT);
         TestWorkersIOCP(4, 1, IOCPProducerEntry, IOCPConsumerEntry);
-        mPendingWork.Clear();
+        mPendingWork.clear();
         gSysLog.Info(LogMessage("MPSC (TaskScheduler) test running..."));
-        mPendingWork.Resize(WORK_TO_SUBMIT);
+        mPendingWork.resize(WORK_TO_SUBMIT);
         TestScheduler(4, 1, SchedulerProducerEntry);
-        mPendingWork.Clear();
+        mPendingWork.clear();
     }
     void TestMPMC()
     {
         gSysLog.Info(LogMessage("MPMC test running..."));
         TestWorkers(4, 4, MultiProducerEntry, MultiConsumerEntry);
         gSysLog.Info(LogMessage("MPMC (IOCP) test running..."));
-        mPendingWork.Resize(WORK_TO_SUBMIT);
+        mPendingWork.resize(WORK_TO_SUBMIT);
         TestWorkersIOCP(4, 4, IOCPProducerEntry, IOCPConsumerEntry);
-        mPendingWork.Clear();
+        mPendingWork.clear();
         gSysLog.Info(LogMessage("MPMC (TaskScheduler) test running..."));
-        mPendingWork.Resize(WORK_TO_SUBMIT);
+        mPendingWork.resize(WORK_TO_SUBMIT);
         TestScheduler(4, 4, SchedulerProducerEntry);
-        mPendingWork.Clear();
+        mPendingWork.clear();
     }
     void TestMPMCEx(SizeT numProducers, SizeT numConsumers)
     {
         gSysLog.Info(LogMessage("MPMCEx test running..."));
         TestWorkers(numProducers, numConsumers, MultiProducerEntry, MultiConsumerEntry);
         gSysLog.Info(LogMessage("MPMCEx (IOCP) test running..."));
-        mPendingWork.Resize(WORK_TO_SUBMIT);
+        mPendingWork.resize(WORK_TO_SUBMIT);
         TestWorkersIOCP(numProducers, numConsumers, IOCPProducerEntry, IOCPConsumerEntry);
-        mPendingWork.Clear();
+        mPendingWork.clear();
         gSysLog.Info(LogMessage("MPMCEx (TaskScheduler) test running..."));
-        mPendingWork.Resize(WORK_TO_SUBMIT);
+        mPendingWork.resize(WORK_TO_SUBMIT);
         TestScheduler(numProducers, numConsumers, SchedulerProducerEntry);
-        mPendingWork.Clear();
+        mPendingWork.clear();
     }
 
     void OutputResults(TestOutputData* output = nullptr)
     {
-        if (mPendingWork.Empty())
+        if (mPendingWork.empty())
         {
             gSysLog.Warning(LogMessage("No results to process!"));
             return;
@@ -432,7 +432,7 @@ public:
             totalLatency += us;
         }
 
-        Float64 avgLatency = totalLatency / mPendingWork.Size();
+        Float64 avgLatency = totalLatency / mPendingWork.size();
 
         Int32 totalScore = 0;
         Int32 perfectDistribution = 0;
@@ -442,7 +442,7 @@ public:
         perfectDistribution = static_cast<Int32>((1.0 / senderStats.size()) * 100.0);
         for (auto it : senderStats)
         {
-            Int32 pct = static_cast<Int32>((static_cast<Float64>(it.second) / mPendingWork.Size()) * 100.0);
+            Int32 pct = static_cast<Int32>((static_cast<Float64>(it.second) / mPendingWork.size()) * 100.0);
             gSysLog.Info(LogMessage("    [") << it.first << "]: " << it.second << ", " << pct << "%");
             totalScore += Abs(pct - perfectDistribution);
         }
@@ -460,7 +460,7 @@ public:
         gSysLog.Info(LogMessage("  Worker"));
         for (auto it : workerStats)
         {
-            Int32 pct = static_cast<Int32>((static_cast<Float64>(it.second) / mPendingWork.Size()) * 100.0);
+            Int32 pct = static_cast<Int32>((static_cast<Float64>(it.second) / mPendingWork.size()) * 100.0);
             gSysLog.Info(LogMessage("    [") << it.first << "]: " << it.second << ", " << pct << "%");
             totalScore += Abs(pct - perfectDistribution);
         }
@@ -492,11 +492,11 @@ public:
         const SizeT GIGA_BYTE = 1024 * 1024 * 1024;
         LF_STATIC_ASSERT(memoryEstimate < GIGA_BYTE);
 
-        mPendingWork.Resize(WORK_TO_SUBMIT);
+        mPendingWork.resize(WORK_TO_SUBMIT);
         TestWorkers(numProducers, numConsumers, ProfileProducerEntry, ProfileConsumerEntry);
         // Process Results:
         OutputResults(output);
-        mPendingWork.Clear();
+        mPendingWork.clear();
     }
 
     void TestIOCPProfile(const char* testName, SizeT numProducers, SizeT numConsumers, TestOutputData* output = nullptr)
@@ -507,11 +507,11 @@ public:
         const SizeT GIGA_BYTE = 1024 * 1024 * 1024;
         LF_STATIC_ASSERT(memoryEstimate < GIGA_BYTE);
 
-        mPendingWork.Resize(WORK_TO_SUBMIT);
+        mPendingWork.resize(WORK_TO_SUBMIT);
         TestWorkersIOCP(numProducers, numConsumers, IOCPProducerEntry, IOCPConsumerEntry);
         // Process Results:
         OutputResults(output);
-        mPendingWork.Clear();
+        mPendingWork.clear();
     }
 
     void TestSchedulerProfile(const char* testName, SizeT numProducers, SizeT numConsumers, TestOutputData* output = nullptr)
@@ -522,11 +522,11 @@ public:
         const SizeT GIGA_BYTE = 1024 * 1024 * 1024;
         LF_STATIC_ASSERT(memoryEstimate < GIGA_BYTE);
 
-        mPendingWork.Resize(WORK_TO_SUBMIT);
+        mPendingWork.resize(WORK_TO_SUBMIT);
         TestScheduler(numProducers, numConsumers, SchedulerProducerEntry);
         // Process Results:
         OutputResults(output);
-        mPendingWork.Clear();
+        mPendingWork.clear();
     }
 
     void OnStart() override
@@ -570,12 +570,12 @@ public:
             else
             {
                 const SizeT PROFILE_ITERATIONS = 16;
-                TArray<TestOutputData> CRBResults;
-                TArray<TestOutputData> IOCPResults;
-                TArray<TestOutputData> SchedulerResults;
-                CRBResults.Resize(PROFILE_ITERATIONS);
-                IOCPResults.Resize(PROFILE_ITERATIONS);
-                SchedulerResults.Resize(PROFILE_ITERATIONS);
+                TVector<TestOutputData> CRBResults;
+                TVector<TestOutputData> IOCPResults;
+                TVector<TestOutputData> SchedulerResults;
+                CRBResults.resize(PROFILE_ITERATIONS);
+                IOCPResults.resize(PROFILE_ITERATIONS);
+                SchedulerResults.resize(PROFILE_ITERATIONS);
 
                 for (SizeT i = 0; i < PROFILE_ITERATIONS; ++i)
                 {

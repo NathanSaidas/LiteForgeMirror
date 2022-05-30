@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -18,9 +18,11 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
+#include "Core/PCH.h"
 #include "Stream.h"
 #include "Core/String/StringUtil.h"
 #include "Core/Memory/Memory.h"
+#include "Core/Memory/MemoryBuffer.h"
 
 namespace lf
 {
@@ -56,7 +58,7 @@ namespace lf
 StreamPropertyInfo::StreamPropertyInfo(const String& inName) : name(inName)
 {
 }
-StreamPropertyInfo::StreamPropertyInfo(const char* inName, const String&) : name()
+StreamPropertyInfo::StreamPropertyInfo(const char* inName, const String&, bool dynamic) : name()
 {
     String temp(inName, COPY_ON_WRITE);
     SizeT dot = temp.FindLast('.');
@@ -64,7 +66,7 @@ StreamPropertyInfo::StreamPropertyInfo(const char* inName, const String&) : name
     if (Valid(dot))
     {
         offset = dot + 1;
-        temp = String(inName + offset, COPY_ON_WRITE);
+        temp.Assign(inName + offset, COPY_ON_WRITE);
     }
 
     // change mColor => Color leave map as map though and m as m
@@ -75,8 +77,19 @@ StreamPropertyInfo::StreamPropertyInfo(const char* inName, const String&) : name
             ++offset;
         }
     }
+    if (dynamic)
+    {
+        name.Assign(String(inName + offset));
+    }
+    else
+    {
+        name.Assign(inName + offset, COPY_ON_WRITE);
+    }
+}
 
-    name = String(inName + offset, COPY_ON_WRITE);
+StreamPropertyInfo::StreamPropertyInfo(const StreamPropertyInfo& other)
+: name(other.name, COPY_ON_WRITE)
+{
 }
 
 void StreamBufferObject::Clear()
@@ -215,6 +228,14 @@ void Stream::Serialize(const StreamPropertyInfo&)
 {
 
 }
+void Stream::Serialize(const ArrayPropertyInfo&)
+{
+
+}
+
+void Stream::Serialize(MemoryBuffer&)
+{
+}
 
 bool Stream::BeginObject(const String&, const String&)
 {
@@ -262,6 +283,18 @@ Stream::StreamMode Stream::GetMode() const
 {
     return GetContext() ? GetContext()->mMode : SM_CLOSED;
 }
+
+void Stream::SetAssetLoadFlags(Stream::AssetLoadFlags flags)
+{
+    if (GetContext())
+    {
+        // TODO: We need to come back to this stream interface and rethink it a little bit.
+        // [Nathan] -- To be honest I would rather not use these context objects anymore...
+        // If we want stream persistance then use TStrongPointer<Stream> or TAtomicStrong
+        const_cast<StreamContext*>(GetContext())->mFlags = flags;
+    }
+}
+
 
 Stream::AssetLoadFlags Stream::GetAssetLoadFlags() const
 {

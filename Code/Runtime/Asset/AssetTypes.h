@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -22,8 +22,10 @@
 #define LF_RUNTIME_ASSET_TYPES_H
 
 #include "Core/Common/Enum.h"
+#include "Core/Crypto/MD5.h"
 #include "Core/String/Token.h"
 #include "Core/Utility/Bitfield.h"
+#include "Core/Utility/DateTime.h"
 
 // **********************************
 // Notes:
@@ -103,10 +105,14 @@ class Stream;
 
 // Internal:
 struct AssetHash;
-struct AssetType;
 struct UnknownAssetHandle;
 struct AssetHandle;
 class AssetObject;
+class AssetTypeInfo;
+class AssetDataController;
+class AssetCacheController;
+class AssetSourceController;
+class AssetOpController;
 
 // **********************************
 // Hints for AssetMgr when importing/caching assets
@@ -156,6 +162,85 @@ DECLARE_ENUM
 );
 using AssetFlagsBitfield = Bitfield<AssetFlags::Value, UInt8>;
 
+namespace AssetLoadFlags
+{
+    using Value = UInt32;
+    const Value LF_ACQUIRE                  = 1 << 0;
+    const Value LF_ASYNC                    = 1 << 1;
+    const Value LF_IMMEDIATE_PROPERTIES     = 1 << 2;
+    const Value LF_RECURSIVE_PROPERTIES     = 1 << 3;
+    const Value LF_LOW_PRIORITY             = 1 << 4;
+    const Value LF_HIGH_PRIORITY            = 1 << 5;
+    const Value LF_SOURCE                   = 1 << 6;
+}
+
+DECLARE_ENUM
+(
+    AssetDataType,
+    ADT_TEXT,
+    ADT_JSON,
+    ADT_BINARY
+);
+
+DECLARE_ENUM
+(
+    AssetLoadState,
+    // The asset is not loaded at all
+    ALS_UNLOADED,
+    // The asset prototype has been created
+    ALS_CREATED,
+    // The asset properties have been written to the prototype
+    ALS_SERIALIZED_PROPERTIES,
+    // The asset has loaded all of it's dependencies
+    ALS_SERIALIZED_DEPENDENCIES,
+    // The asset is completely loaded
+    ALS_LOADED,
+    // The asset has been marked for delete
+    ALS_DELETED,
+    // The asset is corrupted (we may consider options for attempting to fix)
+    ALS_CORRUPTED
+);
+
+namespace AssetLoadState {
+
+LF_RUNTIME_API bool IsCreated(AssetLoadState::Value value);
+LF_RUNTIME_API bool IsPropertyLoaded(AssetLoadState::Value value);
+LF_RUNTIME_API bool IsDependencyLoaded(AssetLoadState::Value value);
+
+}
+
+DECLARE_ENUM
+(
+    AssetOpState,
+    // The asset is available to transition to [ Loading | Downloading | Caching | Creating ]
+    AOS_IDLE,
+    // The asset is available to transition to [ Idle ]
+    // + weak-read lock on the 'load target'
+    // + weak-write lock on the prototype
+    // + weak-write lock on the handle
+    AOS_LOADING,
+    // The asset is available to transition to [ Idle ]
+    // + weak-write lock on the prototype
+    // + weak-write lock on the handle
+    AOS_UNLOADING,
+    // The asset is available to transition to [ Idle ]
+    // 
+    AOS_DOWNLOADING,
+    // The asset is available to transition to [ Idle ]
+    // + weak-write lock on the cache
+    // + weak-read lock on the source
+    AOS_CACHING,
+    // The asset is available to transition to [ Idle ]
+    // + weak-write lock on both source/cache
+    // TODO [Nathan] Maybe we'll support AOS_IMPORT as a separate op?
+    AOS_CREATING,
+    // 
+    AOS_DELETED,
+    // 
+    AOS_UNDO_DELETE
+);
+
+
 
 // **********************************
 // 
@@ -163,6 +248,7 @@ using AssetFlagsBitfield = Bitfield<AssetFlags::Value, UInt8>;
 struct LF_RUNTIME_API AssetHash
 {
     AssetHash();
+    explicit AssetHash(const Crypto::MD5Hash& hash);
     void Serialize(Stream& s);
 
     bool Parse(const String& string);
@@ -171,7 +257,10 @@ struct LF_RUNTIME_API AssetHash
     void SetZero();
     bool IsZero() const;
 
-    ByteT mData[16];
+    bool operator==(const AssetHash& other) const { return mValue == other.mValue; }
+    bool operator!=(const AssetHash& other) const { return mValue != other.mValue; }
+
+    Crypto::MD5Hash mValue;
 };
 LF_FORCE_INLINE Stream& operator<<(Stream& s, AssetHash& self)
 {
@@ -179,86 +268,49 @@ LF_FORCE_INLINE Stream& operator<<(Stream& s, AssetHash& self)
     return s;
 }
 
-// **********************************
-// The runtime version of asset type, for saving for persistence see AssetTypeData
-//
-// This is a really fat data structure and here are some numbers I've run
-//
-// The non-editor version uses 72 bytes
-// To store this raw datastructure in a table at runtime beware of certain memory budgets
-//     # Instances : Memory Used
-//            1000 |   62.5(KB)
-//            5000 |  312.5(KB)
-//           15000 |  937.5(KB)
-//           65535 |    4.0(MB)
-//          100000 |    6.1(MB)
-//          250000 |   15.3(MB)
-//          400000 |   24.4(MB) --- Around this I might consider loading in types on demand.
-//
-// Those calculations do not take into account of table overhead and indexing.
-// **********************************
-struct AssetType
+struct AssetInfoQuery
 {
-    // ** The fullname of the asset
-    Token              mFullName;
-    // ** Concrete type of the asset
-    const Type*        mConcreteType;
-    // ** Parent type of the asset (Concrete Assets have no parent)
-    AssetType*         mParentType;
-    // ** Unique ID of the asset (Generated by 'Content Server')
-    UInt32             mUID;
-    // ** Version number for the asset
-    UInt16             mVersion;
-    // ** Cache file location (ID should map to AssetCacheController )
-    UInt16             mCacheFileID;
-    // ** Cache Object index within a blob
-    UInt16             mCacheObjectIndex;
-    // ** todo: This may not be necessary
-    UInt16             mAttributes;
-    // ** Asset flags of the asset
-    AssetFlagsBitfield mFlags;
-    // ** 
-    UInt8              mCategory;
-    // ** Current loading state of the asset
-    UInt8              mLoadState;
-    // ** Content Server hash of the asset.
-    AssetHash          mHash;
-
-    // AssetEditorTypeInfo mEditorInfo;
+    bool mModifyDate;
+    bool mHash;
 };
 
-// **********************************
-// Asset type data in the format saved for persistence 
-// **********************************
-struct LF_RUNTIME_API AssetTypeData
+struct AssetInfoQueryResult
 {
-    AssetTypeData();
-    void Serialize(Stream& s);
-
-    Token mFullName;
-    Token mConcreteType;
-    Token mCacheName;
-    UInt32 mUID;
-    UInt32 mParentUID;
-    UInt16 mVersion;
-    UInt16 mAttributes;
-    UInt8  mFlags;
-    UInt8  mCategory;
+    DateTime  mModifyDate;
     AssetHash mHash;
 };
-LF_FORCE_INLINE Stream& operator<<(Stream& s, AssetTypeData& self)
-{
-    self.Serialize(s);
-    return s;
-}
 
 struct UnknownAssetHandle { };
 struct AssetHandle : public UnknownAssetHandle
 {
-    AssetObject*     mPrototype;
-    const AssetType* mType;
-    UInt32           mStrongRefs;
-    UInt32           mWeakRefs;
+    AssetObject*         mPrototype;
+    volatile Atomic32    mStrongRefs;
+    volatile Atomic32    mWeakRefs;
+    const AssetTypeInfo* mType;
+};
+
+// ********************************************************************
+// A data structure that holds pointers to various resources of the 
+// asset mgr. The lifetime of these pointers is guaranteed to outlive
+// any assets. 
+//  
+// AssetMgr::Initialize => These resources are created.
+// AssetMgr::Shutdown => These resources are destroyed. 
+// ********************************************************************
+struct AssetDependencyContext
+{
+    AssetDependencyContext()
+    : mDataController(nullptr)
+    , mCacheController(nullptr)
+    , mSourceController(nullptr)
+    , mOpController(nullptr)
+    {
+    }
+
+    AssetDataController* mDataController;
+    AssetCacheController* mCacheController;
+    AssetSourceController* mSourceController;
+    AssetOpController* mOpController;
 };
 
 } // namespace lf

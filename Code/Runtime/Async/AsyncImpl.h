@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -24,10 +24,14 @@
 #include "Runtime/Async/Async.h"
 #include "Core/Concurrent/TaskScheduler.h"
 #include "Core/Platform/SpinLock.h"
+#include "Core/Platform/RWSpinLock.h"
 #include "Core/Platform/Thread.h"
 #include "Core/Platform/ThreadFence.h"
+#include "Runtime/Async/AppThread.h"
 
 namespace lf {
+
+DECLARE_PTR(AppThreadContext);
 
 class LF_RUNTIME_API AsyncImpl : public Async
 {
@@ -38,6 +42,9 @@ public:
     void Initialize();
     void Shutdown();
 
+    void EnableAppThread();
+    void DisableAppThread();
+
     void RunPromise(PromiseWrapper promise) final;
     void QueuePromise(PromiseWrapper promise) final;
     TaskHandle RunTask(const TaskCallback& callback, void* param = nullptr) final;
@@ -46,16 +53,31 @@ public:
 
     bool IsRunning() const;
     void DrainQueue();
+
+    bool AppThreadRunning() const;
+    bool StartThread(AppThreadId threadID, const AppThreadCallback& callback, const AppThreadAttributes& threadAttributes);
+    bool StopThread(AppThreadId threadID);
+    bool ExecuteOn(AppThreadId threadID, const AppThreadDispatchCallback& callback);
+protected:
+    TaskScheduler& GetScheduler() final;
 private:
+    static void PlatformInitAppThread(AppThreadContext* context);
+    static void PlatformShutdownAppThread(AppThreadContext* context);
+    static void PlatformThreadProc(AppThreadContext* context);
+
 
     TaskScheduler mScheduler;
 
     Thread                 mDrainQueueThread;
     ThreadFence            mFence;
-    TArray<PromiseWrapper> mBuffer;
-    TArray<PromiseWrapper> mWork;
+    TVector<PromiseWrapper> mBuffer;
+    TVector<PromiseWrapper> mWork;
     SpinLock               mLock;
     volatile Atomic32      mIsRunning;
+
+    volatile Atomic32      mAllowAppThreadExecution;
+    RWSpinLock             mAppThreadLock;
+    AppThreadContextPtr    mAppThreads[APP_THREAD_ID_MAX];
 };
 
 }

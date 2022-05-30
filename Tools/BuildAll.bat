@@ -10,7 +10,7 @@ REM Set our 'working' state
 REM ==============================================
 SET gWorkingDirectory=%cd%
 SET gWorkingDrive=%~d0
-SET gVSInstallDrive="C:\Program Files"
+SET gVSInstallDrive="C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\Common7\Tools"
 SET gBuildType=%1
 SET /A gHelp=0
 
@@ -41,8 +41,7 @@ REM ==============================================
 REM Load the visual Studio Developer variables
 REM ==============================================
 PUSHD %gVSInstallDrive%
-CD %VS140COMNTOOLS%
-call vsvars32.bat
+call VsDevCmd.bat
 
 REM ==============================================
 REM Goto Solution Directory

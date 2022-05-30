@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -26,6 +26,8 @@
 #include "Runtime/Asset/CacheTypes.h"
 
 namespace lf {
+
+class Stream;
 
 // Error messages reported when bugs are detected.
 namespace CacheBlobError {
@@ -77,11 +79,13 @@ public:
     //                   in another blob.
     // @param capacity -- How large the entire blob is in bytes.
     // **********************************
-    void Initialize(const TArray<CacheObject>& objects, UInt32 capacity);
+    void Initialize(const TVector<CacheObject>& objects, UInt32 capacity);
     // **********************************
     // Releases all the CacheObjects and resets the internal state.
     // **********************************
     void Release();
+
+    void Serialize(Stream& s);
     // **********************************
     // Attempts to allocate space in the blob for the 'asset' matching assetID
     // 
@@ -128,10 +132,20 @@ public:
     // @param outObject- -- Output target of the cache object data
     // **********************************
     bool GetObject(CacheObjectId objectID, CacheObject& outObject) const;
-
+    // **********************************
+    // Utility function that calculates free space in the form of CacheObjects
+    // We can later write to these objects using 0's when cleaning up CacheBlobs
+    // **********************************
+    TVector<CacheObject> GetFreeObjects() const;
+    // **********************************
+    // Utility function to detect corrupted objects (eg objects who overlap the same memory)
+    // To fix corrupted objects we should delete the corrupted area and re-cache although
+    // memory corruption should only occur on mistake when the index/blob fall out of date.
+    // **********************************
+    TVector<CacheObject> GetCorruptedObjects() const;
 
     // Returns the number of objects contained in the blob
-    SizeT Size() const { return mObjects.Size(); }
+    SizeT Size() const { return mObjects.size(); }
 
     // How many bytes are actually used by the CacheObjects
     SizeT GetBytesUsed() const { return static_cast<SizeT>(mUsed); }
@@ -169,7 +183,7 @@ private:
     void CalculateMemoryUsage();
 
     // List of Objects the blob owns
-    TArray<CacheObject> mObjects;
+    TVector<CacheObject> mObjects;
     // Bytes currently used by all the objects
     UInt32              mUsed;
     // Bytes currently reserved by all objects.
@@ -177,6 +191,12 @@ private:
     // Bytes reserved for this blob
     UInt32              mCapacity;
 };
+
+LF_INLINE Stream& operator<<(Stream& s, CacheBlob& b)
+{
+    b.Serialize(s);
+    return s;
+}
 
 } // namespace lf
 

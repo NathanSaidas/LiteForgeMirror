@@ -26,15 +26,31 @@
     <ClCompile Include="Concurrent\TaskHandle.cpp" />
     <ClCompile Include="Concurrent\TaskScheduler.cpp" />
     <ClCompile Include="Concurrent\TaskWorker.cpp" />
-    <ClCompile Include="Config.cpp" />
+    <ClCompile Include="Math\AABB.cpp" />
+    <ClCompile Include="PCH.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Final|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="Crypto\AES.cpp" />
     <ClCompile Include="Crypto\BCrypt.cpp" />
+    <ClCompile Include="Crypto\CryptoSerialization.cpp" />
+    <ClCompile Include="Crypto\ECDH.cpp" />
     <ClCompile Include="Crypto\HMAC.cpp" />
+    <ClCompile Include="Crypto\MD5.cpp" />
     <ClCompile Include="Crypto\RSA.cpp" />
     <ClCompile Include="Crypto\SecureRandom.cpp" />
     <ClCompile Include="Crypto\SHA256.cpp" />
+    <ClCompile Include="Input\InputBinding.cpp" />
+    <ClCompile Include="Input\InputBindingData.cpp" />
+    <ClCompile Include="Input\InputMapping.cpp" />
+    <ClCompile Include="Input\USBWindows.cpp" />
     <ClCompile Include="IO\BinaryStream.cpp" />
+    <ClCompile Include="IO\DependencyStream.cpp" />
     <ClCompile Include="IO\EngineConfig.cpp" />
+    <ClCompile Include="IO\JsonStream.cpp" />
+    <ClCompile Include="IO\MemDB.cpp" />
     <ClCompile Include="IO\Stream.cpp" />
     <ClCompile Include="IO\TextStream.cpp" />
     <ClCompile Include="Math\Color.cpp" />
@@ -44,35 +60,18 @@
     <ClCompile Include="Math\Vector2.cpp" />
     <ClCompile Include="Math\Vector3.cpp" />
     <ClCompile Include="Memory\DynamicPoolHeap.cpp" />
+    <ClCompile Include="Memory\TempHeap.cpp" />
     <ClCompile Include="Memory\Memory.cpp" />
     <ClCompile Include="Memory\MemoryBuffer.cpp" />
     <ClCompile Include="Memory\PoolHeap.cpp" />
-    <ClCompile Include="Net\ConnectPacket.cpp" />
-    <ClCompile Include="Net\Controllers\NetClientController.cpp" />
-    <ClCompile Include="Net\Controllers\NetConnectionController.cpp" />
-    <ClCompile Include="Net\Controllers\NetEventController.cpp" />
-    <ClCompile Include="Net\Controllers\NetServerController.cpp" />
-    <ClCompile Include="Net\HeartbeatPacket.cpp" />
-    <ClCompile Include="Net\NetClientDriver.cpp" />
-    <ClCompile Include="Net\NetEvent.cpp" />
     <ClCompile Include="Net\NetFrameworkWindows.cpp" />
-    <ClCompile Include="Net\NetServerDriver.cpp" />
-    <ClCompile Include="Net\NetSocket.cpp" />
-    <ClCompile Include="Net\NetTransport.cpp" />
-    <ClCompile Include="Net\NetTransportConfig.cpp" />
-    <ClCompile Include="Net\NetTransportHandler.cpp" />
-    <ClCompile Include="Net\NetTransportImpl.cpp" />
-    <ClCompile Include="Net\NetUtil.cpp" />
-    <ClCompile Include="Net\PacketUtility.cpp" />
-    <ClCompile Include="Net\TransportHandlers\ClientConnectionHandler.cpp" />
-    <ClCompile Include="Net\TransportHandlers\ClientHeartbeatHandler.cpp" />
-    <ClCompile Include="Net\TransportHandlers\ServerConnectionHandler.cpp" />
-    <ClCompile Include="Net\TransportHandlers\ServerHeartbeatHandler.cpp" />
     <ClCompile Include="Net\UDPSocket.cpp" />
     <ClCompile Include="Net\UDPSocketWindows.cpp" />
     <ClCompile Include="Platform\AsyncIOBuffer.cpp" />
     <ClCompile Include="Platform\AsyncIODevice.cpp" />
     <ClCompile Include="Platform\CriticalSection.cpp" />
+    <ClCompile Include="Platform\MappedFileWin32.cpp" />
+    <ClCompile Include="Platform\RWLock.cpp" />
     <ClCompile Include="Platform\ThreadFence.cpp" />
     <ClCompile Include="Platform\File.cpp" />
     <ClCompile Include="Platform\FileSystem.cpp" />
@@ -90,21 +89,20 @@
     <ClCompile Include="String\StringUtil.cpp" />
     <ClCompile Include="String\TokenShared.cpp" />
     <ClCompile Include="String\WString.cpp" />
-    <ClCompile Include="Tests\FileTests.cpp" />
-    <ClCompile Include="Tests\PointerTest.cpp" />
-    <ClCompile Include="Tests\SStreamTest.cpp" />
-    <ClCompile Include="Tests\StringTest.cpp" />
-    <ClCompile Include="Tests\ThreadTest.cpp" />
-    <ClCompile Include="Tests\WStringTest.cpp" />
+    <ClCompile Include="Test\Profiling.cpp" />
     <ClCompile Include="Test\SampleCycleA.cpp" />
     <ClCompile Include="Test\SampleCycleB.cpp" />
     <ClCompile Include="Test\Test.cpp" />
     <ClCompile Include="Utility\CmdLine.cpp" />
+    <ClCompile Include="Utility\Console.cpp" />
     <ClCompile Include="Utility\DateTime.cpp" />
     <ClCompile Include="Utility\Debug.cpp" />
+    <ClCompile Include="Utility\APIResult.cpp" />
+    <ClCompile Include="Utility\Error.cpp" />
     <ClCompile Include="Utility\Guid.cpp" />
     <ClCompile Include="Utility\Log.cpp" />
     <ClCompile Include="Utility\StackTrace.cpp" />
+    <ClCompile Include="Utility\StandardError.cpp" />
     <ClCompile Include="Utility\StaticCallback.cpp" />
     <ClCompile Include="Utility\Time.cpp" />
   </ItemGroup>
@@ -115,19 +113,41 @@
     <ClInclude Include="Common\Types.h" />
     <ClInclude Include="Concurrent\ConcurrentRingBuffer.h" />
     <ClInclude Include="Concurrent\IOCPQueue.h" />
+    <ClInclude Include="Concurrent\Task.h" />
     <ClInclude Include="Concurrent\TaskDeliveryThread.h" />
     <ClInclude Include="Concurrent\TaskHandle.h" />
     <ClInclude Include="Concurrent\TaskScheduler.h" />
     <ClInclude Include="Concurrent\TaskTypes.h" />
     <ClInclude Include="Concurrent\TaskWorker.h" />
+    <ClInclude Include="Math\AABB.h" />
+    <ClInclude Include="Math\Viewport.h" />
+    <ClInclude Include="Memory\AlignedMemory.h" />
+    <ClInclude Include="Memory\HeapContainerAllocator.h" />
+    <ClInclude Include="Memory\StackContainerAllocator.h" />
+    <ClInclude Include="PCH.h" />
     <ClInclude Include="Crypto\AES.h" />
     <ClInclude Include="Crypto\BCrypt.h" />
+    <ClInclude Include="Crypto\CryptoSerialization.h" />
+    <ClInclude Include="Crypto\ECDH.h" />
     <ClInclude Include="Crypto\HMAC.h" />
+    <ClInclude Include="Crypto\MD5.h" />
     <ClInclude Include="Crypto\SecureRandom.h" />
     <ClInclude Include="Crypto\RSA.h" />
     <ClInclude Include="Crypto\SHA256.h" />
+    <ClInclude Include="Input\InputBinding.h" />
+    <ClInclude Include="Input\InputBindingData.h" />
+    <ClInclude Include="Input\InputEvents.h" />
+    <ClInclude Include="Input\InputMapping.h" />
+    <ClInclude Include="Input\InputTypes.h" />
+    <ClInclude Include="Input\KeyboardEvents.h" />
+    <ClInclude Include="Input\MouseEvents.h" />
+    <ClInclude Include="Input\USB.h" />
+    <ClInclude Include="Input\USBWindows.h" />
     <ClInclude Include="IO\BinaryStream.h" />
+    <ClInclude Include="IO\DependencyStream.h" />
     <ClInclude Include="IO\EngineConfig.h" />
+    <ClInclude Include="IO\JsonStream.h" />
+    <ClInclude Include="IO\MemDB.h" />
     <ClInclude Include="IO\Stream.h" />
     <ClInclude Include="IO\TextStream.h" />
     <ClInclude Include="Math\Color.h" />
@@ -155,35 +175,13 @@
     <ClInclude Include="Math\VectorInline.h" />
     <ClInclude Include="Memory\AtomicSmartPointer.h" />
     <ClInclude Include="Memory\DynamicPoolHeap.h" />
+    <ClInclude Include="Memory\TempHeap.h" />
     <ClInclude Include="Memory\Memory.h" />
     <ClInclude Include="Memory\MemoryBuffer.h" />
     <ClInclude Include="Memory\PoolHeap.h" />
     <ClInclude Include="Memory\SmartPointer.h" />
-    <ClInclude Include="Net\Controllers\NetClientController.h" />
-    <ClInclude Include="Net\Controllers\NetConnectionController.h" />
-    <ClInclude Include="Net\Controllers\NetEventController.h" />
-    <ClInclude Include="Net\Controllers\NetServerController.h" />
-    <ClInclude Include="Net\HeartbeatPacket.h" />
-    <ClInclude Include="Net\ConnectPacket.h" />
-    <ClInclude Include="Net\NetClientDriver.h" />
-    <ClInclude Include="Net\NetConnection.h" />
-    <ClInclude Include="Net\NetDriver.h" />
-    <ClInclude Include="Net\NetEvent.h" />
     <ClInclude Include="Net\NetFramework.h" />
-    <ClInclude Include="Net\NetServerDriver.h" />
-    <ClInclude Include="Net\NetSocket.h" />
-    <ClInclude Include="Net\NetTransport.h" />
-    <ClInclude Include="Net\NetTransportConfig.h" />
-    <ClInclude Include="Net\NetTransportHandler.h" />
-    <ClInclude Include="Net\NetTransportImpl.h" />
     <ClInclude Include="Net\NetTypes.h" />
-    <ClInclude Include="Net\NetUtil.h" />
-    <ClInclude Include="Net\PacketAllocator.h" />
-    <ClInclude Include="Net\PacketUtility.h" />
-    <ClInclude Include="Net\TransportHandlers\ClientConnectionHandler.h" />
-    <ClInclude Include="Net\TransportHandlers\ClientHeartbeatHandler.h" />
-    <ClInclude Include="Net\TransportHandlers\ServerConnectionHandler.h" />
-    <ClInclude Include="Net\TransportHandlers\ServerHeartbeatHandler.h" />
     <ClInclude Include="Net\UDPSocket.h" />
     <ClInclude Include="Net\UDPSocketWindows.h" />
     <ClInclude Include="Platform\AsyncIOBuffer.h" />
@@ -191,6 +189,8 @@
     <ClInclude Include="Platform\Atomic.h" />
     <ClInclude Include="Platform\Barrier.h" />
     <ClInclude Include="Platform\CriticalSection.h" />
+    <ClInclude Include="Platform\MappedFile.h" />
+    <ClInclude Include="Platform\RWLock.h" />
     <ClInclude Include="Platform\ThreadFence.h" />
     <ClInclude Include="Platform\File.h" />
     <ClInclude Include="Platform\FileSystem.h" />
@@ -200,6 +200,7 @@
     <ClInclude Include="Platform\Thread.h" />
     <ClInclude Include="Platform\ThreadSignal.h" />
     <ClInclude Include="Reflection\AccessSpecifier.h" />
+    <ClInclude Include="Reflection\DynamicCast.h" />
     <ClInclude Include="Reflection\FunctionInfo.h" />
     <ClInclude Include="Reflection\MemberInfo.h" />
     <ClInclude Include="Reflection\MethodInfo.h" />
@@ -208,6 +209,7 @@
     <ClInclude Include="Reflection\Type.h" />
     <ClInclude Include="Runtime\ReflectionHooks.h" />
     <ClInclude Include="String\SStream.h" />
+    <ClInclude Include="String\StaticString.h" />
     <ClInclude Include="String\String.h" />
     <ClInclude Include="String\StringCommon.h" />
     <ClInclude Include="String\StringHashTable.h" />
@@ -215,12 +217,8 @@
     <ClInclude Include="String\Token.h" />
     <ClInclude Include="String\TokenTable.h" />
     <ClInclude Include="String\WString.h" />
-    <ClInclude Include="Tests\FileTests.h" />
-    <ClInclude Include="Tests\PointerTest.h" />
-    <ClInclude Include="Tests\SStreamTest.h" />
-    <ClInclude Include="Tests\StringTest.h" />
-    <ClInclude Include="Tests\ThreadTest.h" />
-    <ClInclude Include="Tests\WStringTest.h" />
+    <ClInclude Include="Test\ProfilerHooks.h" />
+    <ClInclude Include="Test\Profiling.h" />
     <ClInclude Include="Test\SampleCycleA.h" />
     <ClInclude Include="Test\SampleCycleB.h" />
     <ClInclude Include="Test\Test.h" />
@@ -229,19 +227,29 @@
     <ClInclude Include="Utility\Bitfield.h" />
     <ClInclude Include="Utility\ByteOrder.h" />
     <ClInclude Include="Utility\CmdLine.h" />
+    <ClInclude Include="Utility\Console.h" />
     <ClInclude Include="Utility\Crc32.h" />
     <ClInclude Include="Utility\DateTime.h" />
     <ClInclude Include="Utility\Debug.h" />
+    <ClInclude Include="Utility\Error.h" />
     <ClInclude Include="Utility\ErrorCore.h" />
+    <ClInclude Include="Utility\APIResult.h" />
+    <ClInclude Include="Utility\EventBus.h" />
     <ClInclude Include="Utility\FNVHash.h" />
     <ClInclude Include="Utility\Guid.h" />
     <ClInclude Include="Utility\Log.h" />
+    <ClInclude Include="Utility\NumericalVariant.h" />
     <ClInclude Include="Utility\SmartCallback.h" />
     <ClInclude Include="Utility\StackTrace.h" />
+    <ClInclude Include="Utility\StandardError.h" />
     <ClInclude Include="Utility\StaticCallback.h" />
     <ClInclude Include="Utility\StdMap.h" />
+    <ClInclude Include="Utility\StdSet.h" />
+    <ClInclude Include="Utility\StdUnorderedSet.h" />
+    <ClInclude Include="Utility\StdVector.h" />
     <ClInclude Include="Utility\StreamTypes.h" />
     <ClInclude Include="Utility\Time.h" />
+    <ClInclude Include="Utility\Tokenizer.h" />
     <ClInclude Include="Utility\UniqueNumber.h" />
     <ClInclude Include="Utility\Utility.h" />
   </ItemGroup>
@@ -253,32 +261,32 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{F3FC9249-17E9-4FC4-A514-3CF8FC276950}</ProjectGuid>
     <RootNamespace>Core</RootNamespace>
-    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Final|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
@@ -289,15 +297,19 @@
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\..\Public\rapidjson-1-1-0\RapidJson.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Test|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\..\Public\rapidjson-1-1-0\RapidJson.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\..\Public\rapidjson-1-1-0\RapidJson.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Final|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\..\Public\rapidjson-1-1-0\RapidJson.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -336,7 +348,8 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <MinimalRebuild>false</MinimalRebuild>
       <OmitFramePointers>false</OmitFramePointers>
-      <ProgramDataBaseFileName>$(IntDir)%(Filename).pdb</ProgramDataBaseFileName>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>Core/PCH.h</PrecompiledHeaderFile>
     </ClCompile>
     <Lib>
       <AdditionalDependencies>synchronization.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -357,20 +370,19 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <ExceptionHandling>Sync</ExceptionHandling>
       <PreprocessorDefinitions>_ALLOW_RTCc_IN_STL;LF_INTERNAL_TEST;LF_INTERNAL_EXPORT_CORE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <StringPooling>true</StringPooling>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
-      <ProgramDataBaseFileName>$(IntDir)%(Filename).pdb</ProgramDataBaseFileName>
       <SmallerTypeCheck>true</SmallerTypeCheck>
+      <OmitFramePointers>false</OmitFramePointers>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <MinimalRebuild>false</MinimalRebuild>
-      <OmitFramePointers>false</OmitFramePointers>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>Core/PCH.h</PrecompiledHeaderFile>
     </ClCompile>
     <Lib>
       <AdditionalDependencies>synchronization.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Lib>
     <Link>
       <AdditionalDependencies>Synchronization.lib;$(SolutionDir)Public\openssl\lib\libcrypto.lib;$(SolutionDir)Public\openssl\lib\libssl.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -382,13 +394,14 @@
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>$(SolutionDir)Code\;$(SolutionDir)Public\openssl\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <ProgramDataBaseFileName>$(IntDir)%(Filename).pdb</ProgramDataBaseFileName>
       <PreprocessorDefinitions>_HAS_EXCEPTIONS=0;_ALLOW_RTCc_IN_STL;LF_INTERNAL_RELEASE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <ExceptionHandling>false</ExceptionHandling>
       <BufferSecurityCheck>true</BufferSecurityCheck>
       <OmitFramePointers>false</OmitFramePointers>
       <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>Core/PCH.h</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -407,11 +420,12 @@
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>$(SolutionDir)Code\;$(SolutionDir)Public\openssl\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <ProgramDataBaseFileName>$(IntDir)%(Filename).pdb</ProgramDataBaseFileName>
       <PreprocessorDefinitions>_HAS_EXCEPTIONS=0;_ALLOW_RTCc_IN_STL;LF_INTERNAL_FINAL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <OmitFramePointers>false</OmitFramePointers>
       <ExceptionHandling>false</ExceptionHandling>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>Core/PCH.h</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>

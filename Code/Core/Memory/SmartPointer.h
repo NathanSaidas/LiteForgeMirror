@@ -1,5 +1,5 @@
 // ********************************************************************
-// Copyright (c) 2019 Nathan Hanlan
+// Copyright (c) 2019-2020 Nathan Hanlan
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files(the "Software"), 
@@ -18,8 +18,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ********************************************************************
-#ifndef LF_CORE_SMART_POINTER_H
-#define LF_CORE_SMART_POINTER_H
+#pragma once
 
 #include "Core/Common/Types.h"
 #include "Core/Common/Assert.h"
@@ -30,6 +29,12 @@
 
 #define DECLARE_STRUCT_PTR(T) struct T; using T##Ptr = TStrongPointer<T>;
 #define DECLARE_STRUCT_WPTR(T) struct T; using T##WPtr = TWeakPoitner<T>;
+
+#define DECLARE_MANAGED_PTR(T) class T; using T##Ptr = TManagedPointer<T>
+#define DECLARE_STRUCT_MANAGED_PTR(T) struct T; using T##Ptr = TManagedPointer<T>;
+
+#define DECLARE_MANAGED_CPTR(T) class T; using T##CPtr = TConstManagedPointer<const T>;
+#define DECLARE_STRUCT_MANAGED_CPTR(T) struct T; using T##CPtr = TConstManagedPointer<const T>;
 
 namespace lf {
 
@@ -114,7 +119,8 @@ private:
     void AllocNode()
     {
         Assert(!mNode);
-        mNode = static_cast<NodeType*>(LFAlloc(sizeof(NodeType), alignof(NodeType), MMT_POINTER_NODE));
+        LF_SCOPED_MEMORY(MMT_POINTER_NODE);
+        mNode = static_cast<NodeType*>(LFAlloc(sizeof(NodeType), alignof(NodeType)));
         mNode->mStrong = 1;
         mNode->mWeak = 0;
         mNode->mPointer = nullptr;
@@ -266,15 +272,19 @@ private:
     NodeType* mNode;
 };
 
-// Convertable Smart Pointers
+// Convertible Smart Pointers
 // usage:
-// class MyType : public TWeakPointerConvertable
+// class MyType : public TWeakPointerConvertible
 // 
-// ptr = MakeConvertablePtr<MyType>();
+// public: 
+//      // ### Use this typedef to automatically create a convertible weak pointer when using ReflectionMgr
+//      using PointerConvertible = PointerConvertibleType;
+// 
+// ptr = MakeConvertiblePtr<MyType>();
 // wptr = GetPointer(rawPtr);
 //
 template<typename T>
-struct TWeakPointerConvertable
+struct TWeakPointerConvertible
 {
 public:
     const TWeakPointer<T>& GetWeakPointer() const { return mPointer; }
@@ -283,10 +293,194 @@ private:
     TWeakPointer<T> mPointer;
 };
 
+// ********************************************************************
+// This represents a managed pointer (managed meaning the allocation/free
+// is managed else where)
+//
+// The TManagedPointer just provides convience reference count management.
+// 
+// The 'owner' (one that manages memory lifetime of pointer) MUST NOT 
+// release the memory, unless the ref count is 0.
+// 
+// The 'owner' SHOULD verify the ref count never goes below 0.
+//
+// typename T must implement 2 methods 
+//          'void IncrementRef()' -- Increment the reference count by one 
+//          'void DecrementRef()' -- Decrement the reference count by one
+//
+// TODO: TLockingManagedPointer (Use locks to get TManagedPointer)
+// ********************************************************************
 template<typename T>
-TStrongPointer<T> MakeConvertablePtr()
+class TManagedPointer
+{
+public:
+    using ValueType = T;
+
+    TManagedPointer() : mPointer(nullptr) {}
+    TManagedPointer(const TManagedPointer& other) : mPointer(other.mPointer) { IncrementRef(); }
+    TManagedPointer(TManagedPointer&& other) : mPointer(other.mPointer) { other.mPointer = nullptr; }
+    TManagedPointer(const NullPtr&) : mPointer(nullptr) {}
+    explicit TManagedPointer(T* other) : mPointer(other) { IncrementRef(); }
+    ~TManagedPointer() { DecrementRef(); }
+
+    template<typename U>
+    TManagedPointer(const TManagedPointer<U>& other) : mNode(nullptr)
+    {
+        LF_STATIC_IS_A(U, ValueType);
+        const TManagedPointer<T>* otherPtr = reinterpret_cast<const TManagedPointer<T>*>(&other);
+        mNode = otherPtr->mNode;
+        IncrementRef();
+    }
+
+    TManagedPointer& operator=(const TManagedPointer& other)
+    {
+        if (&other != this)
+        {
+            Release();
+            mPointer = other.mPointer;
+            IncrementRef();
+        }
+        return *this;
+    }
+
+    TManagedPointer& operator=(TManagedPointer&& other)
+    {
+        if (&other != this)
+        {
+            Release();
+            mPointer = other.mPointer;
+            other.mPointer = nullptr;
+        }
+        return *this;
+    }
+
+    TManagedPointer& operator=(T* other)
+    {
+        if (other != mPointer)
+        {
+            Release();
+            mPointer = other;
+            IncrementRef();
+        }
+        return *this;
+    }
+    TManagedPointer& operator=(const NullPtr&)
+    {
+        Release();
+        return *this;
+    }
+
+    void Release()
+    {
+        DecrementRef();
+        mPointer = nullptr;
+    }
+
+    operator T* () { return mPointer; }
+    operator const T* () const { return mPointer; }
+
+    T& operator*() { return *mPointer; }
+    const T& operator*() const { return *mPointer; }
+    T* operator->() { return mPointer; }
+    const T* operator->() const { return mPointer; }
+
+private:
+    void DecrementRef() { if (mPointer) mPointer->DecrementRef(); }
+    void IncrementRef() { if (mPointer) mPointer->IncrementRef(); }
+
+    T* mPointer;
+};
+
+template<typename T>
+class TConstManagedPointer
+{
+public:
+    using ValueType = T;
+
+    TConstManagedPointer() : mPointer(nullptr) {}
+    TConstManagedPointer(const TConstManagedPointer& other) : mPointer(other.mPointer) { IncrementRef(); }
+    TConstManagedPointer(TConstManagedPointer&& other) : mPointer(other.mPointer) { other.mPointer = nullptr; }
+    TConstManagedPointer(const TManagedPointer<T>& other) : mPointer(other.mPointer) { IncrementRef(); }
+    TConstManagedPointer(const NullPtr&) : mPointer(nullptr) {}
+    explicit TConstManagedPointer(const T* other) : mPointer(other) { IncrementRef(); }
+    ~TConstManagedPointer() { DecrementRef(); }
+
+    template<typename U>
+    TConstManagedPointer(const TConstManagedPointer<U>& other) : mNode(nullptr)
+    {
+        LF_STATIC_IS_A(U, ValueType);
+        const TManagedPointer<T>* otherPtr = reinterpret_cast<const TManagedPointer<T>*>(&other);
+        mNode = otherPtr->mNode;
+        IncrementRef();
+    }
+
+    TConstManagedPointer& operator=(const TConstManagedPointer& other)
+    {
+        if (&other != this)
+        {
+            Release();
+            mPointer = other.mPointer;
+            IncrementRef();
+        }
+        return *this;
+    }
+
+    TConstManagedPointer& operator=(TConstManagedPointer&& other)
+    {
+        if (&other != this)
+        {
+            Release();
+            mPointer = other.mPointer;
+            other.mPointer = nullptr;
+        }
+        return *this;
+    }
+
+    TConstManagedPointer& operator=(T* other)
+    {
+        if (other != mPointer)
+        {
+            Release();
+            mPointer = other;
+            IncrementRef();
+        }
+        return *this;
+    }
+    TConstManagedPointer& operator=(const NullPtr&)
+    {
+        Release();
+        return *this;
+    }
+
+    void Release()
+    {
+        mPointer = nullptr;
+        DecrementRef();
+    }
+
+    operator const T* () const { return mPointer; }
+    const T& operator*() const { return *mPointer; }
+    const T* operator->() const { return mPointer; }
+
+private:
+    void DecrementRef() { if (mPointer) mPointer->DecrementRef(); }
+    void IncrementRef() { if (mPointer) mPointer->IncrementRef(); }
+
+    const T* mPointer;
+};
+
+template<typename T>
+TStrongPointer<T> MakeConvertiblePtr()
 {
     TStrongPointer<T> ptr(LFNew<T>());
+    ptr->GetWeakPointer() = ptr;
+    return ptr;
+}
+
+template<typename T, typename ... ARGS>
+TStrongPointer<T> MakeConvertiblePtr(ARGS&&... args)
+{
+    TStrongPointer<T> ptr(LFNew<T>(std::forward<ARGS>(args)...));
     ptr->GetWeakPointer() = ptr;
     return ptr;
 }
@@ -298,7 +492,7 @@ TWeakPointer<T> GetPointer(T* self)
     {
         return NULL_PTR;
     }
-    return self->GetWeakPointer();
+    return StaticCast<TWeakPointer<T>>(self->GetWeakPointer());
 }
 
 template<typename T>
@@ -308,7 +502,7 @@ const TWeakPointer<T>& GetPointer(const T* self)
     {
         return *reinterpret_cast<const TWeakPointer<T>*>(&NULL_PTR);
     }
-    return self->GetWeakPointer();
+    return StaticCast<TWeakPointer<T>>(self->GetWeakPointer());
 }
 
 template<typename T>
@@ -662,5 +856,3 @@ SizeT TWeakPointer<T>::GetStrongRefs() const
 }
 
 } // namespace lf
-
-#endif // LF_CORE_SMART_POINTER_H
